@@ -11,10 +11,12 @@ import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js
 
 export const signup = async (req, res) => {
   try {
-    let { email, lastname, name, password } = req.body;
-    if (!email || !password) {
-      throw new Error("EMAIL AND PASSWORD ARE REQUIRED!");
+    let { email, username, password } = req.body;
+
+    if (!email || !password || !username) {
+      throw new Error("EMAIL, USERNAME AND PASSWORD ARE REQUIRED!");
     }
+
     const isExisted = await User.findOne({ email });
     if (isExisted && isExisted.isVerified)
       throw new Error("USER ALREADY EXISTS");
@@ -28,8 +30,7 @@ export const signup = async (req, res) => {
         { email },
         {
           $set: {
-            name,
-            lastname,
+            username,
             password,
             verificationToken,
             verificationTokenExpiresAt,
@@ -39,8 +40,7 @@ export const signup = async (req, res) => {
       );
     } else {
        user = await User.create({
-        name,
-        lastname,
+        username,
         email,
         password,
         verificationToken,
@@ -65,6 +65,7 @@ export const signup = async (req, res) => {
     });
   }
 };
+
 export const verifyMail = async (req, res) => {
   //1 2 3 6 8 7 form the frontend
   try {
@@ -100,6 +101,7 @@ export const verifyMail = async (req, res) => {
     });
   }
 };
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -129,6 +131,7 @@ export const login = async (req, res) => {
     });
   }
 };
+
 export const logout = async (req, res) => {
   res.clearCookie("auth-token");
   res.status(200).json({
@@ -136,6 +139,7 @@ export const logout = async (req, res) => {
     message: "user logged out successfully",
   });
 };
+
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -160,6 +164,7 @@ export const forgotPassword = async (req, res) => {
     });
   }
 };
+
 export const resetPassword = async (req, res) => {
   try {
     const token = req.query.token;
@@ -186,6 +191,7 @@ export const resetPassword = async (req, res) => {
     });
   }
 };
+
 export const checkAuth = async (req, res) => {
   try {
     const user = await User.findById(req.userId).select("-password");

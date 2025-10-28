@@ -17,6 +17,8 @@ app.use(express.json());//allows us to parse incomming requests:req.body (json)
 app.use(cookieParser());//allows us to parse incomming cookies
 const port = process.env.PORT || 2000;
 
+//----------------------------Root Routes-----------------------------
+
 app.use("/api/auth", authRoutes);
 app.use("/api/houses", authRoutes);
 
@@ -24,5 +26,5 @@ app.use("/api/houses", authRoutes);
 
 app.listen(port, () => {
   connectDB();
-  console.log("server starting on port", port);
+  console.log("Server starting on port", port);
 });
