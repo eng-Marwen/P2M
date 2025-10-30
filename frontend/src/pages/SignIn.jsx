@@ -2,11 +2,13 @@ import axios from "axios";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-
+import { useDispatch } from "react-redux";
 import OAuth from "../components/OAuth.jsx";
 import { showToast } from "../popups/tostHelper.js";
+import { signInSuccess, signInFailure } from "../app/user/userSlice.js";  
 
 const SignIn = () => {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -28,11 +30,13 @@ const SignIn = () => {
       .then((response) => {
         console.log("User signed in successfully:", response.data);
         showToast("User is signed in!", "success");
+        dispatch(signInSuccess(response.data.data));
         setTimeout(() => {
           navigate("/");
         }, 1500);
       })
       .catch((error) => {
+        dispatch(signInFailure( "Something went wrong"));
         console.error("There was an error signing up!", error);
         const message =
           error.response?.data?.message || // if your backend sends { message: "..." }
