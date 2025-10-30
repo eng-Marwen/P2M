@@ -6,7 +6,8 @@ import {
   forgotPassword,
   verifyMail,
   resetPassword,
-  checkAuth
+  checkAuth,
+  google
 } from "../controllers/auth.controller.js";
 import { verifyToken } from "../middlewares/verifyToken.js";
 const router = express.Router();
@@ -18,5 +19,6 @@ router.post("/verify-email", verifyMail);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.get("/check-auth", verifyToken, checkAuth); //for checking of the auth of the user
+router.post("/google", google); // OAuth route
 
 export default router;

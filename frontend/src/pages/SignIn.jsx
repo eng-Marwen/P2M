@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 
+import OAuth from "../components/OAuth.jsx";
 import { showToast } from "../popups/tostHelper.js";
 
 const SignIn = () => {
@@ -26,7 +27,10 @@ const SignIn = () => {
       .post("http://localhost:4000/api/auth/signin", formData)
       .then((response) => {
         console.log("User signed in successfully:", response.data);
-        navigate("/home");
+        showToast("User is signed in!", "success");
+        setTimeout(() => {
+          navigate("/");
+        }, 1500);
       })
       .catch((error) => {
         console.error("There was an error signing up!", error);
@@ -66,9 +70,7 @@ const SignIn = () => {
         >
           SIGN IN
         </button>
-        <button className="bg-red-700 uppercase text-white p-3 rounded-lg">
-          continue with Google
-        </button>
+        <OAuth />
       </form>
       <div className=" flex gap-2 pt-5">
         <p>Already have an account? </p>

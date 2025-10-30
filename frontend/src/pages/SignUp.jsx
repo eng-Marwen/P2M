@@ -1,8 +1,8 @@
 import axios from "axios";
-import {  useState } from "react";
-import { Link,useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-
+import OAuth from "../components/OAuth.jsx";
 import { showToast } from "../popups/tostHelper.js";
 
 const SignUp = () => {
@@ -12,7 +12,7 @@ const SignUp = () => {
     password: "",
   });
 
-  const [load,setLoad]=useState(false);
+  const [load, setLoad] = useState(false);
 
   const handFormChange = (e) => {
     setFormData({
@@ -30,11 +30,14 @@ const SignUp = () => {
       .post("http://localhost:4000/api/auth/signup", formData)
       .then((response) => {
         console.log("User signed up successfully:", response.data);
-        navigate("/verify-email");
+        showToast("Verification code sent to your email!", "success");
+        setTimeout(() => {
+          navigate("/verify-email");
+        }, 1500);
       })
       .catch((error) => {
         console.error("There was an error signing up!", error);
-         const message =
+        const message =
           error.response?.data?.message || // if your backend sends { message: "..." }
           error.response?.data || // if backend sends plain text
           error.message || // fallback from axios
@@ -42,7 +45,7 @@ const SignUp = () => {
         console.log(message);
         showToast(message, "error");
       });
-      setLoad(false);
+    setLoad(false);
   };
 
   return (
@@ -78,9 +81,8 @@ const SignUp = () => {
         >
           {load ? "Loading..." : "Create Account"}
         </button>
-        <button className="bg-red-700 uppercase text-white p-3 rounded-lg">
-          continue with Google
-        </button>
+
+        <OAuth />
       </form>
       <div className=" flex gap-2 pt-5">
         <p>Already have an account? </p>

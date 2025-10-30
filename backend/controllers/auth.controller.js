@@ -23,10 +23,10 @@ export const signup = async (req, res) => {
     const verificationToken = Math.floor(100000 + Math.random() * 900000); //6 digits code
 
     const verificationTokenExpiresAt = new Date(Date.now() + 3600 * 1000 * 24); // This sets the expiration time to 24 hour(in ms) from now
-    let user
+    let user;
     password = await bcrypt.hash(password, 10);
     if (isExisted && !isExisted.isVerified) {
-       user = await User.findOneAndUpdate(
+      user = await User.findOneAndUpdate(
         { email },
         {
           $set: {
@@ -39,7 +39,7 @@ export const signup = async (req, res) => {
         { new: true }
       );
     } else {
-       user = await User.create({
+      user = await User.create({
         username,
         email,
         password,
@@ -202,6 +202,39 @@ export const checkAuth = async (req, res) => {
     });
   } catch (error) {
     res.status(200).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+};
+
+export const google = async (req, res) => {
+  try {
+    const { email, username, photo } = req.body;
+    let user = await User.findOne({ email }).lean();
+
+    if (!user) {
+      let password = Math.random().toString(36).slice(-8); // Generate a random 8-character password
+      password = await bcrypt.hash(password, 10);
+      user = await User.create({
+        username: username.split(" ").join("").toLowerCase(),
+        email,
+        password,
+        photo,
+        isVerified: true,
+      });
+    }
+    generateTokenAndSetCookie(res, user.id);
+    res.status(200).json({
+      status: "success",
+      message: "user logged in with google successfully",
+      data: {
+        ...user._doc,
+        password: undefined,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
       status: "fail",
       message: error.message,
     });

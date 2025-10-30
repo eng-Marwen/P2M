@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { showToast } from "../popups/tostHelper.js";
 
-const EmailVerification= () => {
+const EmailVerification = () => {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef([]);
   const navigate = useNavigate();
@@ -52,8 +52,10 @@ const EmailVerification= () => {
       })
       .then((response) => {
         console.log(response.data);
-        showToast("User is verified!", "success"); //  pass message here
-        setTimeout(() => navigate("/home"), 1500); // wait 1.5s
+        showToast("User is signed up!", "success");
+        setTimeout(() => {
+          navigate("/");
+        }, 1500);
       })
       .catch((err) => {
         const message =
@@ -72,9 +74,7 @@ const EmailVerification= () => {
   return (
     <>
       <div className="mx-auto my-14 max-w-md w-full  rounded-2xl shadow-xl overflow-hidden">
-        <div
-          className=" bg-slate-200 shadow-md rounded-2xl p-8 w-full max-w-md"
-        >
+        <div className=" bg-slate-200 shadow-md rounded-2xl p-8 w-full max-w-md">
           <h2 className="text-3xl font-semiboldbold mb-6 text-center  text-slate-700 ">
             Verify Your Email
           </h2>
