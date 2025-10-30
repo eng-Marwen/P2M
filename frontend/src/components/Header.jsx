@@ -18,10 +18,10 @@ const Header = () => {
               placeholder="search . . ."
               className="
             bg-transparent focus:outline-none 
-            w-24 sm:w-64 h-8
+            w-24 sm:w-64 p-1.5
             "
             />
-            <FaSearch className="text-slate-600" />
+            <FaSearch className="text-slate-600 mr-2" />
           </form>
           <ul className="flex gap-4  font-medium text-slate-600 text-lg  items-center">
             <Link to="/"><li className="hidden sm:inline hover:underline">Home</li></Link>

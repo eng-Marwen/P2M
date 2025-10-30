@@ -12,6 +12,8 @@ const SignUp = () => {
     password: "",
   });
 
+  const [load,setLoad]=useState(false);
+
   const handFormChange = (e) => {
     setFormData({
       ...formData,
@@ -22,6 +24,7 @@ const SignUp = () => {
   };
   const navigate = useNavigate();
   const handleFormSubmit = (e) => {
+    setLoad(true);
     e.preventDefault();
     axios
       .post("http://localhost:4000/api/auth/signup", formData)
@@ -39,6 +42,7 @@ const SignUp = () => {
         console.log(message);
         showToast(message, "error");
       });
+      setLoad(false);
   };
 
   return (
@@ -72,7 +76,7 @@ const SignUp = () => {
           hover:opacity-95 disabled:opacity-80
         "
         >
-          SIGN UP
+          {load ? "Loading..." : "Create Account"}
         </button>
         <button className="bg-red-700 uppercase text-white p-3 rounded-lg">
           continue with Google
