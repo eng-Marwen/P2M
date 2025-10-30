@@ -3,8 +3,7 @@ const userSchma = new mongoose.Schema(
   {
     username: {
       type: String,
-      unique: true,
-      require: true,
+      required: true,
     },
     email: {
       type: String,
@@ -13,7 +12,7 @@ const userSchma = new mongoose.Schema(
     },
     password:{
       type:String,
-      require:true
+      required:true
     },
     lastLogin: {
       type: Date,
@@ -34,4 +33,4 @@ const userSchma = new mongoose.Schema(
                     //"updatedAt": "2025-07-22T16:00:00.000Z",
   }
 );
-export const User=mongoose.model("User",userSchma,"users");
+export const User=mongoose.model("User",userSchma,"Users");
