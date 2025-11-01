@@ -1,13 +1,15 @@
+import axios from "axios";
 import { useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
+import { signInSuccess, signOut } from "../app/user/userSlice.js";
 import { showToast } from "../popups/tostHelper.js";
 import { supabase } from "../supabaseClient";
-import axios from "axios";
-import { signInSuccess } from "../app/user/userSlice.js";
 
 const Profile = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   //---supabase image upload setup---
   const [file, setFile] = useState(null);
@@ -86,8 +88,10 @@ const Profile = () => {
       console.log("Update data:", updateData);
 
       // Send to backend
-      const response = await axios.patch("http://localhost:4000/api/auth/update-profile", updateData)
-
+      const response = await axios.patch(
+        "http://localhost:4000/api/auth/update-profile",
+        updateData
+      );
 
       if (response.data.status === "success") {
         showToast("Profile updated successfully!", "success");
@@ -103,6 +107,48 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete your account? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await axios.delete(
+        "http://localhost:4000/api/auth/delete"
+      );
+      if (response.data.status === "success") {
+        showToast("Account deleted successfully!", "success");
+        dispatch(signOut());
+        setTimeout(() => {
+          navigate("/sign-in");
+        }, 1500); // Redirect to home or login page
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      const message = error.response?.data?.message || "Delete failed";
+      showToast(message, "error");
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:4000/api/auth/logout"
+      );
+      if (response.data.status === "success") {
+        dispatch(signOut());
+        navigate("/sign-in");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      const message = error.response?.data?.message || "Logging out failed";
+      showToast(message, "error");
+    }
+  };
   return (
     <div className="mx-auto p-3 max-w-lg ">
       <h1 className="text-3xl text-center font-semiboldbold my-7">Profile </h1>
@@ -159,8 +205,13 @@ const Profile = () => {
         </button>
       </form>
       <div className="flex justify-between mt-4">
-        <span className="text-red-700 cursor-pointer">Delete Account</span>
-        <span className="text-red-700 cursor-pointer">Sign Out</span>
+        <span
+          onClick={handleDeleteAccount}
+          className="text-red-700 cursor-pointer"
+        >
+          Delete Account
+        </span>
+        <span onClick={handleSignOut} className="text-red-700 cursor-pointer">Sign Out</span>
       </div>
       <ToastContainer />
     </div>
