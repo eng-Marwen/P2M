@@ -28,7 +28,6 @@ const SignIn = () => {
     axios
       .post("http://localhost:4000/api/auth/signin", formData)
       .then((response) => {
-        console.log("User signed in successfully:", response.data);
         showToast("User is signed in!", "success");
         dispatch(signInSuccess(response.data.data));
         setTimeout(() => {

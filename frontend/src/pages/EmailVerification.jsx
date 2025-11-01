@@ -1,14 +1,16 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-
 import { ToastContainer } from "react-toastify";
+import { signInFailure, signInSuccess } from "../app/user/userSlice.js";
 import { showToast } from "../popups/tostHelper.js";
 
 const EmailVerification = () => {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef([]);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleChange = (index, value) => {
     const newCode = [...code];
@@ -53,6 +55,7 @@ const EmailVerification = () => {
       .then((response) => {
         console.log(response.data);
         showToast("User is signed up!", "success");
+        dispatch(signInSuccess(response.data.data));
         setTimeout(() => {
           navigate("/");
         }, 1500);
@@ -64,6 +67,7 @@ const EmailVerification = () => {
           err.message || // fallback from axios
           "Something went wrong";
         console.log(message);
+        dispatch(signInFailure(message));
         showToast(message, "error");
       });
   };

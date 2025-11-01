@@ -1,15 +1,27 @@
 import jwt from "jsonwebtoken";
 
-
 export const generateTokenAndSetCookie = (res, userId) => {
   const token = jwt.sign({userId}, process.env.SECRET_KEY, {
     expiresIn: "7d",
   });
-  res.cookie("auth-token", token, {
+  
+  console.log("Environment:", process.env.NODE_ENV);
+  console.log("Setting cookie for userId:", userId);
+  
+  const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // only send over HTTPS in production
-    sameSite: "Strict", // or 'Lax' depending on use-case
-    maxAge: 7*24*3600*1000, // 7 days in ms
-  });
+    secure: false, // Always false for localhost testing
+    sameSite: "lax",
+    maxAge: 7*24*60*60*1000,
+    path: "/",
+  };
+  
+  console.log("Cookie options:", cookieOptions);
+  
+  res.cookie("auth-token", token, cookieOptions);
+  
+  // Check if cookie was set in response headers
+  console.log("Response headers:", res.getHeaders());
+  
   return token;
 };

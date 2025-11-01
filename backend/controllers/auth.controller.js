@@ -47,12 +47,10 @@ export const signup = async (req, res) => {
         verificationTokenExpiresAt,
       });
     }
-    //jwt
-    generateTokenAndSetCookie(res, user._id);
     await sendVerificatinMail(user.email, verificationToken);
     res.status(201).json({
       status: "success",
-      message: "user created successfully",
+      message: "verification email sent successfully",
       data: {
         ...user._doc,
         password: undefined,
@@ -85,6 +83,7 @@ export const verifyMail = async (req, res) => {
     user.verificationToken = undefined;
     user.verificationTokenExpiresAt = undefined;
     await user.save();
+    generateTokenAndSetCookie(res, user._id);
     res.status(200).json({
       status: "success",
       message: "email verified successfully",
@@ -94,6 +93,7 @@ export const verifyMail = async (req, res) => {
       },
     });
   } catch (error) {
+    res.clearCookie("auth-token");
     console.log("error in send verification mail");
     res.status(404).json({
       status: "failed",
@@ -108,12 +108,12 @@ export const login = async (req, res) => {
     if (!email || !password) {
       throw new Error("missing email or password field");
     }
+    console.log("Login attempt for email:", email);
     const user = await User.findOne({ email });
     if (!user) throw new Error("user does not exit please signup");
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) throw new Error("invalid password");
     generateTokenAndSetCookie(res, user.id);
-    const id = user.id;
     user.lastLogin = Date.now();
     await user.save();
     res.status(200).json({
@@ -225,6 +225,7 @@ export const google = async (req, res) => {
       });
     }
     generateTokenAndSetCookie(res, user.id);
+    user = user._doc || user; //in case of new user created
     res.status(200).json({
       status: "success",
       message: "user logged in with google successfully",
@@ -232,6 +233,84 @@ export const google = async (req, res) => {
         ...user,
         password: undefined,
       },
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+};
+
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.userId;
+    await User.findByIdAndDelete(userId);
+    res.status(200).json({
+      status: "success",
+      message: "user account deleted successfully",
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { username, oldPassword, newPassword, avatar } = req.body;
+
+    // Get the current user
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const updateData = {};
+
+    // Update username if provided
+    if (username) {
+      updateData.username = username;
+    }
+
+    // Update avatar if provided
+    if (avatar) {
+      updateData.avatar = avatar;
+    }
+
+    // Handle password update
+    if (newPassword) {
+      if (!oldPassword) {
+        throw new Error("Current password is required to set a new password");
+      }
+
+      // Verify old password
+      const isOldPasswordValid = await bcrypt.compare(
+        oldPassword,
+        user.password
+      );
+      if (!isOldPasswordValid) {
+        throw new Error("Current password is incorrect");
+      }
+
+      // Hash new password
+      updateData.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true }
+    ).select("-password");
+
+    res.status(200).json({
+      status: "success",
+      message: "Profile updated successfully",
+      data: updatedUser,
     });
   } catch (error) {
     res.status(400).json({

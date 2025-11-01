@@ -23,7 +23,7 @@ const OAuth = () => {
         email: user.email,
         avatar: user.photoURL,
       };
-      const response = await axios.post("http://localhost:4000/api/auth/google", body);
+      const response = await axios.post("http://localhost:4000/api/auth/google", body,{withCredentials:true});
       console.log("User signed up/sign in with Google successfully:", response.data);
       dispatch(signInSuccess(response.data.data));
 
