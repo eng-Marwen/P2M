@@ -210,7 +210,7 @@ export const checkAuth = async (req, res) => {
 
 export const google = async (req, res) => {
   try {
-    const { email, username, photo } = req.body;
+    const { email, username, avatar } = req.body;
     let user = await User.findOne({ email }).lean();
 
     if (!user) {
@@ -220,7 +220,7 @@ export const google = async (req, res) => {
         username: username.split(" ").join("").toLowerCase(),
         email,
         password,
-        photo,
+        avatar,
         isVerified: true,
       });
     }
@@ -229,7 +229,7 @@ export const google = async (req, res) => {
       status: "success",
       message: "user logged in with google successfully",
       data: {
-        ...user._doc,
+        ...user,
         password: undefined,
       },
     });

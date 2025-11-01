@@ -1,7 +1,10 @@
 import { FaSearch } from "react-icons/fa"; //found awesome icons
+import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 
 const Header = () => {
+  const currentUser = useSelector((state) => state.user.currentUser);
+  console.log("Current User:", currentUser);
   return (
     <>
       <div className=" bg-slate-200 shadow-md">
@@ -24,9 +27,24 @@ const Header = () => {
             <FaSearch className="text-slate-600 mr-2" />
           </form>
           <ul className="flex gap-4  font-medium text-slate-600 text-lg  items-center">
-            <Link to="/"><li className="hidden sm:inline hover:underline">Home</li></Link>
-            <Link to="/about"><li className="hidden sm:inline hover:underline  ">About</li></Link>
-            <Link to="/sign-in"><li className="hover:underline">Sign In</li></Link>
+            <Link to="/">
+              <li className="hidden sm:inline hover:underline">Home</li>
+            </Link>
+            <Link to="/about">
+              <li className="hidden sm:inline hover:underline  ">About</li>
+            </Link>
+
+            <Link to="/sign-in">
+
+            {currentUser ? (
+              <img src={currentUser.avatar} alt="profile"
+                    className="w-8 h-8 rounded-full object-cover border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+
+              />
+            ) : (
+                <li className="hover:underline">Sign In</li>
+            )}
+            </Link>
           </ul>
         </div>
       </div>

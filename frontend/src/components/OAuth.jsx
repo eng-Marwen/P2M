@@ -1,10 +1,15 @@
 import axios from "axios";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { signInSuccess,signInFailure } from "../app/user/userSlice.js";
 import { app } from "../firebase";
 import { showToast } from "../popups/tostHelper.js";
-import { useNavigate } from "react-router-dom"; 
+
+
 const OAuth = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const handleGoogleClick = async () => {
     try {
       const provider = new GoogleAuthProvider();
@@ -16,14 +21,18 @@ const OAuth = () => {
       const body = {
         username: user.displayName,
         email: user.email,
-        photo: user.photoURL,
+        avatar: user.photoURL,
       };
-      await axios.post("http://localhost:4000/api/auth/google", body);
+      const response = await axios.post("http://localhost:4000/api/auth/google", body);
+      console.log("User signed up/sign in with Google successfully:", response.data);
+      dispatch(signInSuccess(response.data.data));
+
       showToast("User is signed up!", "success");
       setTimeout(() => {
         navigate("/");
       }, 1500);
     } catch (error) {
+      dispatch(signInFailure( "Something went wrong with Google OAuth"));
       console.error("OAuth error:", error);
       console.error("There was an error signing up!", error);
       const message =
