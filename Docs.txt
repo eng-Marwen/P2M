@@ -4,6 +4,8 @@ frontend:
     -// Routes define the structure
     -// useNavigate for programmatic navigation(     // Do some logic, then navigate)
     -Use Link for simple navigation (Recommended for Header)
+    -Navigate is a component 
+    *Outlet the child compo of a route
 
 
 ***tailwind***

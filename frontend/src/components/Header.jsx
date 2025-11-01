@@ -34,11 +34,11 @@ const Header = () => {
               <li className="hidden sm:inline hover:underline  ">About</li>
             </Link>
 
-            <Link to="/sign-in">
+            <Link to="/profile">
 
             {currentUser ? (
               <img src={currentUser.avatar} alt="profile"
-                    className="w-8 h-8 rounded-full object-cover border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
 
               />
             ) : (
