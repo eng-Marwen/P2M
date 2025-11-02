@@ -2,6 +2,7 @@ import express from "express";
 import { connectDB } from "./DB/connectDB.js"; //use .js when u import local files
 import dotenv from "dotenv"; //+dotenv.config() for accessing to strings in env file(do it just here)
 import authRoutes from "./routes/auth.route.js";
+import houseRoutes from "./routes/house.route.js";
 import cookieParser from "cookie-parser";
 import cors from "cors"
 dotenv.config();
@@ -20,9 +21,9 @@ const port = process.env.PORT || 2000;
 //----------------------------Root Routes-----------------------------
 
 app.use("/api/auth", authRoutes);
-app.use("/api/houses", authRoutes);
+app.use("/api/houses", houseRoutes);
 
-
+//----------------------------Start Server-----------------------------
 
 app.listen(port, () => {
   connectDB();
