@@ -6,6 +6,7 @@ import { ToastContainer } from "react-toastify";
 import { signInSuccess, signOut } from "../app/user/userSlice.js";
 import { showToast } from "../popups/tostHelper.js";
 import { supabase } from "../supabaseClient";
+import { Link } from "react-router-dom";
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -26,7 +27,6 @@ const Profile = () => {
   };
 
   const uploadImage = async () => {
-    console.log(file);
     if (!file) return;
 
     setUploading(true);
@@ -175,21 +175,21 @@ const Profile = () => {
         <input
           type="text"
           placeholder={currentUser?.username}
-          className=" border border-gray-300 p-2 rounded-lg mb-2"
+          className=" border border-gray-300 p-2 rounded-lg mb-2 bg-white"
           id="username"
           onChange={handleInputChange}
         />
         <input
           type="password"
           placeholder="Current Password"
-          className="border border-gray-300 p-2 rounded-lg mb-2 "
+          className="border border-gray-300 p-2 rounded-lg mb-2 bg-white"
           id="currentPassword"
           onChange={handleInputChange}
         />
         <input
           type="password"
           placeholder="New Password"
-          className="border border-gray-300 p-2 rounded-lg mb-2"
+          className="border border-gray-300 p-2 rounded-lg mb-2 bg-white"
           id="password"
           onChange={handleInputChange}
         />
@@ -203,6 +203,10 @@ const Profile = () => {
         >
           {uploading ? "Uploading..." : "Update Profile"}
         </button>
+        <Link to="/create-house" className="bg-green-900 text-center text-white p-3 uppercase rounded-lg
+          hover:opacity-95 disabled:opacity-80 ">
+          Create New House Listing
+        </Link>
       </form>
       <div className="flex justify-between mt-4">
         <span

@@ -8,6 +8,7 @@ import SignUp from "./pages/SignUp";
 import EmailVerification from "./pages/EmailVerification";
 import PrivateRoute from "./components/PrivateRoute";
 import axios from 'axios';
+import CreateHouse from "./pages/CreateHouse";
 
 // Set default config for all axios requests
 axios.defaults.withCredentials = true;
@@ -24,6 +25,7 @@ function App() {
 
         <Route element={<PrivateRoute />}>
           <Route path="/profile" element={<Profile />} />
+          <Route path="/create-house" element={<CreateHouse />} />
         </Route>
 
         <Route path="/verify-email" element={<EmailVerification />} />
