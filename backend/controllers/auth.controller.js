@@ -224,7 +224,7 @@ export const google = async (req, res) => {
         isVerified: true,
       });
     }
-    generateTokenAndSetCookie(res, user.id);
+    generateTokenAndSetCookie(res, user._id);
     user = user._doc || user; //in case of new user created
     res.status(200).json({
       status: "success",
