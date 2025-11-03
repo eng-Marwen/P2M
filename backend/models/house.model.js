@@ -12,6 +12,7 @@ const houseSchema = new mongoose.Schema(
     discountedPrice: { type: Number },
     images: [{ type: String }], // Array of image URLs
     bedrooms: { type: Number, required: true },
+    bathrooms: { type: Number, required: true },
     furnished: { type: Boolean, required: true },
     parking: { type: Boolean, required: true },
     type: { type: String, enum: ["rent", "sale"], required: true }, // rent or sale

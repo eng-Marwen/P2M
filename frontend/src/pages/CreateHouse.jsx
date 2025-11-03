@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import axios from "axios";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import { showToast } from "../popups/tostHelper.js";
 import { supabase } from "../supabaseClient";
@@ -6,9 +7,118 @@ import { supabase } from "../supabaseClient";
 const CreateHouse = () => {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
-  const fileInputRef = useRef(null); // Add ref for file input
+  const [formSubmitted, setFormSubmitted] = useState(false);
+  const fileInputRef = useRef(null);
 
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    address: "",
+    type: "",
+    parking: false,
+    furnished: false,
+    offer: false,
+    bedrooms: 1,
+    bathrooms: 1,
+    regularPrice: 50,
+    discountedPrice: 0,
+  });
+
+  // Use useCallback to memoize the cleanup function
+  const cleanupUploadedImages = useCallback(async () => {
+    if (uploadedImages.length > 0 && !formSubmitted) {
+      console.log("Cleaning up uploaded images...");
+
+      try {
+        const filesToDelete = uploadedImages.map(
+          (img) => `public/${img.fileName}`
+        );
+
+        const { error } = await supabase.storage
+          .from("houses")
+          .remove(filesToDelete);
+
+        if (error) {
+          console.error("Error cleaning up images:", error);
+        } else {
+          console.log("Successfully cleaned up images:", filesToDelete);
+        }
+      } catch (error) {
+        console.error("Error during cleanup:", error);
+      }
+    }
+  }, [uploadedImages, formSubmitted]); // Include dependencies here
+
+  // useEffect for cleanup on component unmount or page unload
+  useEffect(() => {
+    // Handle page refresh/close
+    const handleBeforeUnload = (event) => {
+      if (uploadedImages.length > 0 && !formSubmitted) {
+        // This will trigger the cleanup, but won't block the page unload
+        cleanupUploadedImages();
+
+        // Show warning to user (optional)
+        const message =
+          "You have uploaded images that will be deleted if you leave.";
+        event.returnValue = message;
+        return message;
+      }
+    };
+
+    // Handle component unmount (navigation within app)
+    const handleUnload = () => {
+      cleanupUploadedImages();
+    };
+
+    // Add event listeners
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("unload", handleUnload);
+
+    // Cleanup function for useEffect
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("unload", handleUnload);
+
+      // Clean up images when component unmounts
+      if (!formSubmitted) {
+        cleanupUploadedImages();
+      }
+    };
+  }, [uploadedImages, formSubmitted, cleanupUploadedImages]); // Include cleanupUploadedImages
+
+  // Handle navigation away from component
+  useEffect(() => {
+    return () => {
+      // This runs when component unmounts
+      if (!formSubmitted && uploadedImages.length > 0) {
+        cleanupUploadedImages();
+      }
+    };
+  }, [uploadedImages, formSubmitted, cleanupUploadedImages]); // Include all dependencies
+
+  const handleChange = (e) => {
+    const { id, value, type, checked } = e.target;
+
+    setFormData((prev) => {
+      if (id === "sale" && checked) {
+        return { ...prev, type: "sale" };
+      } else if (id === "rent" && checked) {
+        return { ...prev, type: "rent" };
+      } else if (id === "sale" && !checked) {
+        return { ...prev, type: "rent" };
+      } else if (id === "rent" && !checked) {
+        return { ...prev, type: "sale" };
+      } else if (type === "checkbox") {
+        return { ...prev, [id]: checked };
+      } else if (type === "number") {
+        return { ...prev, [id]: parseInt(value) || 0 };
+      } else {
+        return { ...prev, [id]: value };
+      }
+    });
+  };
   const handleUploadImages = async (e) => {
     e.preventDefault();
 
@@ -48,12 +158,133 @@ const CreateHouse = () => {
         fileInputRef.current.value = "";
       }
 
-      showToast(`${uploadResults.length} image${uploadResults.length > 1 ? "s" : ""} uploaded successfully!`, "success");
+      showToast(
+        `${uploadResults.length} image${
+          uploadResults.length > 1 ? "s" : ""
+        } uploaded successfully!`,
+        "success"
+      );
     } catch (error) {
       console.error("Upload failed:", error);
       showToast("Some images failed to upload", "error");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleSubmitForm = async (e) => {
+    e.preventDefault();
+
+    // Add validation before submitting
+    if (!formData.name || formData.name.length < 6) {
+      showToast("House name must be at least 4 characters", "error");
+      return;
+    }
+
+    if (!formData.description || formData.description.length < 20) {
+      showToast("Description must be at least 20 characters", "error");
+      return;
+    }
+
+    if (!formData.address) {
+      showToast("Please enter an address", "error");
+      return;
+    }
+
+    if (!formData.type) {
+      showToast("Please select either Sale or Rent", "error");
+      return;
+    }
+
+    if (uploadedImages.length === 0) {
+      showToast("Please upload at least one image", "error");
+      return;
+    }
+
+    if (formData.offer && formData.discountedPrice >= formData.regularPrice) {
+      showToast("Discounted price must be less than regular price", "error");
+      return;
+    }
+
+    setCreating(true);
+
+    try {
+      // Prepare data to send to backend - match your model exactly
+      const houseData = {
+        ...formData,
+        images: uploadedImages.map((img) => img.url),
+      };
+
+      console.log("Submitting house data:", houseData);
+
+      const response = await axios.post(
+        "http://localhost:4000/api/houses",
+        houseData,
+        {
+          withCredentials: true, // If using cookies for auth
+        }
+      );
+
+      console.log("Server response:", response.data);
+
+      // Check if the response indicates success
+      if (
+        response.data &&
+        (response.data.success ||
+          response.status === 200 ||
+          response.status === 201)
+      ) {
+        // Mark form as submitted so images won't be deleted
+        setFormSubmitted(true);
+
+        showToast("House listing created successfully!", "success");
+
+        // Reset form after successful creation
+        setFormData({
+          name: "",
+          description: "",
+          address: "",
+          type: "",
+          parking: false,
+          furnished: false,
+          offer: false,
+          bedrooms: 1,
+          bathrooms: 1,
+          regularPrice: 50,
+          discountedPrice: 0,
+        });
+        setUploadedImages([]);
+
+        // Optional: Navigate to the created listing or profile page
+        // setTimeout(() => {
+        //   navigate(`/house/${response.data.house._id}`);
+        // }, 2000);
+      } else {
+        throw new Error(response.data?.message || "Failed to create listing");
+      }
+    } catch (error) {
+      console.error("Error creating house listing:", error);
+
+      // Handle different types of errors
+      let errorMessage = "Failed to create house listing";
+
+      if (error.response) {
+        // Server responded with error status
+        errorMessage =
+          error.response.data?.message ||
+          `Server error: ${error.response.status}`;
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = "No response from server. Please check your connection.";
+      } else {
+        // Something else happened
+        errorMessage = error.message || "An unexpected error occurred";
+      }
+
+      showToast(errorMessage, "error");
+      setFormSubmitted(false); // Reset if submission failed
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -82,14 +313,11 @@ const CreateHouse = () => {
             .from("houses")
             .getPublicUrl(`public/${fileName}`);
 
-          console.log("Upload successful:", publicUrlData.publicUrl);
-
           resolve({
             url: publicUrlData.publicUrl,
             fileName: fileName,
           });
         } catch (error) {
-          console.error("Upload error:", error);
           reject(error);
         }
       };
@@ -124,7 +352,7 @@ const CreateHouse = () => {
     );
 
     if (validFiles.length !== selectedFiles.length) {
-      alert("Please select only image files");
+      showToast("Please select only image files", "error");
       // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -159,7 +387,6 @@ const CreateHouse = () => {
         (_, index) => index !== indexToRemove
       );
       setUploadedImages(updatedImages);
-      console.log("Image deleted successfully:", imageToRemove.fileName);
       showToast("Image deleted successfully", "success");
     } catch (error) {
       console.error("Error removing image:", error);
@@ -181,14 +408,10 @@ const CreateHouse = () => {
 
   return (
     <main className="p-3 max-w-4xl mx-auto">
-      {" "}
-      {/* Increased max-width */}
       <h1 className="text-3xl font-semibold my-7 text-center">
         Create New House Listing
       </h1>
       <form className="flex flex-col sm:flex-row gap-6">
-        {" "}
-        {/* Fixed responsive classes */}
         {/* Left side - Form fields */}
         <div className="flex flex-col gap-4 flex-1">
           <input
@@ -196,9 +419,11 @@ const CreateHouse = () => {
             placeholder="Name"
             required
             maxLength={62}
-            minLength={6}
+            minLength={4}
             id="name"
+            value={formData.name}
             className="border bg-white border-gray-300 p-2 rounded-lg"
+            onChange={handleChange}
           />
           <textarea
             placeholder="Description"
@@ -206,7 +431,9 @@ const CreateHouse = () => {
             maxLength={500}
             minLength={20}
             id="description"
+            value={formData.description}
             className="border bg-white border-gray-300 p-2 rounded-lg"
+            onChange={handleChange}
           ></textarea>
 
           <input
@@ -214,30 +441,62 @@ const CreateHouse = () => {
             required
             placeholder="Address"
             id="address"
+            value={formData.address}
+            onChange={handleChange}
             className="border bg-white border-gray-300 p-2 rounded-lg"
           />
 
           <div className="flex gap-2 flex-wrap">
             <div className="flex gap-2">
-              <input type="checkbox" id="sale" className="w-5" />
+              <input
+                type="checkbox"
+                id="sale"
+                checked={formData.type === "sale"}
+                className="w-5"
+                onChange={handleChange}
+              />
               <span>Sell</span>
             </div>
 
             <div className="flex gap-2">
-              <input type="checkbox" id="rent" className="w-5" />
+              <input
+                type="checkbox"
+                id="rent"
+                checked={formData.type === "rent"}
+                className="w-5"
+                onChange={handleChange}
+              />
               <span>Rent</span>
             </div>
 
             <div className="flex gap-2">
-              <input type="checkbox" id="parking" className="w-5" />
+              <input
+                type="checkbox"
+                id="parking"
+                checked={formData.parking}
+                className="w-5"
+                onChange={handleChange}
+              />
               <span>Parking Spot</span>
             </div>
             <div className="flex gap-2">
-              <input type="checkbox" id="furnished" className="w-5" />
+              <input
+                type="checkbox"
+                id="furnished"
+                checked={formData.furnished}
+                className="w-5"
+                onChange={handleChange}
+              />
               <span>Furnished</span>
             </div>
             <div className="flex gap-2">
-              <input type="checkbox" id="offer" className="w-5" />
+              <input
+                type="checkbox"
+                id="offer"
+                checked={formData.offer}
+                className="w-5"
+                onChange={handleChange}
+              />
               <span>Offer</span>
             </div>
           </div>
@@ -250,6 +509,8 @@ const CreateHouse = () => {
                 min={1}
                 max={10}
                 id="bedrooms"
+                value={formData.bedrooms}
+                onChange={handleChange}
                 className="border bg-white border-gray-300 w-16 p-2 rounded-lg"
               />
               <p>Beds</p>
@@ -262,6 +523,8 @@ const CreateHouse = () => {
                 min={1}
                 max={10}
                 id="bathrooms"
+                value={formData.bathrooms}
+                onChange={handleChange}
                 className="border bg-white border-gray-300 w-16 p-2 rounded-lg"
               />
               <p>Baths</p>
@@ -271,8 +534,10 @@ const CreateHouse = () => {
               <input
                 type="number"
                 required
-                min={1}
+                min={50}
                 id="regularPrice"
+                value={formData.regularPrice}
+                onChange={handleChange}
                 className="border bg-white border-gray-300 w-24 p-2 rounded-lg"
               />
               <div className="flex flex-col">
@@ -285,8 +550,10 @@ const CreateHouse = () => {
               <input
                 type="number"
                 required
-                min={1}
+                min={50}
                 id="discountedPrice"
+                value={formData.discountedPrice}
+                onChange={handleChange}
                 className="border bg-white border-gray-300 w-24 p-2 rounded-lg"
               />
               <div className="flex flex-col">
@@ -300,14 +567,14 @@ const CreateHouse = () => {
           <button
             type="submit"
             className="bg-slate-700 text-white p-3 rounded-lg hover:opacity-95 uppercase font-semibold"
+            onClick={handleSubmitForm}
           >
-            Create Listing
+            {creating ? "Creating Listing..." : "Create Listing"}
           </button>
         </div>
+
         {/* Right side - Images section */}
         <div className="flex flex-col gap-4 flex-1 sm:max-w-md">
-          {" "}
-          {/* Added max width for right side */}
           <div className="flex flex-col">
             <p className="font-semibold text-lg">
               Images:{" "}
@@ -319,6 +586,7 @@ const CreateHouse = () => {
               Uploaded: {uploadedImages.length}/6 | Selected: {files.length}
             </p>
           </div>
+
           <div className="flex gap-2">
             <input
               ref={fileInputRef}
@@ -338,6 +606,7 @@ const CreateHouse = () => {
               {uploading ? "Uploading..." : "Upload Images"}
             </button>
           </div>
+
           {/* Show selected files */}
           {files.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -372,6 +641,7 @@ const CreateHouse = () => {
               </div>
             </div>
           )}
+
           {/* Show uploaded images */}
           {uploadedImages.length > 0 && (
             <div>
