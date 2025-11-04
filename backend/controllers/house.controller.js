@@ -22,3 +22,26 @@ export const postHouse = async (req, res) => {
     });
   }
 };
+
+export const getUserHousesById = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    if(req.userId !== userId){
+      return res.status(403).json({
+        status: "fail",
+        message: "FORBIDDEN: You can only access your own houses",
+      });
+    }
+    const userHouses = await House.find({ userRef: userId });
+    res.status(200).json({
+      status: "success",
+      results: userHouses.length,
+      data: userHouses,
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+}
