@@ -45,3 +45,32 @@ export const getUserHousesById = async (req, res) => {
     });
   }
 }
+
+export const deleteHouseById = async (req, res) => {
+  try {
+    const houseId = req.params.id;
+    const houseToDelete = await House.findById(houseId);
+    if (!houseToDelete) {
+      return res.status(404).json({
+        status: "fail",
+        message: "HOUSE NOT FOUND",
+      });
+    }
+    if (houseToDelete.userRef.toString() !== req.userId) {
+      return res.status(403).json({
+        status: "fail",
+        message: "FORBIDDEN: You can only delete your own houses",
+      });
+    }
+    await House.findByIdAndDelete(houseId);
+    res.status(200).json({
+      status: "success",
+      message: "HOUSE DELETED SUCCESSFULLY",
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+}

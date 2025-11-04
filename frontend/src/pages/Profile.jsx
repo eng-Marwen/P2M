@@ -134,7 +134,7 @@ const Profile = () => {
       showToast(message, "error");
     }
   };
-  const handleShowListings= async() => {
+  const handleShowListings = async () => {
     try {
       const response = await axios.get(
         `http://localhost:4000/api/houses/${currentUser._id}`
@@ -145,8 +145,29 @@ const Profile = () => {
       const message = error.response?.data?.message || "Navigation failed";
       showToast(message, "error");
     }
-  }
+  };
 
+  const deleteListing = async (listingId) => {
+    if (!window.confirm("Are you sure you want to delete this listing?")) {
+      return;
+    }
+    try {
+      const response = await axios.delete(
+        `http://localhost:4000/api/houses/${listingId}`
+      );
+      if (response.data.status === "success") {
+        showToast("Listing deleted successfully!", "success");
+        // Refresh the listings
+        setUserListings((prevListings) =>
+          prevListings.filter((listing) => listing._id !== listingId)
+        );
+      }
+    } catch (error) {
+      console.error("Delete listing error:", error);
+      const message = error.response?.data?.message || "Delete failed";
+      showToast(message, "error");
+    }
+  };
   const handleSignOut = async () => {
     try {
       const response = await axios.post(
@@ -235,95 +256,79 @@ const Profile = () => {
           Sign Out
         </span>
       </div>
-      <button onClick={handleShowListings} className="text-green-700 w-full my-2 text-lg hover:opacity-80">
+      <button
+        onClick={handleShowListings}
+        className="text-green-700 w-full my-2 text-lg hover:opacity-80"
+      >
         Show My Listings
       </button>
       {userListings && userListings.length > 0 ? (
-
-
         <div className="space-y-4">
-                  {userListings.map((listing) => (
-                    <div
-                      key={listing._id}
-                      className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-4"
-                    >
-                      <div className="flex gap-4">
-                        {/* Image */}
-                        <div className="shrink-0">
-                          <img
-                            src={listing.images[0] || "/placeholder-house.jpg"}
-                            alt={listing.name}
-                            className="w-24 h-24 rounded-lg object-cover"
-                          />
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="text-lg font-semibold text-gray-800 truncate">
-                              {listing.name}
-                            </h3>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              listing.type === 'rent' 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              {listing.type === 'rent' ? 'For Rent' : 'For Sale'}
-                            </span>
-                          </div>
-
-                          <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                            📍 {listing.address}
-                          </p>
-
-                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                            <span>🛏️ {listing.bedrooms} bed{listing.bedrooms > 1 ? 's' : ''}</span>
-                            <span>🚿 {listing.bathrooms} bath{listing.bathrooms > 1 ? 's' : ''}</span>
-                            {listing.parking && <span>🚗 Parking</span>}
-                            {listing.furnished && <span>🪑 Furnished</span>}
-                          </div>
-
-                          {/* <div className="flex justify-between items-center">
-                            <div>
-                              <span className="text-lg font-bold text-green-600">
-                                {formatPrice(listing.regularPrice)}
-                                {listing.type === 'rent' && <span className="text-sm text-gray-600">/month</span>}
-                              </span>
-                              {listing.offer && listing.discountedPrice > 0 && (
-                                <span className="text-sm text-gray-500 line-through ml-2">
-                                  {formatPrice(listing.discountedPrice)}
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex gap-2">
-                              <Link
-                                to={`/edit-house/${listing._id}`}
-                                className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors"
-                              >
-                                Edit
-                              </Link>
-                              <button
-                                onClick={() => handleDeleteListing(listing._id)}
-                                className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="text-xs text-gray-400 mt-2">
-                            Created: {formatDate(listing.createdAt)}
-                          </div> */}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+          {userListings.map((listing) => (
+            <div
+              key={listing._id}
+              className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-4"
+            >
+              <div className="flex gap-4">
+                {/* Image */}
+                <div className="shrink-0">
+                  <img
+                    src={listing.images[0] || "/placeholder-house.jpg"}
+                    alt={listing.name}
+                    className="w-24 h-24 rounded-lg object-cover"
+                  />
                 </div>
 
+                {/* Content */}
+                <div className="flex-1">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-semibold text-gray-800 truncate">
+                      {listing.name}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        listing.type === "rent"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-green-100 text-green-800"
+                      }`}
+                    >
+                      {listing.type === "rent" ? "For Rent" : "For Sale"}
+                    </span>
+                  </div>
 
+                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+                    📍 {listing.address}
+                  </p>
 
-
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                    <span>
+                      🛏️ {listing.bedrooms} bed{listing.bedrooms > 1 ? "s" : ""}
+                    </span>
+                    <span>
+                      🚿 {listing.bathrooms} bath
+                      {listing.bathrooms > 1 ? "s" : ""}
+                    </span>
+                    {listing.parking && <span>🚗 Parking</span>}
+                    {listing.furnished && <span>🪑 Furnished</span>}
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="flex gap-2">
+                      <button className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors">
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteListing(listing._id)}
+                        className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <p>No listings found.</p>
       )}
