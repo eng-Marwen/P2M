@@ -23,7 +23,7 @@ export const postHouse = async (req, res) => {
   }
 };
 
-export const getUserHousesById = async (req, res) => {
+export const getUserHousesByUserId = async (req, res) => {
   try {
     const userId = req.params.id;
     if(req.userId !== userId){
@@ -45,6 +45,27 @@ export const getUserHousesById = async (req, res) => {
     });
   }
 }
+export const getHouseById= async (req, res) => {
+  try {
+    const houseId = req.params.id;
+    const house = await House.findById(houseId);
+    if (!house) {
+      return res.status(404).json({
+        status: "fail",
+        message: "HOUSE NOT FOUND",
+      });
+    }
+    res.status(200).json({
+      status: "success",
+      data: house,
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+};
 
 export const deleteHouseById = async (req, res) => {
   try {
@@ -74,3 +95,33 @@ export const deleteHouseById = async (req, res) => {
     });
   }
 }
+
+export const updateListingById = async (req, res) => {
+  const houseId = req.params.id;
+  const updatedData = req.body;
+
+  try {
+    const updatedHouse = await House.findByIdAndUpdate(houseId, updatedData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedHouse) {
+      return res.status(404).json({
+        status: "fail",
+        message: "HOUSE NOT FOUND",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "HOUSE UPDATED SUCCESSFULLY",
+      data: updatedHouse,
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+};

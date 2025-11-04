@@ -313,12 +313,15 @@ const Profile = () => {
                   </div>
                   <div className="flex justify-between items-center mt-2">
                     <div className="flex gap-2">
-                      <button className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors">
+                      <button
+                        onClick={() => navigate(`/edit-listing/${listing._id}`)}
+                        className="bg-transparent text-blue-600 border border-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-600 hover:text-white transition-colors"
+                      >
                         Edit
                       </button>
                       <button
                         onClick={() => deleteListing(listing._id)}
-                        className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors"
+                        className="bg-transparent text-red-800 border border-red-800 px-3 py-1 rounded text-sm hover:bg-red-600 hover:text-white transition-colors"
                       >
                         Delete
                       </button>

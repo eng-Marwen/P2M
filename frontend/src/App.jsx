@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import EditListing from "./pages/EditListing";
 import EmailVerification from "./pages/EmailVerification";
 import PrivateRoute from "./components/PrivateRoute";
 import axios from 'axios';
@@ -26,6 +27,7 @@ function App() {
         <Route element={<PrivateRoute />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/create-house" element={<CreateHouse />} />
+          <Route path="/edit-listing/:id" element={<EditListing />} />
         </Route>
 
         <Route path="/verify-email" element={<EmailVerification />} />
