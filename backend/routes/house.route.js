@@ -1,13 +1,19 @@
 import express from "express";
-import {getUserHousesByUserId, postHouse,deleteHouseById, getHouseById,updateListingById } from "../controllers/house.controller.js";
+import {
+  deleteHouseById,
+  getUserHousesByUserId,
+  postHouse,
+  updateListingById,
+  getHouseById,
+} from "../controllers/house.controller.js";
 import { verifyToken } from "../middlewares/verifyToken.js";
 const router = express.Router();
 
 router.post("/", verifyToken, postHouse);
 
+router.get("/house/:id", getHouseById);
 router.get("/:id", verifyToken, getUserHousesByUserId);
-router.get("/house/:id", verifyToken, getHouseById);
-router.patch("/:id",verifyToken,updateListingById);
+router.patch("/:id", verifyToken, updateListingById);
 router.delete("/:id", verifyToken, deleteHouseById);
 
 export default router;
