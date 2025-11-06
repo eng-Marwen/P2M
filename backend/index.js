@@ -3,6 +3,7 @@ import { connectDB } from "./DB/connectDB.js"; //use .js when u import local fil
 import dotenv from "dotenv"; //+dotenv.config() for accessing to strings in env file(do it just here)
 import authRoutes from "./routes/auth.route.js";
 import houseRoutes from "./routes/house.route.js";
+import cloudinaryRoutes from "./routes/cloudinary.route.js";
 import cookieParser from "cookie-parser";
 import cors from "cors"
 dotenv.config();
@@ -22,7 +23,7 @@ const port = process.env.PORT || 2000;
 
 app.use("/api/auth", authRoutes);
 app.use("/api/houses", houseRoutes);
-
+app.use("/api/cloudinary", cloudinaryRoutes);
 //----------------------------Start Server-----------------------------
 
 app.listen(port, () => {
