@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper.js";
@@ -10,13 +10,13 @@ const CreateHouse = () => {
   const [creating, setCreating] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const fileInputRef = useRef(null);
 
+  // Add form state (initial values used elsewhere in this file)
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     address: "",
-    type: "",
+    type: "", // "sale" or "rent"
     parking: false,
     furnished: false,
     offer: false,
@@ -26,16 +26,32 @@ const CreateHouse = () => {
     discountedPrice: 0,
   });
 
-  // Use useCallback to memoize the cleanup function
-  const cleanupUploadedImages = useCallback(async () => {
-    if (uploadedImages.length > 0 && !formSubmitted) {
-      console.log("Cleaning up uploaded images...");
+  const fileInputRef = useRef(null);
+  const uploadedImagesRef = useRef(uploadedImages);
 
-      try {
-        // Try to remove uploaded images using backend (recommended).
-        // Backend endpoint should accept { publicId } and remove via Cloudinary Admin API.
-        for (const img of uploadedImages) {
-          if (!img.publicId) continue;
+  // keep ref in sync with state so unmount cleanup sees latest images
+  useEffect(() => {
+    uploadedImagesRef.current = uploadedImages;
+  }, [uploadedImages]);
+
+  // keep a ref for formSubmitted to avoid adding it to effect deps
+  const formSubmittedRef = useRef(formSubmitted);
+  useEffect(() => {
+    formSubmittedRef.current = formSubmitted;
+  }, [formSubmitted]);
+
+  // Run cleanup only on component unmount. Uses refs to read latest state,
+  // so we don't re-subscribe or trigger cleanup on every uploadedImages change.
+  useEffect(() => {
+    return () => {
+      const imgs = uploadedImagesRef.current;
+      if (!imgs || imgs.length === 0 || formSubmittedRef.current) return;
+
+      // fire-and-forget async cleanup on unmount
+      (async () => {
+        console.log("Unmount: cleaning up uploaded images...");
+        for (const img of imgs) {
+          if (!img?.publicId) continue;
           try {
             await axios.post(
               "/api/cloudinary/delete",
@@ -45,64 +61,16 @@ const CreateHouse = () => {
             console.log("Deleted remote image:", img.publicId);
           } catch (err) {
             console.warn(
-              "Could not delete remote image (backend route may be missing):",
+              "Could not delete remote image during unmount:",
               img.publicId,
-              err.message || err
+              err?.message || err
             );
           }
         }
-      } catch (error) {
-        console.error("Error during cleanup:", error);
-      }
-    }
-  }, [uploadedImages, formSubmitted]); // Include dependencies here
-
-  // useEffect for cleanup on component unmount or page unload
-  useEffect(() => {
-    // Handle page refresh/close
-    const handleBeforeUnload = (event) => {
-      if (uploadedImages.length > 0 && !formSubmitted) {
-        // This will trigger the cleanup, but won't block the page unload
-        cleanupUploadedImages();
-
-        // Show warning to user (optional)
-        const message =
-          "You have uploaded images that will be deleted if you leave.";
-        event.returnValue = message;
-        return message;
-      }
+      })();
     };
-
-    // Handle component unmount (navigation within app)
-    const handleUnload = () => {
-      cleanupUploadedImages();
-    };
-
-    // Add event listeners
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("unload", handleUnload);
-
-    // Cleanup function for useEffect
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("unload", handleUnload);
-
-      // Clean up images when component unmounts
-      if (!formSubmitted) {
-        cleanupUploadedImages();
-      }
-    };
-  }, [uploadedImages, formSubmitted, cleanupUploadedImages]); // Include cleanupUploadedImages
-
-  // Handle navigation away from component
-  useEffect(() => {
-    return () => {
-      // This runs when component unmounts
-      if (!formSubmitted && uploadedImages.length > 0) {
-        cleanupUploadedImages();
-      }
-    };
-  }, [uploadedImages, formSubmitted, cleanupUploadedImages]); // Include all dependencies
+    // run once on mount, cleanup runs on unmount
+  }, []);
 
   const handleChange = (e) => {
     const { id, value, type, checked } = e.target;
@@ -363,7 +331,6 @@ const CreateHouse = () => {
     const imageToRemove = uploadedImages[indexToRemove];
 
     try {
-      // Try to delete via backend (recommended). If backend route missing, just remove from UI.
       if (imageToRemove.url && imageToRemove.publicId) {
         try {
           console.log("Deleting Cloudinary image:", imageToRemove.url);

@@ -1,9 +1,9 @@
 import axios from "axios";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
+import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper.js";
-import { supabase } from "../supabaseClient";
 
 const EditListing = () => {
   const { id } = useParams();
@@ -33,6 +33,23 @@ const EditListing = () => {
   const [existingImages, setExistingImages] = useState([]); // Add this for existing images
   const [formSubmitted, setFormSubmitted] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Helper: extract Cloudinary public_id from a secure_url
+  const extractPublicIdFromUrl = (url) => {
+    try {
+      if (!url || !url.includes("/res.cloudinary.com/")) return null;
+      // Match everything after /upload/ optionally skipping version like v123456789/
+      // and strip the file extension and any query string
+      const m = url.match(
+        /\/upload\/(?:v\d+\/)?(.+?)\.(?:jpg|jpeg|png|gif|webp|bmp|tiff)(?:$|\?)/i
+      );
+      if (!m || !m[1]) return null;
+      return decodeURIComponent(m[1]);
+    } catch (err) {
+      console.error("extractPublicIdFromUrl error:", err);
+      return null;
+    }
+  };
 
   // Fetch listing data
   useEffect(() => {
@@ -76,6 +93,8 @@ const EditListing = () => {
               url: imageUrl,
               id: `existing-${index}`, // Give them unique IDs
               isExisting: true, // Flag to identify existing images
+              // attempt to derive Cloudinary publicId from the stored URL
+              publicId: extractPublicIdFromUrl(imageUrl),
             })
           );
           setExistingImages(existingImagesData);
@@ -101,36 +120,52 @@ const EditListing = () => {
     return existingImages.length + uploadedImages.length;
   };
 
-  // Use useCallback to memoize the cleanup function
-  const cleanupUploadedImages = useCallback(async () => {
-    if (uploadedImages.length > 0 && !formSubmitted) {
-      console.log("Cleaning up uploaded images...");
+  // --- Replace previous cleanup useCallback + effect with ref-based one-time listeners ---
+  // Keep refs in sync so unload handlers see the latest state without re-subscribing
+  const uploadedImagesRef = useRef(uploadedImages);
+  useEffect(() => {
+    uploadedImagesRef.current = uploadedImages;
+  }, [uploadedImages]);
 
-      try {
-        const filesToDelete = uploadedImages.map(
-          (img) => `public/${img.fileName}`
-        );
+  const formSubmittedRef = useRef(formSubmitted);
+  useEffect(() => {
+    formSubmittedRef.current = formSubmitted;
+  }, [formSubmitted]);
 
-        const { error } = await supabase.storage
-          .from("houses")
-          .remove(filesToDelete);
+  const cleanupUploadedImagesOnUnload = async () => {
+    const imgs = uploadedImagesRef.current;
+    if (!imgs || imgs.length === 0 || formSubmittedRef.current) return;
 
-        if (error) {
-          console.error("Error cleaning up images:", error);
-        } else {
-          console.log("Successfully cleaned up images:", filesToDelete);
-        }
-      } catch (error) {
-        console.error("Error during cleanup:", error);
-      }
-    }
-  }, [uploadedImages, formSubmitted]);
+    console.log("Cleaning up uploaded images (unload)...");
 
-  // useEffect for cleanup on component unmount or page unload
+    const deletePromises = imgs.map((img) => {
+      if (!img?.publicId) return Promise.resolve();
+      return axios
+        .post(
+          "http://localhost:4000/api/cloudinary/delete",
+          { publicId: img.publicId },
+          { withCredentials: true }
+        )
+        .then((res) => {
+          console.log("Deleted remote image:", img.publicId, res.data);
+        })
+        .catch((err) => {
+          console.warn(
+            "Could not delete remote image during unload:",
+            img.publicId,
+            err?.message || err
+          );
+        });
+    });
+
+    await Promise.all(deletePromises);
+  };
+
   useEffect(() => {
     const handleBeforeUnload = (event) => {
-      if (uploadedImages.length > 0 && !formSubmitted) {
-        cleanupUploadedImages();
+      if (uploadedImagesRef.current.length > 0 && !formSubmittedRef.current) {
+        // best-effort async cleanup (may not complete in all browsers)
+        cleanupUploadedImagesOnUnload();
         const message =
           "You have uploaded images that will be deleted if you leave.";
         event.returnValue = message;
@@ -139,7 +174,8 @@ const EditListing = () => {
     };
 
     const handleUnload = () => {
-      cleanupUploadedImages();
+      // best-effort cleanup on page unload
+      cleanupUploadedImagesOnUnload();
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -148,12 +184,10 @@ const EditListing = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("unload", handleUnload);
-
-      if (!formSubmitted) {
-        cleanupUploadedImages();
-      }
+      // do NOT call cleanup here — returning cleanup runs on every re-render if deps change.
+      // This effect runs once on mount (empty deps) so unmount won't accidentally delete images during normal state updates.
     };
-  }, [uploadedImages, formSubmitted, cleanupUploadedImages]);
+  }, []);
 
   const handleChange = (e) => {
     const { id, value, type, checked } = e.target;
@@ -269,69 +303,121 @@ const EditListing = () => {
         return;
       }
 
-      const uploadToSupabase = async () => {
+      const uploadToCloudinaryWrapper = async () => {
         try {
-          const fileName = `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2)}-${file.name}`;
-
-          const { error } = await supabase.storage
-            .from("houses")
-            .upload(`public/${fileName}`, file);
-
-          if (error) {
-            throw error;
+          // Use the same helper as Profile.jsx
+          // put uploads in a folder for listings
+          const result = await uploadToCloudinary(file, { folder: "houses" });
+          // Expect result to include secure_url and public_id (same shape used in Profile.jsx)
+          if (!result || !result.secure_url || !result.public_id) {
+            throw new Error("Invalid upload response from Cloudinary helper");
           }
 
-          const { data: publicUrlData } = supabase.storage
-            .from("houses")
-            .getPublicUrl(`public/${fileName}`);
-
           resolve({
-            url: publicUrlData.publicUrl,
-            fileName: fileName,
+            url: result.secure_url,
+            publicId: result.public_id,
           });
         } catch (error) {
           reject(error);
         }
       };
 
-      uploadToSupabase();
+      uploadToCloudinaryWrapper();
     });
   };
 
-  // Remove existing image
-  const removeExistingImage = (indexToRemove) => {
-    const updatedImages = existingImages.filter(
-      (_, index) => index !== indexToRemove
-    );
-    setExistingImages(updatedImages);
-    showToast("Image removed from listing", "success");
-  };
+  // Remove existing image (delete from Cloudinary when possible)
+  const removeExistingImage = async (indexToRemove) => {
+    const imageData = existingImages[indexToRemove];
+    if (!imageData) {
+      showToast("Image not found", "error");
+      return;
+    }
 
-  // Remove uploaded image (and delete from Supabase)
-  const removeUploadedImage = async (indexToRemove) => {
-    const imageToRemove = uploadedImages[indexToRemove];
+    const { publicId } = imageData;
+
+    // If we cannot determine a Cloudinary publicId, just remove locally
+    if (!publicId) {
+      setExistingImages((prev) => prev.filter((_, i) => i !== indexToRemove));
+      showToast(
+        "Image removed from listing (not a Cloudinary asset)",
+        "success"
+      );
+      return;
+    }
 
     try {
-      const { error } = await supabase.storage
-        .from("houses")
-        .remove([`public/${imageToRemove.fileName}`]);
+      const res = await axios.post(
+        "http://localhost:4000/api/cloudinary/delete",
+        { publicId },
+        { withCredentials: true }
+      );
 
-      if (error) {
-        console.error("Error deleting from Supabase:", error);
+      const ok =
+        res.status === 200 ||
+        res.data?.status === "success" ||
+        res.data?.result === "ok" ||
+        res.data?.result === "not found";
+
+      if (ok) {
+        setExistingImages((prev) => prev.filter((_, i) => i !== indexToRemove));
+        showToast(
+          "Image deleted from Cloudinary and removed from listing",
+          "success"
+        );
+      } else {
+        console.error("Cloudinary delete response:", res.data);
         showToast("Failed to delete image from storage", "error");
+      }
+    } catch (error) {
+      console.error("Error deleting existing image from Cloudinary:", error);
+
+      const status = error.response?.status;
+      if (status === 404) {
+        // Already gone on Cloudinary — remove locally
+        setExistingImages((prev) => prev.filter((_, i) => i !== indexToRemove));
+        showToast("Image not found on Cloudinary — removed locally", "warning");
         return;
       }
 
-      const updatedImages = uploadedImages.filter(
-        (_, index) => index !== indexToRemove
+      showToast(
+        error.response?.data?.message ||
+          "Failed to delete image from Cloudinary. See console for details.",
+        "error"
       );
-      setUploadedImages(updatedImages);
-      showToast("Image deleted successfully", "success");
+    }
+  };
+
+  // Remove uploaded image (and delete from Cloudinary)
+  const removeUploadedImage = async (indexToRemove) => {
+    const imageToRemove = uploadedImages[indexToRemove];
+
+    if (!imageToRemove) {
+      showToast("Image not found", "error");
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        "/api/cloudinary/delete",
+        { publicId: imageToRemove.publicId },
+        { withCredentials: true }
+      );
+
+      // backend should return success info
+      if (res.status === 200) {
+        const updatedImages = uploadedImages.filter(
+          (_, index) => index !== indexToRemove
+        );
+        setUploadedImages(updatedImages);
+        showToast("Image deleted successfully", "success");
+      } else {
+        console.error("Cloudinary delete response:", res.data);
+        showToast("Failed to delete image from storage", "error");
+      }
     } catch (error) {
-      console.error("Error removing image:", error);
-      showToast("Failed to delete image", "error");
+      console.error("Error deleting from Cloudinary:", error);
+      showToast("Failed to delete image from storage", "error");
     }
   };
 
