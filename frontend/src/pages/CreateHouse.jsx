@@ -1,8 +1,8 @@
 import axios from "axios";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ToastContainer } from "react-toastify";
+import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper.js";
-import { supabase } from "../supabaseClient";
 
 const CreateHouse = () => {
   const [files, setFiles] = useState([]);
@@ -32,18 +32,24 @@ const CreateHouse = () => {
       console.log("Cleaning up uploaded images...");
 
       try {
-        const filesToDelete = uploadedImages.map(
-          (img) => `public/${img.fileName}`
-        );
-
-        const { error } = await supabase.storage
-          .from("houses")
-          .remove(filesToDelete);
-
-        if (error) {
-          console.error("Error cleaning up images:", error);
-        } else {
-          console.log("Successfully cleaned up images:", filesToDelete);
+        // Try to remove uploaded images using backend (recommended).
+        // Backend endpoint should accept { publicId } and remove via Cloudinary Admin API.
+        for (const img of uploadedImages) {
+          if (!img.publicId) continue;
+          try {
+            await axios.post(
+              "/api/cloudinary/delete",
+              { publicId: img.publicId },
+              { withCredentials: true }
+            );
+            console.log("Deleted remote image:", img.publicId);
+          } catch (err) {
+            console.warn(
+              "Could not delete remote image (backend route may be missing):",
+              img.publicId,
+              err.message || err
+            );
+          }
         }
       } catch (error) {
         console.error("Error during cleanup:", error);
@@ -295,34 +301,18 @@ const CreateHouse = () => {
         return;
       }
 
-      const uploadToSupabase = async () => {
+      // Upload to Cloudinary (unsigned preset) and return { url, publicId }
+      (async () => {
         try {
-          const fileName = `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2)}-${file.name}`;
-
-          const { error } = await supabase.storage
-            .from("houses")
-            .upload(`public/${fileName}`, file);
-
-          if (error) {
-            throw error;
-          }
-
-          const { data: publicUrlData } = supabase.storage
-            .from("houses")
-            .getPublicUrl(`public/${fileName}`);
-
+          const result = await uploadToCloudinary(file, { folder: "houses" });
           resolve({
-            url: publicUrlData.publicUrl,
-            fileName: fileName,
+            url: result.secure_url,
+            publicId: result.public_id,
           });
-        } catch (error) {
-          reject(error);
+        } catch (err) {
+          reject(err);
         }
-      };
-
-      uploadToSupabase();
+      })();
     });
   };
 
@@ -373,21 +363,29 @@ const CreateHouse = () => {
     const imageToRemove = uploadedImages[indexToRemove];
 
     try {
-      const { error } = await supabase.storage
-        .from("houses")
-        .remove([`public/${imageToRemove.fileName}`]);
-
-      if (error) {
-        console.error("Error deleting from Supabase:", error);
-        showToast("Failed to delete image from storage", "error");
-        return;
+      // Try to delete via backend (recommended). If backend route missing, just remove from UI.
+      if (imageToRemove.url && imageToRemove.publicId) {
+        try {
+          console.log("Deleting Cloudinary image:", imageToRemove.url);
+          await axios.post(
+            "http://localhost:4000/api/cloudinary/delete",
+            { publicId: imageToRemove.publicId },
+            { withCredentials: true }
+          );
+          console.log("Deleted Cloudinary image:", imageToRemove.url);
+        } catch (err) {
+          console.warn(
+            "Could not delete remote Cloudinary image (backend may be missing):",
+            err.message || err
+          );
+        }
       }
 
       const updatedImages = uploadedImages.filter(
         (_, index) => index !== indexToRemove
       );
       setUploadedImages(updatedImages);
-      showToast("Image deleted successfully", "success");
+      showToast("Image removed", "success");
     } catch (error) {
       console.error("Error removing image:", error);
       showToast("Failed to delete image", "error");
@@ -655,6 +653,10 @@ const CreateHouse = () => {
                       src={imageData.url}
                       alt={`House ${index + 1}`}
                       className="w-full h-20 object-cover rounded border"
+                      onError={(e) => {
+                        console.error("Image load failed:", imageData.url);
+                        e.target.src = "/placeholder-house.jpg";
+                      }}
                     />
                     <button
                       type="button"

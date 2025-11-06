@@ -4,12 +4,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { signInSuccess, signOut } from "../app/user/userSlice.js";
+import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper.js";
-import { supabase } from "../supabaseClient";
 
 const Profile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // const v = "dgmaxi7wu";
 
   const [userListings, setUserListings] = useState([]);
 
@@ -28,32 +30,21 @@ const Profile = () => {
   };
 
   const uploadImage = async () => {
-    if (!file) return;
+    if (!file) return null;
 
     setUploading(true);
     try {
-      // Create unique filename to avoid conflicts
-      const fileName = `${Date.now()}-${file.name}`;
-
-      const { error } = await supabase.storage
-        .from("avatars")
-        .upload(`public/${fileName}`, file);
-
-      if (error) {
-        throw error;
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(`public/${fileName}`);
-
-      setUrl(publicUrlData.publicUrl);
-      console.log("Upload successful:", publicUrlData.publicUrl);
+      // uploadToCloudinary returns { secure_url, public_id, raw }
+      const result = await uploadToCloudinary(file, { folder: "avatars" });
+      // store only the secure url string
+      setUrl(result.secure_url);
+      console.log("Upload successful:", result.secure_url);
       setFile(null);
-      return publicUrlData.publicUrl; // Return the URL
+      return result.secure_url;
     } catch (error) {
       console.error("Upload error:", error);
       showToast("Upload failed: " + error.message, "error");
+      return null;
     } finally {
       setUploading(false);
     }
@@ -70,8 +61,10 @@ const Profile = () => {
 
       // Upload image first if there's a new file
       if (file) {
-        avatarUrl = await uploadImage();
+        const uploaded = await uploadImage();
+        if (uploaded) avatarUrl = uploaded;
       }
+      console.log("Avatar URL to use:", avatarUrl);
 
       // Prepare update data
       const updateData = {
@@ -91,13 +84,21 @@ const Profile = () => {
       // Send to backend
       const response = await axios.patch(
         "http://localhost:4000/api/auth/update-profile",
-        updateData
+        updateData,
+        {
+          withCredentials: true,
+        }
       );
 
       if (response.data.status === "success") {
         showToast("Profile updated successfully!", "success");
-
+        // ensure we dispatch the updated user object returned by backend
         dispatch(signInSuccess(response.data.data));
+        // also update local preview url from returned user if available
+        const returnedAvatar = response.data.data?.avatar;
+        if (returnedAvatar) setUrl(returnedAvatar);
+      } else {
+        console.warn("Unexpected response:", response.data);
       }
     } catch (error) {
       console.error("Update error:", error);
@@ -119,7 +120,10 @@ const Profile = () => {
 
     try {
       const response = await axios.delete(
-        "http://localhost:4000/api/auth/delete"
+        "http://localhost:4000/api/auth/delete",
+        {
+          withCredentials: true, // Add this line
+        }
       );
       if (response.data.status === "success") {
         showToast("Account deleted successfully!", "success");
@@ -137,7 +141,10 @@ const Profile = () => {
   const handleShowListings = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:4000/api/houses/${currentUser._id}`
+        `http://localhost:4000/api/houses/${currentUser._id}`,
+        {
+          withCredentials: true, // Add this line
+        }
       );
       setUserListings(response.data.data);
     } catch (error) {
@@ -153,7 +160,10 @@ const Profile = () => {
     }
     try {
       const response = await axios.delete(
-        `http://localhost:4000/api/houses/${listingId}`
+        `http://localhost:4000/api/houses/${listingId}`,
+        {
+          withCredentials: true, // Add this line
+        }
       );
       if (response.data.status === "success") {
         showToast("Listing deleted successfully!", "success");
@@ -171,7 +181,11 @@ const Profile = () => {
   const handleSignOut = async () => {
     try {
       const response = await axios.post(
-        "http://localhost:4000/api/auth/logout"
+        "http://localhost:4000/api/auth/logout",
+        {},
+        {
+          withCredentials: true, // Add this line
+        }
       );
       if (response.data.status === "success") {
         dispatch(signOut());
@@ -196,10 +210,16 @@ const Profile = () => {
           onChange={(e) => setFile(e.target.files[0])}
         />
         <img
-          src={url || currentUser?.avatar}
+          src={encodeURI(
+            url || currentUser?.avatar || "/placeholder-profile.png"
+          )}
           alt={currentUser?.username || "profile"}
           onClick={() => fileInputRef.current.click()}
           className="w-24 h-24 mt-2 self-center rounded-full object-cover cursor-pointer"
+          onError={(e) => {
+            console.error("Avatar load failed:", e.target.src);
+            e.target.src = "/placeholder-profile.png";
+          }}
         />
         {file && (
           <p className="text-center text-sm text-gray-600">
