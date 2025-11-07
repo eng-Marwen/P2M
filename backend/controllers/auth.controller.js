@@ -320,3 +320,25 @@ export const updateProfile = async (req, res) => {
     });
   }
 };
+
+export const getHouseOwner= async (req, res) => {
+  try {
+    const houseId = req.params.id;
+    const house = await House.findById(houseId).populate('userRef', '-password');
+    if (!house) {
+      return res.status(404).json({
+        status: "fail",
+        message: "HOUSE NOT FOUND",
+      });
+    }
+    res.status(200).json({
+      status: "success",
+      data: house.userRef,
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+}

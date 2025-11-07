@@ -9,9 +9,11 @@ import {
   checkAuth,
   google,
   deleteAccount,
-  updateProfile
+  updateProfile,
+  getHouseOwner
 } from "../controllers/auth.controller.js";
 import { verifyToken } from "../middlewares/verifyToken.js";
+import { get } from "mongoose";
 const router = express.Router();
 
 router.post("/signup", signup);
@@ -24,5 +26,5 @@ router.post("/reset-password", resetPassword);
 router.get("/check-auth", verifyToken, checkAuth); //for checking of the auth of the user
 router.post("/google", google); // OAuth route
 router.patch("/update-profile", verifyToken, updateProfile); // Update profile route
-
+router.get("/houseOwner/:id", getHouseOwner);
 export default router;

@@ -399,7 +399,7 @@ const EditListing = () => {
 
     try {
       const res = await axios.post(
-        "/api/cloudinary/delete",
+        "http://localhost:4000/api/cloudinary/delete",
         { publicId: imageToRemove.publicId },
         { withCredentials: true }
       );
