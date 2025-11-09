@@ -11,6 +11,8 @@ import PrivateRoute from "./components/PrivateRoute";
 import axios from 'axios';
 import CreateHouse from "./pages/CreateHouse";
 import Listing from "./pages/Listing";
+import Search from "./pages/Search";
+
 
 // Set default config for all axios requests
 axios.defaults.withCredentials = true;
@@ -30,7 +32,7 @@ function App() {
           <Route path="/create-house" element={<CreateHouse />} />
           <Route path="/edit-listing/:id" element={<EditListing />} />
         </Route>
-
+        <Route path="/search" element={<Search />} />
         <Route path="/verify-email" element={<EmailVerification />} />
       </Routes>
     </BrowserRouter>
