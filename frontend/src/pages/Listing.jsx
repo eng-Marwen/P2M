@@ -6,6 +6,7 @@ import {
   FaCouch,
   FaMapMarkerAlt,
   FaParking,
+  FaPhone,
 } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import SwiperCore from "swiper";
@@ -164,15 +165,33 @@ const Listing = () => {
           </div>
 
           <div className="w-full sm:w-44 text-right">
-            <div className="text-3xl font-bold text-green-600">
-              {listingData.discountedPrice > 0
-                ? listingData.discountedPrice
-                : listingData.regularPrice}
-              $
-              {listingData.type === "rent" && (
-                <span className="text-sm text-gray-500"> / month</span>
-              )}
-            </div>
+            {/* Price: show crossed original when offer exists, highlight offer in red */}
+            {listingData.offer && listingData.discountedPrice > 0 ? (
+              <div className="flex flex-col items-end">
+                <div className="text-sm text-gray-500 line-through">
+                  {listingData.regularPrice}$
+                  {listingData.type === "rent" && (
+                    <span className="ml-1">/ month</span>
+                  )}
+                </div>
+                <div className="text-3xl font-extrabold text-red-600">
+                  {listingData.discountedPrice}$
+                  {listingData.type === "rent" && (
+                    <span className="text-sm text-gray-500 ml-1">/ month</span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-3xl font-bold text-green-600">
+                {(listingData.discountedPrice > 0
+                  ? listingData.discountedPrice
+                  : listingData.regularPrice) ?? 0}
+                $
+                {listingData.type === "rent" && (
+                  <span className="text-sm text-gray-500"> / month</span>
+                )}
+              </div>
+            )}
             <div className="text-xs text-gray-400 mt-1">
               Posted: {new Date(listingData.createdAt).toLocaleDateString()}
             </div>
@@ -290,7 +309,9 @@ const Listing = () => {
                     setOwnerData(res.data?.data ?? res.data ?? null);
                   } catch (err) {
                     setOwnerError(
-                      err.response?.data?.message || err.message || "Failed to load owner"
+                      err.response?.data?.message ||
+                        err.message ||
+                        "Failed to load owner"
                     );
                   } finally {
                     setOwnerLoading(false);
@@ -326,7 +347,7 @@ const Listing = () => {
             />
 
             <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full overflow-hidden">
-              <div className="p-4 border-b flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                 <div className="text-lg font-semibold">Owner</div>
                 <button
                   onClick={() => setShowOwnerCard(false)}
@@ -345,7 +366,7 @@ const Listing = () => {
                 ) : ownerError ? (
                   <div className="text-red-600 text-sm">{ownerError}</div>
                 ) : ownerData ? (
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-start gap-4">
                     <img
                       src={
                         ownerData.photo ||
@@ -356,13 +377,59 @@ const Listing = () => {
                       alt={ownerData.name || "Owner"}
                       className="w-16 h-16 rounded-full object-cover bg-gray-100"
                     />
-                    <div>
+
+                    <div className="flex-1">
                       <div className="font-medium text-gray-900">
                         {ownerData.name || ownerData.fullName || "Owner"}
                       </div>
-                      <div className="text-sm text-gray-600">
-                        {ownerData.email || "No email available"}
+
+                      {/* Phone */}
+                      {ownerData.phone ? (
+                        <div className="text-sm text-gray-700 mt-1 flex items-center gap-2">
+                          <FaPhone className="text-indigo-500" aria-hidden />
+                          <a
+                            href={`tel:${ownerData.phone}`}
+                            className="hover:underline text-indigo-700"
+                          >
+                            {ownerData.phone}
+                          </a>
+                        </div>
+                      ) : null}
+
+                      {/* Address */}
+                      {ownerData.address ? (
+                        <div className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                          <FaMapMarkerAlt
+                            className="text-indigo-500"
+                            aria-hidden
+                          />
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              ownerData.address
+                            )}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hover:underline text-indigo-600"
+                          >
+                            {ownerData.address}
+                          </a>
+                        </div>
+                      ) : null}
+
+                      {/* Email */}
+                      <div className="text-sm text-gray-600 mt-2">
+                        {ownerData.email ? (
+                          <a
+                            href={`mailto:${ownerData.email}`}
+                            className="text-indigo-600 hover:underline"
+                          >
+                            {ownerData.email}
+                          </a>
+                        ) : (
+                          "No email available"
+                        )}
                       </div>
+
                       <div className="mt-3 flex gap-2">
                         {ownerData.email && (
                           <a
@@ -372,10 +439,17 @@ const Listing = () => {
                             Send email
                           </a>
                         )}
+                        {ownerData.phone && (
+                          <a
+                            href={`tel:${ownerData.phone}`}
+                            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                          >
+                            Call
+                          </a>
+                        )}
                         <button
                           onClick={() => {
                             setShowOwnerCard(false);
-                            // optionally open a contact form or chat
                           }}
                           className="px-3 py-1 text-sm border rounded"
                         >

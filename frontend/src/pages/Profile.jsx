@@ -11,16 +11,18 @@ const Profile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // const v = "dgmaxi7wu";
-
   const [userListings, setUserListings] = useState([]);
 
-  //---supabase image upload setup---
   const [file, setFile] = useState(null);
   const [url, setUrl] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [formData, setFormData] = useState({});
   const currentUser = useSelector((state) => state.user.currentUser);
+  // initialize form with current user values (if available)
+  const [formData, setFormData] = useState({
+    username: currentUser?.username || "",
+    address: currentUser?.address || "",
+    phone: currentUser?.phone || "",
+  });
   // Handle form input changes
   const handleInputChange = (e) => {
     setFormData({
@@ -49,7 +51,6 @@ const Profile = () => {
       setUploading(false);
     }
   };
-  //---end supabase image upload setup---
   const fileInputRef = useRef(null);
 
   const handleUpdateProfile = async (e) => {
@@ -245,6 +246,21 @@ const Profile = () => {
           placeholder="New Password"
           className="border border-gray-300 p-2 rounded-lg mb-2 bg-white"
           id="password"
+          onChange={handleInputChange}
+        />
+        {/* Address & Phone */}
+        <input
+          type="text"
+          placeholder={currentUser?.address || "Address (optional)"}
+          className="border border-gray-300 p-2 rounded-lg mb-2 bg-white"
+          id="address"
+          onChange={handleInputChange}
+        />
+        <input
+          type="tel"
+          placeholder={currentUser?.phone || "Phone (optional)"}
+          className="border border-gray-300 p-2 rounded-lg mb-2 bg-white"
+          id="phone"
           onChange={handleInputChange}
         />
         <button
