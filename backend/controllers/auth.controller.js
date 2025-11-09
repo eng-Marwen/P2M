@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { User } from "../models/user.model.js";
+import House from "../models/house.model.js"
 import {
   sendLinkForResettingPwd,
   sendResetPwdSuccessfullyMail,
@@ -11,7 +12,7 @@ import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js
 
 export const signup = async (req, res) => {
   try {
-    let { email, username, password } = req.body;
+    let { email, username, password, address = "", phone = "" } = req.body;
 
     if (!email || !password || !username) {
       throw new Error("EMAIL, USERNAME AND PASSWORD ARE REQUIRED!");
@@ -34,6 +35,8 @@ export const signup = async (req, res) => {
             password,
             verificationToken,
             verificationTokenExpiresAt,
+            address,
+            phone,
           },
         },
         { new: true }
@@ -45,6 +48,8 @@ export const signup = async (req, res) => {
         password,
         verificationToken,
         verificationTokenExpiresAt,
+        address,
+        phone,
       });
     }
     await sendVerificatinMail(user.email, verificationToken);
@@ -78,7 +83,7 @@ export const verifyMail = async (req, res) => {
         message: "invalid or expired verification code",
       });
     }
-    await sendWemcomeEmail(user.email, user.name);
+    await sendWemcomeEmail(user.email, user.username);
     user.isVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpiresAt = undefined;
@@ -211,6 +216,8 @@ export const checkAuth = async (req, res) => {
 export const google = async (req, res) => {
   try {
     const { email, username, avatar } = req.body;
+    // allow optional address/phone from google payload (if any)
+    const { address = "", phone = "" } = req.body;
     let user = await User.findOne({ email }).lean();
 
     if (!user) {
@@ -222,6 +229,8 @@ export const google = async (req, res) => {
         password,
         avatar,
         isVerified: true,
+        address,
+        phone,
       });
     }
     generateTokenAndSetCookie(res, user._id);
@@ -262,7 +271,7 @@ export const deleteAccount = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.userId;
-    const { username, oldPassword, newPassword, avatar } = req.body;
+    const { username, oldPassword, newPassword, avatar, address, phone } = req.body;
 
     // Get the current user
     const user = await User.findById(userId);
@@ -277,10 +286,18 @@ export const updateProfile = async (req, res) => {
       updateData.username = username;
     }
 
-    // Update avatar if provided
-    if (avatar) {
-      updateData.avatar = avatar;
-    }
+// Update avatar if provided
+if (avatar) {
+  updateData.avatar = avatar;
+}
+
+// Update address / phone if provided
+if (address !== undefined) {
+  updateData.address = address;
+}
+if (phone !== undefined) {
+  updateData.phone = phone;
+}
 
     // Handle password update
     if (newPassword) {

@@ -26,6 +26,14 @@ const userSchma = new mongoose.Schema(
       type:String,
       default:"https://github.com/eng-Marwen/images/blob/main/unknown.png?raw=true"
     },
+    address:{
+      type:String,
+      default:""
+    },
+    phone:{
+      type:String,
+      default:""
+    },
     resetPasswordToken: String,
     resetPasswordTokenExpiresAt: Date,
     verificationToken: String,

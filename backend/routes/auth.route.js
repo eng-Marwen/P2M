@@ -13,7 +13,6 @@ import {
   getHouseOwner
 } from "../controllers/auth.controller.js";
 import { verifyToken } from "../middlewares/verifyToken.js";
-import { get } from "mongoose";
 const router = express.Router();
 
 router.post("/signup", signup);
