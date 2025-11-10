@@ -1,7 +1,8 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
+import { ToastContainer } from "react-toastify";
+import { showToast } from "../popups/tostHelper.js";
 const Search = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,6 +83,10 @@ const Search = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // show toast immediately when user clicks Search
+    showToast("Searching...", "info");
+
     const queryParams = new URLSearchParams();
     if (sideBar.searchTerm) queryParams.append("search", sideBar.searchTerm);
     if (sideBar.type && sideBar.type !== "all")
@@ -133,6 +138,7 @@ const Search = () => {
         const data = response?.data;
         if (!data) {
           setHouses([]);
+          showToast("No results found", "info");
         } else {
           // try both possible shapes (data.data or data)
           const housesArray = Array.isArray(data.data)
@@ -141,6 +147,13 @@ const Search = () => {
             ? data
             : [];
           setHouses(housesArray);
+
+          // show toast only after fetch, using the fetched array (not stale state)
+          if (housesArray.length === 0) {
+            showToast("No results found", "error");
+          } else {
+            showToast(`${housesArray.length} result(s) found`, "success");
+          }
         }
       } catch (err) {
         console.error(
@@ -149,6 +162,7 @@ const Search = () => {
           err?.response?.data || err.message
         );
         setHouses([]);
+        showToast("Error fetching results", "error");
       } finally {
         setLoading(false);
       }
@@ -157,9 +171,7 @@ const Search = () => {
     fetchHouses();
   }, [location.search]);
   console.log("Houses State:", houses);
-  if(loading){
-    return <div className="text-center mt-10 text-2xl font-medium">Loading...</div>
-  }
+
   return (
     <div className="flex gap-4 flex-col md:flex-row max-w-6xl mx-auto ">
       <div className=" p-7 border-b border-gray-300 sm:border-r md:min-h-screen">
@@ -272,7 +284,24 @@ const Search = () => {
         <h1 className="text-2xl font-semibold border-b p-3 border-slate-300 text-slate-600 mt-5">
           Search Results
         </h1>
+        <div>
+          {!loading && houses.length === 0 ? (
+            <div className="text-center mt-10 text-2xl font-medium">
+              No results found
+            </div>
+          ) : (
+            <div>
+              {houses.map((house) => (
+                <div key={house.id} className="border-b p-3">
+                  <h2 className="text-xl font-semibold">{house.title}</h2>
+                  <p>{house.description}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };
