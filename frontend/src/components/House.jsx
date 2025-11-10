@@ -52,7 +52,7 @@ const House = ({ house }) => {
 
         {/* ribbon offer */}
         {hasOffer && (
-          <div className="absolute left-3 top-3 -rotate-6 bg-gradient-to-r from-red-500 to-rose-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow">
+          <div className="absolute left-3 top-3 -rotate-6 bg-linear-to-r from-red-500 to-rose-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow">
             <FaTag className="inline-block mr-1 w-3 h-3 align-text-bottom" />
             Offer
           </div>
@@ -82,7 +82,7 @@ const House = ({ house }) => {
             </h3>
 
             <div className="mt-1 flex items-center text-xs text-gray-500 gap-2">
-              <MdLocationOn className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+              <MdLocationOn className="w-4 h-4 text-indigo-600 shrink-0" />
               <span className="truncate">{address}</span>
             </div>
           </div>
