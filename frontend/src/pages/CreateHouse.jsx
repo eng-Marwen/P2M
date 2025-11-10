@@ -24,6 +24,7 @@ const CreateHouse = () => {
     bathrooms: 1,
     regularPrice: 50,
     discountedPrice: 0,
+    area: "", // <-- optional area (m²)
   });
 
   const fileInputRef = useRef(null);
@@ -87,12 +88,17 @@ const CreateHouse = () => {
       } else if (type === "checkbox") {
         return { ...prev, [id]: checked };
       } else if (type === "number") {
+        // area is optional: keep empty string if cleared, otherwise convert to number
+        if (id === "area") {
+          return { ...prev, area: value === "" ? "" : Number(value) };
+        }
         return { ...prev, [id]: parseInt(value) || 0 };
       } else {
         return { ...prev, [id]: value };
       }
     });
   };
+
   const handleUploadImages = async (e) => {
     e.preventDefault();
 
@@ -180,6 +186,15 @@ const CreateHouse = () => {
       return;
     }
 
+    // Optional area validation: if provided ensure it's positive number
+    if (
+      formData.area !== "" &&
+      (isNaN(Number(formData.area)) || Number(formData.area) < 0)
+    ) {
+      showToast("Area must be a positive number or left empty", "error");
+      return;
+    }
+
     setCreating(true);
 
     try {
@@ -226,6 +241,7 @@ const CreateHouse = () => {
           bathrooms: 1,
           regularPrice: 50,
           discountedPrice: 0,
+          area: "", // reset optional area
         });
         setUploadedImages([]);
 
@@ -525,6 +541,20 @@ const CreateHouse = () => {
                 <p>Discounted Price</p>
                 <span className="text-xs opacity-80">($ / Month)</span>
               </div>
+            </div>
+
+            {/* Optional area field */}
+            <div className="flex gap-2 items-center">
+              <input
+                type="number"
+                min={0}
+                id="area"
+                value={formData.area}
+                onChange={handleChange}
+                placeholder="Area (m²) - optional"
+                className="border bg-white border-gray-300 w-28 p-2 rounded-lg"
+              />
+              <p>Area (m²)</p>
             </div>
           </div>
 

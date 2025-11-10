@@ -7,6 +7,7 @@ import {
   FaMapMarkerAlt,
   FaParking,
   FaPhone,
+  FaRulerCombined,
 } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import SwiperCore from "swiper";
@@ -117,6 +118,13 @@ const Listing = () => {
       )}&output=embed`
     : null;
 
+  const hasArea =
+    listingData?.area !== undefined &&
+    listingData?.area !== null &&
+    listingData?.area !== "";
+
+  const gridColsClass = hasArea ? "sm:grid-cols-5" : "sm:grid-cols-4";
+
   return (
     <div className="max-w-4xl mx-auto p-4">
       {/* Gallery */}
@@ -199,7 +207,7 @@ const Listing = () => {
         </div>
 
         <div className="mt-5 border-t border-gray-200 pt-5">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div className={`grid grid-cols-2 ${gridColsClass} gap-4 text-sm`}>
             {/* Larger feature cards */}
             <div className="flex flex-col items-center gap-2 bg-indigo-50 p-4 rounded-lg">
               <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl">
@@ -248,6 +256,21 @@ const Listing = () => {
                 Parking
               </div>
             </div>
+
+            {hasArea && (
+              <div className="flex flex-col items-center gap-2 bg-indigo-50 p-4 rounded-lg">
+                <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl">
+                  <FaRulerCombined />
+                </div>
+                <div className="text-2xl font-extrabold text-gray-900">
+                  {listingData.area}
+                  <span className="text-sm ml-1">m²</span>
+                </div>
+                <div className="text-xs text-indigo-600 uppercase tracking-wide">
+                  Area
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-6">

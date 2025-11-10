@@ -23,6 +23,7 @@ const EditListing = () => {
     bathrooms: 1,
     regularPrice: 50,
     discountedPrice: 0,
+    area: "", // <-- optional area (m²), keep empty string when not set
   });
 
   // Image states
@@ -71,7 +72,7 @@ const EditListing = () => {
         const listingData = response.data.data;
         setListing(listingData);
 
-        // Populate form data
+        // Populate form data (include optional area)
         setFormData({
           name: listingData.name || "",
           description: listingData.description || "",
@@ -84,6 +85,10 @@ const EditListing = () => {
           bathrooms: listingData.bathrooms || 1,
           regularPrice: listingData.regularPrice || 50,
           discountedPrice: listingData.discountedPrice || 0,
+          area:
+            typeof listingData.area === "number"
+              ? listingData.area
+              : listingData.area || "", // keep '' when absent
         });
 
         // Set existing images
@@ -184,8 +189,6 @@ const EditListing = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("unload", handleUnload);
-      // do NOT call cleanup here — returning cleanup runs on every re-render if deps change.
-      // This effect runs once on mount (empty deps) so unmount won't accidentally delete images during normal state updates.
     };
   }, []);
 
@@ -204,7 +207,12 @@ const EditListing = () => {
       } else if (type === "checkbox") {
         return { ...prev, [id]: checked };
       } else if (type === "number") {
-        return { ...prev, [id]: parseInt(value) || 0 };
+        // area is optional: keep empty string if cleared, otherwise convert to number
+        if (id === "area") {
+          return { ...prev, area: value === "" ? "" : Number(value) };
+        }
+        // other numeric fields: keep numeric (fallback to 0)
+        return { ...prev, [id]: Number(value) || 0 };
       } else {
         return { ...prev, [id]: value };
       }
@@ -469,6 +477,15 @@ const EditListing = () => {
       return;
     }
 
+    // Optional area validation: if provided ensure it's positive number
+    if (
+      formData.area !== "" &&
+      (isNaN(Number(formData.area)) || Number(formData.area) < 0)
+    ) {
+      showToast("Area must be a positive number or left empty", "error");
+      return;
+    }
+
     setCreating(true);
 
     try {
@@ -478,10 +495,45 @@ const EditListing = () => {
         ...uploadedImages.map((img) => img.url),
       ];
 
+      // Prepare payload
       const houseData = {
         ...formData,
         images: allImages,
+        // ensure numeric fields are numbers
+        bedrooms: Number(formData.bedrooms) || 0,
+        bathrooms: Number(formData.bathrooms) || 0,
+        regularPrice: Number(formData.regularPrice) || 0,
+        discountedPrice:
+          formData.offer && formData.discountedPrice !== ""
+            ? Number(formData.discountedPrice) || 0
+            : undefined,
       };
+
+      // Normalize optional area: send numeric value or omit the field entirely
+      if (Object.prototype.hasOwnProperty.call(houseData, "area")) {
+        if (
+          houseData.area === "" ||
+          houseData.area === null ||
+          houseData.area === undefined
+        ) {
+          delete houseData.area;
+        } else {
+          const areaNum = Number(houseData.area);
+          if (!Number.isNaN(areaNum)) {
+            houseData.area = areaNum;
+          } else {
+            delete houseData.area;
+          }
+        }
+      }
+
+      // If offer is false remove discountedPrice to avoid sending invalid data
+      if (
+        !houseData.offer &&
+        Object.prototype.hasOwnProperty.call(houseData, "discountedPrice")
+      ) {
+        delete houseData.discountedPrice;
+      }
 
       console.log("Updating house data:", houseData);
 
@@ -706,6 +758,20 @@ const EditListing = () => {
                 </div>
               </div>
             )}
+
+            {/* Optional area field */}
+            <div className="flex gap-2 items-center">
+              <input
+                type="number"
+                min={0}
+                id="area"
+                value={formData.area}
+                onChange={handleChange}
+                placeholder="Area (m²) - optional"
+                className="border bg-white border-gray-300 w-28 p-2 rounded-lg"
+              />
+              <p>Area (m²)</p>
+            </div>
           </div>
 
           {/* Submit button */}

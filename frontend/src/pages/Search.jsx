@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { showToast } from "../popups/tostHelper.js";
+import House from "../components/House.jsx";
 const Search = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -284,21 +285,20 @@ const Search = () => {
         <h1 className="text-2xl font-semibold border-b p-3 border-slate-300 text-slate-600 mt-5">
           Search Results
         </h1>
-        <div>
-          {!loading && houses.length === 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          {!loading && houses.length === 0 && (
             <div className="text-center mt-10 text-2xl font-medium">
               No results found
             </div>
-          ) : (
-            <div>
-              {houses.map((house) => (
-                <div key={house.id} className="border-b p-3">
-                  <h2 className="text-xl font-semibold">{house.title}</h2>
-                  <p>{house.description}</p>
-                </div>
-              ))}
+          )}
+          {loading && (
+            <div className="text-center mt-10 text-2xl font-medium">
+              Loading...
             </div>
           )}
+          {!loading && houses.length > 0 && houses.map((house) => (
+            <House key={house._id} house={house} />
+          ))}
         </div>
       </div>
       <ToastContainer />

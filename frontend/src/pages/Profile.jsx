@@ -344,9 +344,16 @@ const Profile = () => {
                       🚿 {listing.bathrooms} bath
                       {listing.bathrooms > 1 ? "s" : ""}
                     </span>
+
                     {listing.parking && <span>🚗 Parking</span>}
                     {listing.furnished && <span>🪑 Furnished</span>}
+
+                    {/* Area (optional) */}
+                    {listing.area !== undefined &&
+                      listing.area !== null &&
+                      listing.area !== "" && <span>📐 {listing.area} m²</span>}
                   </div>
+
                   <div className="flex justify-between items-center mt-2">
                     <div className="flex gap-2">
                       <button

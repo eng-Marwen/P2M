@@ -1,8 +1,27 @@
 import House from "../models/house.model.js";
 
 export const postHouse = async (req, res) => {
-  const houseInfo = req.body;
+  const houseInfo = req.body || {};
   houseInfo.userRef = req.userId;
+
+  // normalize optional area: accept numeric or string numbers; remove if empty/invalid
+  if (Object.prototype.hasOwnProperty.call(houseInfo, "area")) {
+    if (
+      houseInfo.area === "" ||
+      houseInfo.area === null ||
+      houseInfo.area === undefined
+    ) {
+      delete houseInfo.area;
+    } else {
+      const areaNum = Number(houseInfo.area);
+      if (!Number.isNaN(areaNum)) {
+        houseInfo.area = areaNum;
+      } else {
+        delete houseInfo.area;
+      }
+    }
+  }
+
   try {
     if (!houseInfo) {
       throw new Error("HOUSE INFO IS MISSING");
@@ -12,6 +31,54 @@ export const postHouse = async (req, res) => {
       status: "success",
       message: "HOUSE ADDED SUCCESSFULLY",
       data: newHouse,
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+};
+
+export const updateListingById = async (req, res) => {
+  const houseId = req.params.id;
+  const updatedData = { ...(req.body || {}) };
+
+  // normalize optional area on updates
+  if (Object.prototype.hasOwnProperty.call(updatedData, "area")) {
+    if (
+      updatedData.area === "" ||
+      updatedData.area === null ||
+      updatedData.area === undefined
+    ) {
+      delete updatedData.area;
+    } else {
+      const areaNum = Number(updatedData.area);
+      if (!Number.isNaN(areaNum)) {
+        updatedData.area = areaNum;
+      } else {
+        delete updatedData.area;
+      }
+    }
+  }
+
+  try {
+    const updatedHouse = await House.findByIdAndUpdate(houseId, updatedData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedHouse) {
+      return res.status(404).json({
+        status: "fail",
+        message: "HOUSE NOT FOUND",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "HOUSE UPDATED SUCCESSFULLY",
+      data: updatedHouse,
     });
   } catch (error) {
     res.status(400).json({
@@ -86,36 +153,6 @@ export const deleteHouseById = async (req, res) => {
     res.status(200).json({
       status: "success",
       message: "HOUSE DELETED SUCCESSFULLY",
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: "fail",
-      message: error.message,
-    });
-  }
-};
-
-export const updateListingById = async (req, res) => {
-  const houseId = req.params.id;
-  const updatedData = req.body;
-
-  try {
-    const updatedHouse = await House.findByIdAndUpdate(houseId, updatedData, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!updatedHouse) {
-      return res.status(404).json({
-        status: "fail",
-        message: "HOUSE NOT FOUND",
-      });
-    }
-
-    res.status(200).json({
-      status: "success",
-      message: "HOUSE UPDATED SUCCESSFULLY",
-      data: updatedHouse,
     });
   } catch (error) {
     res.status(400).json({
