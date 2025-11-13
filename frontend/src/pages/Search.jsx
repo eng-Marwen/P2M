@@ -1,14 +1,35 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { FaFilter, FaSearch } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { showToast } from "../popups/tostHelper.js";
 import House from "../components/House.jsx";
+import { showToast } from "../popups/tostHelper.js";
+
+const COLORS = {
+  pageBg: "bg-slate-50",
+  container: "max-w-6xl mx-auto px-4 py-6",
+  title: "text-2xl sm:text-3xl font-bold text-slate-800",
+  panelBg: "bg-white",
+  panelBorder: "border border-gray-100",
+  panelShadow: "shadow-sm",
+  panelRounded: "rounded-xl",
+  input:
+    "px-3 py-2 rounded-lg border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200",
+  btnPrimary: "bg-indigo-600 text-white hover:bg-indigo-700",
+  btnGhost: "bg-white border border-gray-200",
+  chipActive: "bg-indigo-50 border-indigo-200",
+  chipInactive: "bg-white border-gray-200",
+  statText: "text-sm text-gray-500",
+  resultsTitle: "text-xl font-semibold text-slate-800",
+};
+
 const Search = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [houses, setHouses] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
   const [sideBar, setSideBar] = useState({
     searchTerm: "",
     type: "all",
@@ -18,6 +39,7 @@ const Search = () => {
     sortOrder: "createdAt",
     order: "desc",
   });
+
   const handleChange = (e) => {
     if (
       e.target.id === "all" ||
@@ -28,14 +50,12 @@ const Search = () => {
         ...prev,
         type: e.target.id,
       }));
-    }
-    if (e.target.id === "search") {
+    } else if (e.target.id === "search") {
       setSideBar((prev) => ({
         ...prev,
         searchTerm: e.target.value,
       }));
-    }
-    if (
+    } else if (
       e.target.id === "offer" ||
       e.target.id === "parking" ||
       e.target.id === "furnished"
@@ -45,13 +65,11 @@ const Search = () => {
         [e.target.id]:
           e.target.checked || e.target.checked === "true" ? true : false,
       }));
-    }
-    if (e.target.id === "sort_order") {
+    } else if (e.target.id === "sort_order") {
       const val = (e.target.value || "").toString();
       let sort = "createdAt";
       let order = "desc";
 
-      // Support multiple formats: snake_case (price_asc), dash (price-asc), camelCase (priceAsc)
       if (val.includes("_")) {
         const parts = val.split("_");
         order = parts.pop().toLowerCase();
@@ -70,7 +88,6 @@ const Search = () => {
         }
       }
 
-      // normalize known fields to match backend names
       if (sort.includes("created")) sort = "createdAt";
       if (sort.includes("price")) sort = "price";
 
@@ -83,9 +100,7 @@ const Search = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // show toast immediately when user clicks Search
+    e?.preventDefault();
     showToast("Searching...", "info");
 
     const queryParams = new URLSearchParams();
@@ -99,6 +114,7 @@ const Search = () => {
     if (sideBar.order) queryParams.append("order", sideBar.order);
     const queryString = queryParams.toString();
     navigate(`/search?${queryString}`);
+    setShowFilters(false);
   };
 
   useEffect(() => {
@@ -135,21 +151,17 @@ const Search = () => {
           searchQuery ? `?${searchQuery}` : ""
         }`;
         const response = await axios.get(url);
-        console.log("Raw response:", response);
         const data = response?.data;
         if (!data) {
           setHouses([]);
           showToast("No results found", "info");
         } else {
-          // try both possible shapes (data.data or data)
           const housesArray = Array.isArray(data.data)
             ? data.data
             : Array.isArray(data)
             ? data
             : [];
           setHouses(housesArray);
-
-          // show toast only after fetch, using the fetched array (not stale state)
           if (housesArray.length === 0) {
             showToast("No results found", "error");
           } else {
@@ -159,7 +171,6 @@ const Search = () => {
       } catch (err) {
         console.error(
           "Error fetching houses:",
-          err?.response?.status,
           err?.response?.data || err.message
         );
         setHouses([]);
@@ -171,136 +182,237 @@ const Search = () => {
 
     fetchHouses();
   }, [location.search]);
-  console.log("Houses State:", houses);
 
   return (
-    <div className="flex gap-4 flex-col md:flex-row max-w-6xl mx-auto ">
-      <div className=" p-7 border-b border-gray-300 sm:border-r md:min-h-screen">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          <div className="flex items-center gap-2">
-            <label className="font-semibold whitespace-nowrap">
-              Search Term
-            </label>
-            <input
-              type="text"
-              id="search"
-              placeholder="Search..."
-              className="border border-gray-500 bg-white rounded-lg p-3 w-full"
-              value={sideBar.searchTerm}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <label className="font-semibold">Type:</label>
-            <div className="flex items-center gap-2 ">
-              <input
-                type="checkbox"
-                id="all"
-                className="w-5"
-                checked={sideBar.type === "all"}
-                onChange={handleChange}
-              />
-              <span>Rent & Sale</span>
-            </div>
+    <div className={`${COLORS.pageBg} min-h-screen`}>
+      <div className={COLORS.container}>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+          <h1 className={COLORS.title}>Find your next home</h1>
 
-            <div className="flex items-center gap-2 ">
-              <input
-                type="checkbox"
-                id="rent"
-                className="w-5"
-                checked={sideBar.type === "rent"}
-                onChange={handleChange}
-              />
-              <span>Rent </span>
-            </div>
-
-            <div className="flex items-center gap-2 ">
-              <input
-                type="checkbox"
-                id="sale"
-                className="w-5"
-                checked={sideBar.type === "sale"}
-                onChange={handleChange}
-              />
-              <span> Sale</span>
-            </div>
-
-            <div className="flex items-center gap-2 ">
-              <input
-                type="checkbox"
-                id="offer"
-                className="w-5"
-                checked={sideBar.offer}
-                onChange={handleChange}
-              />
-              <span>Offer</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <label className="font-semibold">Amenities:</label>
-            <div className="flex items-center gap-2 ">
-              <input
-                type="checkbox"
-                id="parking"
-                className="w-5"
-                checked={sideBar.parking}
-                onChange={handleChange}
-              />
-              <span>Parking</span>
-            </div>
-
-            <div className="flex items-center gap-2 ">
-              <input
-                type="checkbox"
-                id="furnished"
-                className="w-5"
-                checked={sideBar.furnished}
-                onChange={handleChange}
-              />
-              <span>Furnished</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="font-semibold">Sort By:</label>
-            <select
-              id="sort_order"
-              className="border border-gray-500 bg-white rounded-lg p-3"
-              defaultValue={"created_at_desc"}
-              onChange={handleChange}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <button
+              onClick={() => setShowFilters((s) => !s)}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg ${COLORS.panelBg} ${COLORS.panelShadow}`}
+              aria-expanded={showFilters}
             >
-              <option value="price_asc">Price high to low</option>
-              <option value="price_desc">Price low to high</option>
-              <option value="created_at_desc">Latest</option>
-              <option value="created_at_asc">Oldest</option>
-            </select>
+              <FaFilter className="w-4 h-4 text-indigo-700" />
+              <span className="hidden sm:inline text-sm">Filters</span>
+            </button>
+
+            <form
+              onSubmit={handleSubmit}
+              className="flex items-center ml-2 w-full md:w-auto"
+            >
+              <label htmlFor="search" className="sr-only">
+                Search
+              </label>
+              <div className="relative w-full md:w-auto">
+                <input
+                  id="search"
+                  type="text"
+                  placeholder="Search by name, address..."
+                  className={`${COLORS.input} w-full md:w-80`}
+                  value={sideBar.searchTerm}
+                  onChange={handleChange}
+                />
+                <button
+                  type="submit"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700"
+                >
+                  <FaSearch />
+                </button>
+              </div>
+            </form>
           </div>
-          <button className="bg-slate-700   uppercase text-white rounded-lg p-3 hover:bg-slate-600 transition-colors">
-            Search
-          </button>
-        </form>
-      </div>
-      <div>
-        <h1 className="text-2xl font-semibold border-b p-3 border-slate-300 text-slate-600 mt-5">
-          Search Results
-        </h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-          {!loading && houses.length === 0 && (
-            <div className="text-center mt-10 text-2xl font-medium">
-              No results found
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Filters / Sidebar */}
+          <aside
+            className={`md:col-span-1 transition-all duration-200 ${
+              showFilters ? "block" : "hidden"
+            } md:block`}
+          >
+            <div
+              className={`${COLORS.panelBg} ${COLORS.panelRounded} ${COLORS.panelBorder} p-4 ${COLORS.panelShadow} sticky top-6 bg-linear-to-b from-white to-gray-200`}
+            >
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Type
+                  </label>
+                  <div className="mt-2 flex gap-2 flex-wrap">
+                    <label
+                      className={`px-3 py-1 rounded-lg border ${
+                        sideBar.type === "all"
+                          ? COLORS.chipActive
+                          : COLORS.chipInactive
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        id="all"
+                        checked={sideBar.type === "all"}
+                        onChange={handleChange}
+                        className=" mr-2"
+                      />
+                      All
+                    </label>
+                    <label
+                      className={`px-3 py-1 rounded-lg border ${
+                        sideBar.type === "rent"
+                          ? COLORS.chipActive
+                          : COLORS.chipInactive
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        id="rent"
+                        className="mr-2"
+                        checked={sideBar.type === "rent"}
+                        onChange={handleChange}
+                      />
+                      Rent
+                    </label>
+                    <label
+                      className={`px-3 py-1 rounded-lg border ${
+                        sideBar.type === "sale"
+                          ? COLORS.chipActive
+                          : COLORS.chipInactive
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        id="sale"
+                        className="mr-2"
+                        checked={sideBar.type === "sale"}
+                        onChange={handleChange}
+                      />
+                      Sale
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Amenities
+                  </label>
+                  <div className="mt-2 flex flex-col gap-2">
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="parking"
+                        className="w-4 h-4"
+                        checked={sideBar.parking}
+                        onChange={handleChange}
+                      />
+                      <span className="text-sm">Parking</span>
+                    </label>
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="furnished"
+                        className="w-4 h-4"
+                        checked={sideBar.furnished}
+                        onChange={handleChange}
+                      />
+                      <span className="text-sm">Furnished</span>
+                    </label>
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="offer"
+                        className="w-4 h-4"
+                        checked={sideBar.offer}
+                        onChange={handleChange}
+                      />
+                      <span className="text-sm">Has Offer</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Sort
+                  </label>
+                  <select
+                    id="sort_order"
+                    defaultValue={"created_at_desc"}
+                    onChange={handleChange}
+                    className="mt-2 w-full px-3 py-2 border rounded-lg bg-white"
+                  >
+                    <option value="price_desc">Price high to low</option>
+                    <option value="price_asc">Price low to high</option>
+                    <option value="created_at_desc">Latest</option>
+                    <option value="created_at_asc">Oldest</option>
+                  </select>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className={`flex-1 ${COLORS.btnPrimary} py-2 rounded-lg`}
+                  >
+                    Apply
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex-1 ${COLORS.btnGhost} py-2 rounded-lg`}
+                    onClick={() => {
+                      setSideBar({
+                        searchTerm: "",
+                        type: "all",
+                        offer: false,
+                        parking: false,
+                        furnished: false,
+                        sortOrder: "createdAt",
+                        order: "desc",
+                      });
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </form>
             </div>
-          )}
-          {loading && (
-            <div className="text-center mt-10 text-2xl font-medium">
-              Loading...
+          </aside>
+
+          {/* Results */}
+          <section className="md:col-span-3">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <div className={COLORS.statText}>
+                  {loading
+                    ? "Searching..."
+                    : `${houses.length} result${
+                        houses.length !== 1 ? "s" : ""
+                      }`}
+                </div>
+                <h2 className={COLORS.resultsTitle}>Search Results</h2>
+              </div>
             </div>
-          )}
-          {!loading && houses.length > 0 && houses.map((house) => (
-            <House key={house._id} house={house} />
-          ))}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {!loading && houses.length === 0 && (
+                <div className="col-span-full text-center py-16 text-lg text-gray-500">
+                  No results found
+                </div>
+              )}
+
+              {loading && (
+                <div className="col-span-full text-center py-16 text-lg text-gray-500">
+                  Loading...
+                </div>
+              )}
+
+              {!loading &&
+                houses.length > 0 &&
+                houses.map((house) => <House key={house._id} house={house} />)}
+            </div>
+          </section>
         </div>
       </div>
+
       <ToastContainer />
     </div>
   );
