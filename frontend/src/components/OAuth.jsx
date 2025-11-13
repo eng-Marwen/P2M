@@ -83,10 +83,36 @@ const OAuth = () => {
     <button
       type="button"
       onClick={handleGoogleClick}
-      className="bg-red-700  text-white p-3 uppercase rounded-lg
-          hover:opacity-95 disabled:opacity-80"
+      className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white bg-red-700 hover:bg-red-800 transition-colors"
+      aria-label="Continue with Google"
     >
-      continue with Google
+      <span>Continue with Google</span>
+
+      {/* Google "G" icon */}
+      <svg
+        className="w-5 h-5"
+        viewBox="0 0 533.5 544.3"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path
+          fill="#4285F4"
+          d="M533.5 278.4c0-19.5-1.8-38.2-5.2-56.4H272v106.8h147.6c-6.4 34.9-25.6 64.4-54.6 84.1v69.8h88.1c51.7-47.7 81.4-117.9 81.4-204.3z"
+        />
+        <path
+          fill="#34A853"
+          d="M272 544.3c73.6 0 135.4-24.5 180.6-66.6l-88.1-69.8c-24.9 16.7-56.8 26.6-92.5 26.6-71 0-131.2-47.9-152.6-112.2H29.2v70.5C74.4 487.1 167.8 544.3 272 544.3z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M119.4 322.3c-10.6-31.2-10.6-64.9 0-96.1V155.7H29.2c-38.5 74.5-38.5 162 0 236.5l90.2-69.9z"
+        />
+        <path
+          fill="#EA4335"
+          d="M272 107.7c39.9 0 75.8 13.7 104 40.6l78-78C418.3 25.3 345.6 0 272 0 167.8 0 74.4 57.2 29.2 155.7l90.2 70.5C140.8 155.6 201 107.7 272 107.7z"
+        />
+      </svg>
     </button>
   );
 };
