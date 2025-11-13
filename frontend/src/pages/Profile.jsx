@@ -12,17 +12,23 @@ const Profile = () => {
   const navigate = useNavigate();
 
   const [userListings, setUserListings] = useState([]);
+  const [loadingListings, setLoadingListings] = useState(false);
 
   const [file, setFile] = useState(null);
   const [url, setUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+
   const currentUser = useSelector((state) => state.user.currentUser);
   // initialize form with current user values (if available)
   const [formData, setFormData] = useState({
     username: currentUser?.username || "",
     address: currentUser?.address || "",
     phone: currentUser?.phone || "",
+    currentPassword: "",
+    password: "",
   });
+
   // Handle form input changes
   const handleInputChange = (e) => {
     setFormData({
@@ -36,16 +42,13 @@ const Profile = () => {
 
     setUploading(true);
     try {
-      // uploadToCloudinary returns { secure_url, public_id, raw }
       const result = await uploadToCloudinary(file, { folder: "avatars" });
-      // store only the secure url string
       setUrl(result.secure_url);
-      console.log("Upload successful:", result.secure_url);
       setFile(null);
       return result.secure_url;
     } catch (error) {
       console.error("Upload error:", error);
-      showToast("Upload failed: " + error.message, "error");
+      showToast("Upload failed: " + (error.message || "unknown"), "error");
       return null;
     } finally {
       setUploading(false);
@@ -54,7 +57,7 @@ const Profile = () => {
   const fileInputRef = useRef(null);
 
   const handleUpdateProfile = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setUploading(true);
 
     try {
@@ -65,11 +68,11 @@ const Profile = () => {
         const uploaded = await uploadImage();
         if (uploaded) avatarUrl = uploaded;
       }
-      console.log("Avatar URL to use:", avatarUrl);
 
-      // Prepare update data
       const updateData = {
-        ...formData,
+        username: formData.username,
+        address: formData.address,
+        phone: formData.phone,
         avatar: avatarUrl,
       };
 
@@ -80,26 +83,22 @@ const Profile = () => {
         }
       });
 
-      console.log("Update data:", updateData);
-
-      // Send to backend
       const response = await axios.patch(
-        "http://localhost:4000/api/auth/update-profile",
+        "/api/auth/update-profile",
         updateData,
         {
           withCredentials: true,
         }
       );
 
-      if (response.data.status === "success") {
+      if (response.data.status === "success" || response.status === 200) {
         showToast("Profile updated successfully!", "success");
-        // ensure we dispatch the updated user object returned by backend
         dispatch(signInSuccess(response.data.data));
-        // also update local preview url from returned user if available
         const returnedAvatar = response.data.data?.avatar;
         if (returnedAvatar) setUrl(returnedAvatar);
+        setShowEdit(false);
       } else {
-        console.warn("Unexpected response:", response.data);
+        showToast("Update returned unexpected response", "error");
       }
     } catch (error) {
       console.error("Update error:", error);
@@ -120,18 +119,15 @@ const Profile = () => {
     }
 
     try {
-      const response = await axios.delete(
-        "http://localhost:4000/api/auth/delete",
-        {
-          withCredentials: true, // Add this line
-        }
-      );
+      const response = await axios.delete("/api/auth/delete", {
+        withCredentials: true,
+      });
       if (response.data.status === "success") {
         showToast("Account deleted successfully!", "success");
         dispatch(signOut());
         setTimeout(() => {
           navigate("/sign-in");
-        }, 1500); // Redirect to home or login page
+        }, 1000);
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -139,16 +135,17 @@ const Profile = () => {
       showToast(message, "error");
     }
   };
+
   const handleShowListings = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:4000/api/houses/${currentUser._id}`,
-        {
-          withCredentials: true, // Add this line
-        }
-      );
-      setUserListings(response.data.data);
+      setLoadingListings(true);
+      const response = await axios.get(`/api/houses/${currentUser._id}`, {
+        withCredentials: true,
+      });
+      setUserListings(response.data.data || []);
+      setLoadingListings(false);
     } catch (error) {
+      setLoadingListings(false);
       console.error("Navigation error:", error);
       const message = error.response?.data?.message || "Navigation failed";
       showToast(message, "error");
@@ -160,17 +157,13 @@ const Profile = () => {
       return;
     }
     try {
-      const response = await axios.delete(
-        `http://localhost:4000/api/houses/${listingId}`,
-        {
-          withCredentials: true, // Add this line
-        }
-      );
+      const response = await axios.delete(`/api/houses/${listingId}`, {
+        withCredentials: true,
+      });
       if (response.data.status === "success") {
         showToast("Listing deleted successfully!", "success");
-        // Refresh the listings
-        setUserListings((prevListings) =>
-          prevListings.filter((listing) => listing._id !== listingId)
+        setUserListings((prev) =>
+          prev.filter((listing) => listing._id !== listingId)
         );
       }
     } catch (error) {
@@ -179,14 +172,13 @@ const Profile = () => {
       showToast(message, "error");
     }
   };
+
   const handleSignOut = async () => {
     try {
       const response = await axios.post(
         "http://localhost:4000/api/auth/logout",
         {},
-        {
-          withCredentials: true, // Add this line
-        }
+        { withCredentials: true }
       );
       if (response.data.status === "success") {
         dispatch(signOut());
@@ -198,186 +190,227 @@ const Profile = () => {
       showToast(message, "error");
     }
   };
+
   return (
-    <div className="mx-auto p-3 max-w-lg ">
-      <h1 className="text-3xl text-center font-semiboldbold my-7">Profile </h1>
+    <div className="min-h-screen bg-slate-50 py-8 px-4">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Profile section */}
+        <aside className="lg:col-span-1 bg-white rounded-lg shadow p-6">
+          <div className="flex flex-col items-center text-center gap-3">
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={(e) => setFile(e.target.files[0])}
+            />
+            <img
+              src={encodeURI(
+                url || currentUser?.avatar || "/placeholder-profile.png"
+              )}
+              alt={currentUser?.username || "profile"}
+              onClick={() => fileInputRef.current?.click()}
+              className="w-28 h-28 rounded-full object-cover cursor-pointer ring-2 ring-indigo-100"
+              onError={(e) => {
+                e.target.src = "/placeholder-profile.png";
+              }}
+            />
+            <div className="text-lg font-semibold text-gray-900">
+              {currentUser?.username || "User"}
+            </div>
+            <div className="text-sm text-gray-500">{currentUser?.email}</div>
 
-      <form className="flex flex-col gap-4   ">
-        <input
-          type="file"
-          hidden
-          accept="image/*"
-          ref={fileInputRef}
-          onChange={(e) => setFile(e.target.files[0])}
-        />
-        <img
-          src={encodeURI(
-            url || currentUser?.avatar || "/placeholder-profile.png"
-          )}
-          alt={currentUser?.username || "profile"}
-          onClick={() => fileInputRef.current.click()}
-          className="w-24 h-24 mt-2 self-center rounded-full object-cover cursor-pointer"
-          onError={(e) => {
-            console.error("Avatar load failed:", e.target.src);
-            e.target.src = "/placeholder-profile.png";
-          }}
-        />
-        {file && (
-          <p className="text-center text-sm text-gray-600">
-            Selected: {file.name}
-          </p>
-        )}
-        <input
-          type="text"
-          placeholder={currentUser?.username}
-          className=" border border-gray-300 p-2 rounded-lg mb-2 bg-white"
-          id="username"
-          onChange={handleInputChange}
-        />
-        <input
-          type="password"
-          placeholder="Current Password"
-          className="border border-gray-300 p-2 rounded-lg mb-2 bg-white"
-          id="currentPassword"
-          onChange={handleInputChange}
-        />
-        <input
-          type="password"
-          placeholder="New Password"
-          className="border border-gray-300 p-2 rounded-lg mb-2 bg-white"
-          id="password"
-          onChange={handleInputChange}
-        />
-        {/* Address & Phone */}
-        <input
-          type="text"
-          placeholder={currentUser?.address || "Address (optional)"}
-          className="border border-gray-300 p-2 rounded-lg mb-2 bg-white"
-          id="address"
-          onChange={handleInputChange}
-        />
-        <input
-          type="tel"
-          placeholder={currentUser?.phone || "Phone (optional)"}
-          className="border border-gray-300 p-2 rounded-lg mb-2 bg-white"
-          id="phone"
-          onChange={handleInputChange}
-        />
-        <button
-          type="submit"
-          disabled={uploading}
-          className="bg-slate-700 text-white p-3 uppercase rounded-lg
-          hover:opacity-95 disabled:opacity-80 
-        "
-          onClick={handleUpdateProfile}
-        >
-          {uploading ? "Uploading..." : "Update Profile"}
-        </button>
-        <Link
-          to="/create-house"
-          className="bg-green-900 text-center text-white p-3 uppercase rounded-lg
-          hover:opacity-95 disabled:opacity-80 "
-        >
-          Create New House Listing
-        </Link>
-      </form>
-      <div className="flex justify-between mt-4">
-        <span
-          onClick={handleDeleteAccount}
-          className="text-red-700 cursor-pointer"
-        >
-          Delete Account
-        </span>
-        <span onClick={handleSignOut} className="text-red-700 cursor-pointer">
-          Sign Out
-        </span>
-      </div>
-      <button
-        onClick={handleShowListings}
-        className="text-green-700 w-full my-2 text-lg hover:opacity-80"
-      >
-        Show My Listings
-      </button>
-      {userListings && userListings.length > 0 ? (
-        <div className="space-y-4">
-          {userListings.map((listing) => (
-            <div
-              key={listing._id}
-              className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-4"
-            >
-              <div className="flex gap-4">
-                {/* Image */}
-                <div className="shrink-0">
-                  <img
-                    src={listing.images[0] || "/placeholder-house.jpg"}
-                    alt={listing.name}
-                    className="w-24 h-24 rounded-lg object-cover"
-                  />
+            <div className="w-full mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+              <div>
+                <div className="font-bold text-indigo-600">
+                  {userListings.length}
                 </div>
+                <div className="text-gray-500">Listings</div>
+              </div>
+              <div>
+                <div className="font-bold text-indigo-600">—</div>
+                <div className="text-gray-500">Favorites</div>
+              </div>
+              <div>
+                <div className="font-bold text-indigo-600">—</div>
+                <div className="text-gray-500">Views</div>
+              </div>
+            </div>
+          </div>
 
-                {/* Content */}
-                <div className="flex-1">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold text-gray-800 truncate">
-                      {listing.name}
-                    </h3>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        listing.type === "rent"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-green-100 text-green-800"
-                      }`}
-                    >
-                      {listing.type === "rent" ? "For Rent" : "For Sale"}
-                    </span>
-                  </div>
+          <div className="mt-4 flex flex-col gap-3">
+            <button
+              onClick={() => setShowEdit((s) => !s)}
+              className="w-full px-4 py-2 bg-black/4 text-black border border-black rounded-md ">
+              {showEdit ? "Close Edit" : "Edit Profile"}
+            </button>
 
-                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                    📍 {listing.address}
-                  </p>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                    <span>
-                      🛏️ {listing.bedrooms} bed{listing.bedrooms > 1 ? "s" : ""}
-                    </span>
-                    <span>
-                      🚿 {listing.bathrooms} bath
-                      {listing.bathrooms > 1 ? "s" : ""}
-                    </span>
+            <button
+              onClick={handleShowListings}
+              className="w-full px-4 py-2 border rounded-md hover:bg-gray-50"
+            >
+              {loadingListings ? "Loading..." : "Show My Listings"}
+            </button>
 
-                    {listing.parking && <span>🚗 Parking</span>}
-                    {listing.furnished && <span>🪑 Furnished</span>}
+            <button
+              onClick={handleSignOut}
+              className="w-full px-4 py-2 text-sm text-red-600 border rounded-md hover:bg-red-50"
+            >
+              Sign Out
+            </button>
 
-                    {/* Area (optional) */}
-                    {listing.area !== undefined &&
-                      listing.area !== null &&
-                      listing.area !== "" && <span>📐 {listing.area} m²</span>}
-                  </div>
+            <button
+              onClick={handleDeleteAccount}
+              className="w-full px-4 py-2 text-sm text-white bg-red-600 rounded-md hover:bg-red-700"
+            >
+              Delete Account
+            </button>
+          </div>
 
-                  <div className="flex justify-between items-center mt-2">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => navigate(`/edit-listing/${listing._id}`)}
-                        className="bg-transparent text-blue-600 border border-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-600 hover:text-white transition-colors"
+          {/* Edit form (collapsible) */}
+          {showEdit && (
+            <form className="mt-4 space-y-3" onSubmit={handleUpdateProfile}>
+              <input
+                type="text"
+                id="username"
+                placeholder={currentUser?.username || "Username"}
+                value={formData.username}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-md"
+              />
+              <input
+                type="text"
+                id="address"
+                placeholder={currentUser?.address || "Address (optional)"}
+                value={formData.address}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-md"
+              />
+              <input
+                type="tel"
+                id="phone"
+                placeholder={currentUser?.phone || "Phone (optional)"}
+                value={formData.phone}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-md"
+              />
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="flex-1 px-3 py-2  border border-indigo-600 text-indigo-600 rounded-md bg-indigo-50"
+                >
+                  {uploading ? "Saving..." : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEdit(false);
+                    setFile(null);
+                  }}
+                  className="flex-1 px-3 py-2 bg-black/5 border rounded-md"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </aside>
+
+        {/* Listings / Dashboard section */}
+        <section className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">My Listings</h2>
+            <div className="text-sm text-gray-500">
+              {loadingListings
+                ? "Loading..."
+                : `${userListings.length} item(s)`}
+            </div>
+          </div>
+
+          {loadingListings && (
+            <div className="p-6 bg-white rounded-lg shadow text-center">
+              Loading listings...
+            </div>
+          )}
+
+          {!loadingListings && userListings.length === 0 && (
+            <div className="p-6 bg-white rounded-lg shadow text-center">
+              <p className="text-gray-600">You have no listings yet.</p>
+              <Link
+                to="/create-house"
+                className="inline-block mt-4 px-4 py-2 bg-green-600 text-white rounded-md"
+              >
+                Create your first listing
+              </Link>
+            </div>
+          )}
+
+          {!loadingListings && userListings.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {userListings.map((listing) => (
+                <div
+                  key={listing._id}
+                  className="bg-white rounded-lg shadow hover:shadow-md transition p-4 flex gap-4"
+                >
+                  <img
+                    src={listing.images?.[0] || "/placeholder-house.jpg"}
+                    alt={listing.name}
+                    className="w-28 h-20 rounded-md object-cover shrink-0"
+                  />
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex justify-between items-start">
+                      <div className="font-semibold text-gray-800 truncate">
+                        {listing.name}
+                      </div>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          listing.type === "rent"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-green-100 text-green-800"
+                        }`}
                       >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => deleteListing(listing._id)}
-                        className="bg-transparent text-red-800 border border-red-800 px-3 py-1 rounded text-sm hover:bg-red-600 hover:text-white transition-colors"
-                      >
-                        Delete
-                      </button>
+                        {listing.type === "rent" ? "For Rent" : "For Sale"}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1 line-clamp-2">
+                      📍 {listing.address}
+                    </div>
+
+                    <div className="mt-auto flex items-center justify-between pt-2">
+                      <div className="text-xs text-gray-500">
+                        🛏 {listing.bedrooms} • 🚿 {listing.bathrooms}{" "}
+                        {listing.area !== undefined &&
+                          listing.area !== null &&
+                          listing.area !== "" && <>• 📐 {listing.area} m²</>}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() =>
+                            navigate(`/edit-listing/${listing._id}`)
+                          }
+                          className="px-2 py-1 text-xs border rounded text-blue-600 hover:bg-blue-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteListing(listing._id)}
+                          className="px-2 py-1 text-xs border rounded text-red-600 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : (
-        <p>No listings found.</p>
-      )}
+          )}
+        </section>
+      </div>
+
       <ToastContainer />
     </div>
   );
