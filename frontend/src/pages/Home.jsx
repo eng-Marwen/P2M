@@ -29,7 +29,7 @@ const Card = ({ listing }) => {
         {listing?.offer && (
           <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-red-600 text-white text-xs font-semibold shadow">
             <FaTag className="w-3 h-3" />
-            <span >
+            <span>
               {discountPercent ? `${discountPercent}% OFF` : "Special Offer"}
             </span>
           </span>
@@ -160,17 +160,34 @@ const Home = () => {
 
           <div className="order-first lg:order-last">
             <div className="w-full rounded-2xl overflow-hidden shadow-lg bg-white">
-              <img
-                src={offerListings?.[0]?.images?.[0] || placeholder}
-                alt="Hero"
-                className="w-full h-64 sm:h-80 object-cover"
-              />
+              <div className="relative w-full h-64 sm:h-80 bg-gray-100">
+                {offerListings?.[0]?.offer && (
+                  <span className="absolute top-4 left-4 z-30 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600 text-white text-sm font-semibold shadow">
+                    <FaTag className="w-4 h-4" />
+                    {offerListings?.[0]?.discountedPrice > 0 &&
+                    offerListings?.[0]?.regularPrice
+                      ? `${Math.round(
+                          ((offerListings[0].regularPrice -
+                            offerListings[0].discountedPrice) /
+                            offerListings[0].regularPrice) *
+                            100
+                        )}% OFF`
+                      : "Special Offer"}
+                  </span>
+                )}
+                <img
+                  src={offerListings?.[0]?.images?.[0] || placeholder}
+                  alt="Hero"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <div className="p-4">
                 <div className="font-semibold text-slate-800">
                   Featured: {offerListings?.[0]?.name || "Sea view apartment"}
                 </div>
                 <div className="text-sm text-slate-500">
-                  Comfortable, modern and close to the beach.
+                  {offerListings?.[0]?.description ||
+                    "A beautiful apartment near the beach."}
                 </div>
               </div>
             </div>

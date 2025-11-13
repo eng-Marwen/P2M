@@ -12,7 +12,7 @@ import axios from 'axios';
 import CreateHouse from "./pages/CreateHouse";
 import Listing from "./pages/Listing";
 import Search from "./pages/Search";
-
+import ContactUs from "./pages/ContactUs";
 
 // Set default config for all axios requests
 axios.defaults.withCredentials = true;
@@ -27,6 +27,7 @@ function App() {
         <Route path="/sign-in" element={<SignIn />} />
         <Route path="/sign-up" element={<SignUp />} />
         <Route path="/listing/:id" element={<Listing />} />
+        <Route path="/contact" element={<ContactUs />} />
         <Route element={<PrivateRoute />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/create-house" element={<CreateHouse />} />

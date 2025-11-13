@@ -35,7 +35,10 @@ const Header = () => {
         <div className="flex items-center justify-between h-16 md:h-18">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img src="https://github.com/eng-Marwen/images/blob/main/logoSamsar.png?raw=true" className="w-15  rounded-lg" />
+            <img
+              src="https://github.com/eng-Marwen/images/blob/main/logoSamsar.png?raw=true"
+              className="w-15  rounded-lg"
+            />
             <div className="hidden sm:flex flex-col leading-tight">
               <span className="text-xl font-semibold text-shadow-black">
                 Samsar
@@ -132,6 +135,13 @@ const Header = () => {
             </Link>
 
             <Link
+              to="/contact"
+              className="text-sm text-black hover:text-slate-800 hover:font-semibold hover:underline"
+            >
+              Contact
+            </Link>
+
+            <Link
               to="/create-house"
               className="px-3 py-1.5 rounded-md text-sm bg-green-50 text-shadow-black-600 border border-black "
             >
@@ -177,7 +187,7 @@ const Header = () => {
               />
               <button
                 type="submit"
-                className="px-3 py-2 rounded-lg bg-rose-500 text-white"
+                className="px-3 py-2 rounded-lg bg-gray-400 hover:bg-gray-600 text-white"
               >
                 Search
               </button>
@@ -188,30 +198,52 @@ const Header = () => {
             <Link
               to="/"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-md text-slate-700 hover:bg-gray-100"
+              className="px-3 py-2 rounded-md text-sm text-black hover:text-slate-800 hover:font-semibold hover:underline"
             >
               Home
             </Link>
             <Link
               to="/about"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-md text-slate-700 hover:bg-gray-100"
+              className="px-3 py-2 rounded-md text-sm text-black hover:text-slate-800 hover:font-semibold hover:underline"
             >
               About
             </Link>
             <Link
+              to="/contact"
+              onClick={() => setMobileOpen(false)}
+              className="px-3 py-2 rounded-md text-sm text-black hover:text-slate-800 hover:font-semibold hover:underline"
+            >
+              Contact
+            </Link>
+            <Link
               to="/create-house"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-md text-rose-600 bg-rose-50 hover:bg-rose-100"
+              className="px-3 py-2 rounded-md text-sm bg-green-50 text-black border border-black hover:bg-green-100 hover:font-semibold"
             >
               Create Listing
             </Link>
             <Link
               to={currentUser ? "/profile" : "/sign-in"}
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-md text-slate-700 hover:bg-gray-100"
+              className="px-3 py-2 rounded-md text-sm"
             >
-              {currentUser ? "My Profile" : "Sign In"}
+              {currentUser ? (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={currentUser.avatar || "/placeholder-profile.png"}
+                    alt={currentUser.username || "profile"}
+                    className="w-9 h-9 rounded-full object-cover border-2 border-gray-100"
+                  />
+                  <span className="text-black hover:text-slate-800 hover:font-semibold hover:underline">
+                    My Profile
+                  </span>
+                </div>
+              ) : (
+                <button className="w-full text-sm px-3 py-1.5 rounded-md border border-black text-black hover:bg-gray-100 hover:font-semibold">
+                  Sign In
+                </button>
+              )}
             </Link>
           </div>
         </div>
