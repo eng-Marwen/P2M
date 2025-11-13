@@ -43,10 +43,10 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 via-white to-slate-50 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-b from-slate-50 via-white to-slate-50 px-4 py-12">
       <div className="w-full max-w-xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden grid grid-cols-1 md:grid-cols-2">
         {/* Visual (left) */}
-        <div className="hidden md:flex flex-col items-center justify-center p-8 bg-gradient-to-b from-rose-50 via-indigo-50 to-sky-50">
+        <div className="hidden md:flex flex-col items-center justify-center p-8 bg-linear-to-b from-rose-50 via-indigo-50 to-sky-50">
           <h2 className="text-2xl font-extrabold text-rose-700 mb-2">
             Welcome back!
           </h2>

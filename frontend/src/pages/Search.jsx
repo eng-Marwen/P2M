@@ -412,6 +412,7 @@ const Search = () => {
           </section>
         </div>
       </div>
+      {/* TODO: add show more less */}
 
       <ToastContainer />
     </div>

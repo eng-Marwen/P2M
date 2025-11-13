@@ -110,7 +110,7 @@ const Home = () => {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 px-4 py-12">
+    <main className="min-h-screen bg-linear-to-b from-slate-50 via-white to-slate-50 px-4 py-12">
       <div className="max-w-7xl mx-auto">
         {/* Hero */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center mb-12">
@@ -227,7 +227,7 @@ const Home = () => {
 
         {/* CTA */}
         <section className="mb-12">
-          <div className="rounded-xl bg-gradient-to-r from-slate-900 to-black text-white p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="rounded-xl bg-linear-to-r from-slate-900 to-black text-white p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-bold">
                 Ready to find your new home?
