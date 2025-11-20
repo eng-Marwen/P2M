@@ -7,6 +7,8 @@ import { signInSuccess, signOut } from "../app/user/userSlice.js";
 import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper.js";
 
+//TODO: add new password and current one for updating 
+
 const Profile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
