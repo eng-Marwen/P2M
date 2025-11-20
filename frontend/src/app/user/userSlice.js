@@ -16,6 +16,7 @@ export const userSlice = createSlice({
             state.error = null;
         },
         signInFailure: (state, action) => {
+            state.currentUser = null;
             state.error = action.payload;
             state.load = false;
         },
