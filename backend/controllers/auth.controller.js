@@ -150,13 +150,13 @@ export const forgotPassword = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
     if (!user) throw new Error("invalid email");
-    const resetPasswordToken = crypto.randomBytes(10).toString("hex");
+    const resetPasswordToken = crypto.randomBytes(10).toString("hex");//otp code
     const resetPasswordTokenExpiresAt = Date.now() + 15 * 60 * 1000; //15min
 
     user.resetPasswordToken = resetPasswordToken;
     user.resetPasswordTokenExpiresAt = resetPasswordTokenExpiresAt;
     await user.save();
-
+    //TODO: send email reset password otp code
     await sendLinkForResettingPwd(resetPasswordToken, user.email);
     res.status(200).json({
       status: "success",
@@ -170,9 +170,10 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
+//TODO:verif code
 export const resetPassword = async (req, res) => {
   try {
-    const token = req.query.token;
+    const otpCode = req.body.code;
     let { newPassword } = req.body;
     if (!token || !newPassword)
       throw new Error("missing token or the new password");
@@ -196,6 +197,7 @@ export const resetPassword = async (req, res) => {
     });
   }
 };
+//TODO:update password controller req.body password confirm new password
 
 export const checkAuth = async (req, res) => {
   try {

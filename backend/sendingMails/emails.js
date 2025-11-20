@@ -69,3 +69,4 @@ export const sendResetPwdSuccessfullyMail = async (email) => {
     );
   }
 };
+//TODO; send reset password email with otp code

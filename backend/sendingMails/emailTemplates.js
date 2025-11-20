@@ -129,3 +129,5 @@ export const PASSWORD_RESET_SUCCESS_TEMPLATE = `
 </html>
 `;
 
+//TODO: add reset password email with otp code template
+
