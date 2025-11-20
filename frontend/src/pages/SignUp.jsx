@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { signInFailure, signInSuccess } from "../app/user/userSlice.js";
+import { signInFailure } from "../app/user/userSlice.js";
 import OAuth from "../components/OAuth.jsx";
 import { showToast } from "../popups/tostHelper.js";
 
@@ -39,19 +39,17 @@ const SignUp = () => {
     e.preventDefault();
     setLoad(true);
     try {
-      // combine prefix with phone before sending
       const payload = {
         ...formData,
         phone: formData.phone ? `${phonePrefix}${formData.phone}` : "",
       };
 
-      const response = await axios.post(
-        "http://localhost:4000/api/auth/signup",
-        payload
-      );
-      showToast("User created!", "success");
-      dispatch(signInSuccess(response.data.data));
-      setTimeout(() => navigate("/"), 1200);
+      await axios.post("http://localhost:4000/api/auth/signup", payload);
+      showToast("OTP code sent to your mail address!", "success");
+      
+        // dispatch(signInSuccess(response.data.data));
+      
+      setTimeout(() => navigate("/verify-email"), 1200);
     } catch (error) {
       dispatch(signInFailure("Signup failed"));
       const message =
@@ -210,7 +208,9 @@ const SignUp = () => {
             <div className="pt-1">
               <div className="flex items-center justify-center gap-3">
                 <span className="h-px w-20 bg-gray-400" />
-                <span className=" text-black  text-[14px] text-nowrap">or continue with</span>
+                <span className=" text-black  text-[14px] text-nowrap">
+                  or continue with
+                </span>
                 <span className="h-px w-20 bg-gray-400" />
               </div>
               <div className="mt-3 ">
@@ -224,7 +224,10 @@ const SignUp = () => {
                 Terms
               </Link>{" "}
               &{" "}
-              <Link to="/privacy" className="text-black font-semibold underline">
+              <Link
+                to="/privacy"
+                className="text-black font-semibold underline"
+              >
                 Privacy
               </Link>
               .
@@ -233,10 +236,7 @@ const SignUp = () => {
 
           <div className="mt-6 text-center text-sm">
             <span className="text-slate-600">Already have an account? </span>
-            <Link
-              to="/sign-in"
-              className="text-black  font-semibold underline"
-            >
+            <Link to="/sign-in" className="text-black  font-semibold underline">
               Sign in
             </Link>
           </div>
