@@ -1,9 +1,10 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { User } from "../models/user.model.js";
-import House from "../models/house.model.js"
+import House from "../models/house.model.js";
+import jwt from "jsonwebtoken";
 import {
-  sendLinkForResettingPwd,
+  sendResetPasswordOtpEmail,
   sendResetPwdSuccessfullyMail,
   sendVerificatinMail,
   sendWemcomeEmail,
@@ -148,47 +149,147 @@ export const logout = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+    if (!email) throw new Error("email is required");
     const user = await User.findOne({ email });
-    if (!user) throw new Error("invalid email");
-    const resetPasswordToken = crypto.randomBytes(10).toString("hex");//otp code
-    const resetPasswordTokenExpiresAt = Date.now() + 15 * 60 * 1000; //15min
+    // Always respond 200 to avoid exposing whether email exists.
+    // If user exists, create OTP and send email. If not, just return success.
+    if (!user) {
+      return res.status(200).json({
+        status: "success",
+        message: "If this email exists, a reset code has been sent.",
+      });
+    }
+    // Create a 6-digit numeric OTP as a string
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // e.g. "483721"
+    // Hash the OTP before storing (so DB doesn't contain raw codes)
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+    const resetPasswordTokenExpiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
 
-    user.resetPasswordToken = resetPasswordToken;
+    user.resetPasswordToken = hashedOtp;
     user.resetPasswordTokenExpiresAt = resetPasswordTokenExpiresAt;
+
     await user.save();
     //TODO: send email reset password otp code
-    await sendLinkForResettingPwd(resetPasswordToken, user.email);
+    await sendResetPasswordOtpEmail(otp, user.email); // function will include OTP in email
+
     res.status(200).json({
       status: "success",
-      message: "verification mail sent successfully",
+      message: "If this email exists, a reset code has been sent.",
     });
   } catch (error) {
-    res.status(400).json({
+    // In case of server error, respond 500
+    console.error("forgotPassword error:", error);
+    res.status(500).json({
       status: "failed",
-      message: error.message,
+      message: error.message || "Server error",
     });
   }
 };
 
 //TODO:verif code
-export const resetPassword = async (req, res) => {
+export const verifyResetOtp = async (req, res) => {
   try {
-    const otpCode = req.body.code;
-    let { newPassword } = req.body;
-    if (!token || !newPassword)
-      throw new Error("missing token or the new password");
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordTokenExpiresAt: { $gt: Date.now() },
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Email and OTP are required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Security: do not reveal email existence
+      return res.status(400).json({
+        status: "fail",
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    // Hash OTP received from user
+    const hashedOtp = crypto
+      .createHash("sha256")
+      .update(String(otp))
+      .digest("hex");
+
+    // Compare hashed OTP with DB
+    if (
+      user.resetPasswordToken !== hashedOtp ||
+      user.resetPasswordTokenExpiresAt < Date.now()
+    ) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    // OTP valid → issue a short-lived token (10 minutes)
+    const tempResetToken = jwt.sign(
+      { userId: user._id },
+      process.env.SECRET_KEY,
+      { expiresIn: "10m" }
+    );
+
+    res.cookie("tempResetToken", tempResetToken, {
+      httpOnly: true,
+      secure: false, // MUST be false on localhost
+      sameSite: "Lax",
+      maxAge: 10 * 60 * 1000, // 10 minutes
     });
-    if (!user) throw new Error("Invalid or expired token");
-    newPassword = await bcrypt.hash(newPassword, 10);
-    user.password = newPassword;
-    await user.save();
-    await sendResetPwdSuccessfullyMail(user.email);
+
     res.status(200).json({
       status: "success",
-      message: "password updated successfully",
+      message: "OTP verified successfully",
+    });
+
+  } catch (error) {
+    console.error("verifyResetOtp error:", error);
+    res.status(500).json({
+      status: "fail",
+      message: error.message || "Server error",
+    });
+  }
+};
+export const resetPassword = async (req, res) => {
+  try {
+    const tempResetToken = req.cookies.tempResetToken;
+    const { newPassword, confirmPassword } = req.body;
+
+    if (!tempResetToken) throw new Error("Missing reset token");
+
+    if (!newPassword || !confirmPassword)
+      throw new Error("Both passwords are required");
+    if (newPassword !== confirmPassword)
+      throw new Error("Passwords do not match");
+
+    // Verify the temporary token
+    const decoded = jwt.verify(tempResetToken, process.env.SECRET_KEY);
+
+    // Find user
+    const user = await User.findById(decoded.userId);
+    if (!user) throw new Error("User not found");
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+
+    // Cleanup reset fields just in case
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpiresAt = undefined;
+
+    await user.save();
+    // ✅ CLEAR COOKIE
+    res.clearCookie("tempResetToken", {
+      httpOnly: true,
+      sameSite: "lax",
+    });
+    // ✅ Send success email
+    await sendResetPwdSuccessfullyMail(user.email);
+
+    res.status(200).json({
+      status: "success",
+      message: "Password updated successfully",
     });
   } catch (error) {
     res.status(400).json({
@@ -197,6 +298,7 @@ export const resetPassword = async (req, res) => {
     });
   }
 };
+
 //TODO:update password controller req.body password confirm new password
 
 export const checkAuth = async (req, res) => {
@@ -273,7 +375,8 @@ export const deleteAccount = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.userId;
-    const { username, oldPassword, newPassword, avatar, address, phone } = req.body;
+    const { username, oldPassword, newPassword, avatar, address, phone } =
+      req.body;
 
     // Get the current user
     const user = await User.findById(userId);
@@ -288,18 +391,18 @@ export const updateProfile = async (req, res) => {
       updateData.username = username;
     }
 
-// Update avatar if provided
-if (avatar) {
-  updateData.avatar = avatar;
-}
+    // Update avatar if provided
+    if (avatar) {
+      updateData.avatar = avatar;
+    }
 
-// Update address / phone if provided
-if (address !== undefined) {
-  updateData.address = address;
-}
-if (phone !== undefined) {
-  updateData.phone = phone;
-}
+    // Update address / phone if provided
+    if (address !== undefined) {
+      updateData.address = address;
+    }
+    if (phone !== undefined) {
+      updateData.phone = phone;
+    }
 
     // Handle password update
     if (newPassword) {
@@ -340,10 +443,13 @@ if (phone !== undefined) {
   }
 };
 
-export const getHouseOwner= async (req, res) => {
+export const getHouseOwner = async (req, res) => {
   try {
     const houseId = req.params.id;
-    const house = await House.findById(houseId).populate('userRef', '-password');
+    const house = await House.findById(houseId).populate(
+      "userRef",
+      "-password"
+    );
     if (!house) {
       return res.status(404).json({
         status: "fail",
@@ -360,4 +466,4 @@ export const getHouseOwner= async (req, res) => {
       message: error.message,
     });
   }
-}
+};

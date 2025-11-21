@@ -10,7 +10,8 @@ import {
   google,
   deleteAccount,
   updateProfile,
-  getHouseOwner
+  getHouseOwner,
+  verifyResetOtp
 } from "../controllers/auth.controller.js";
 import { verifyToken } from "../middlewares/verifyToken.js";
 const router = express.Router();
@@ -21,6 +22,7 @@ router.post("/logout", logout);
 router.delete("/delete", verifyToken, deleteAccount);
 router.post("/verify-email", verifyMail);
 router.post("/forgot-password", forgotPassword);
+router.post("/verify-reset-otp", verifyResetOtp);   
 router.post("/reset-password", resetPassword);
 router.get("/check-auth", verifyToken, checkAuth); //for checking of the auth of the user
 router.post("/google", google); // OAuth route

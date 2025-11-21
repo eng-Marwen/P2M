@@ -1,6 +1,6 @@
 import {
   VERIFICATION_EMAIL_TEMPLATE,
-  PASSWORD_RESET_REQUEST_TEMPLATE,
+  PASSWORD_RESET_OTP_TEMPLATE,
   WELCOME_EMAIL_TEMPLATE,
   PASSWORD_RESET_SUCCESS_TEMPLATE,
 } from "./emailTemplates.js";
@@ -37,23 +37,21 @@ export const sendWemcomeEmail = async (email, name) => {
     throw new Error("error sending welcome mail:" + error.message);
   }
 };
-export const sendLinkForResettingPwd = async (token, email) => {
-  const resetUrl = "http://localhost/api/auth/reset-password?token=" + token;
-  const mailOptions = {
-    from: `"${sender.name}" <${sender.email}>`,
-    to: email,
-    subject: "Forgot Password",
-    html: PASSWORD_RESET_REQUEST_TEMPLATE.replace("{resetURL}", resetUrl),
-  };
-
+export const sendResetPasswordOtpEmail = async (otp,email) => {
   try {
-    const response = await sendMail.sendMail(mailOptions);
-    console.log("Email is sent successfully to " + email, response.response);
+    const response = await sendMail.sendMail({
+      from: `"${sender.name}" <${sender.email}>`,
+      to: email,
+      subject: "Your Password Reset OTP",
+      html: PASSWORD_RESET_OTP_TEMPLATE.replace("{otpCode}", otp),
+    });
+    console.log("Reset password OTP email sent successfully", response);
   } catch (error) {
-    console.log(" Error sending reset password email:", error);
-    throw new Error("Error sending reset password email: " + error.message);
+    console.log("Error sending reset password OTP email:", error);
+    throw new Error("Error sending reset password OTP email: " + error.message);
   }
 };
+
 export const sendResetPwdSuccessfullyMail = async (email) => {
   try {
     const mailOptions = {
