@@ -10,40 +10,63 @@ const VerifyResetOtp = () => {
   const inputRefs = useRef([]);
   const navigate = useNavigate();
 
-const email = sessionStorage.getItem("resetEmail");
-  console.log("Email from location state:", email);
-  // Redirect if email is missing (user navigated directly)
-useEffect(() => {
-  if (!email) {
-    showToast("Session expired. Please start over.", "error");
-    navigate("/forgot-password");
-  }
-}, [email, navigate]);
+  // Get email from sessionStorage
+  const email = sessionStorage.getItem("resetEmail");
+  console.log("Email from sessionStorage:", email);
 
+  // Redirect if email is missing (session expired)
+  useEffect(() => {
+    if (!email) {
+      showToast("Session expired. Please start over.", "error");
+      navigate("/forgot-password");
+    }
+  }, [email, navigate]);
 
-  // Handle input changes
+  // Handle input changes (typing)
   const handleChange = (index, value) => {
     const newCode = [...code];
 
-    // Handle paste
     if (value.length > 1) {
-      const pastedCode = value.slice(0, 6).split("");
-      for (let i = 0; i < 6; i++) newCode[i] = pastedCode[i] || "";
-      setCode(newCode);
+      // Ignore multiple characters in normal typing; paste is handled separately
+      return;
+    }
 
-      const lastFilled = newCode.findLastIndex((d) => d !== "");
-      const focusIndex = lastFilled < 5 ? lastFilled + 1 : 5;
-      inputRefs.current[focusIndex]?.focus();
-    } else {
-      newCode[index] = value;
-      setCode(newCode);
-      if (value && index < 5) inputRefs.current[index + 1]?.focus();
+    newCode[index] = value;
+    setCode(newCode);
+
+    // Move focus to next input if value entered
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
+  // Handle backspace navigation
   const handleKeyDown = (index, e) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  // Handle paste event
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, ""); // keep digits only
+    const pastedCode = pastedData.slice(0, 6).split("");
+    const newCode = [...code];
+
+    for (let i = 0; i < 6; i++) {
+      newCode[i] = pastedCode[i] || "";
+      if (inputRefs.current[i]) {
+        inputRefs.current[i].value = newCode[i];
+      }
+    }
+
+    setCode(newCode);
+
+    // Focus last filled input
+    const lastFilledIndex = pastedCode.length - 1;
+    if (inputRefs.current[lastFilledIndex]) {
+      inputRefs.current[lastFilledIndex].focus();
     }
   };
 
@@ -52,19 +75,20 @@ useEffect(() => {
     e.preventDefault();
     const verificationCode = code.join("");
     console.log("Verifying OTP for email:", email, "Code:", verificationCode);
+
     try {
       await axios.post(
         "/api/auth/verify-reset-otp",
         { email, otp: verificationCode },
-        { withCredentials: true } // allow backend to set cookie
+        { withCredentials: true } // backend cookie support
       );
-      console.log("OTP verified successfully");
+
       showToast("OTP verified successfully!", "success");
 
+      // Redirect to ResetPassword page
       setTimeout(() => {
         navigate("/reset-password");
       }, 1000);
-      console.log("Navigating to Reset Password page");
     } catch (err) {
       const message =
         err.response?.data?.message ||
@@ -97,6 +121,7 @@ useEffect(() => {
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
+                  onPaste={(e) => handlePaste(e)}
                   className="w-12 h-12 text-center text-2xl font-bold bg-slate-500 text-white border-2 border-slate-700 rounded-lg focus:border-emerald-600 focus:outline-none"
                 />
               ))}
