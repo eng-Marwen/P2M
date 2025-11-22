@@ -37,7 +37,7 @@ const ResetPassword = () => {
       // ✅ Clear email from sessionStorage
       sessionStorage.removeItem("resetEmail");
       showToast(
-        "Password updated successfully! Redirecting to Sign In...",
+        "Password updated successfully! Please sign in.",
         "success"
       );
 
