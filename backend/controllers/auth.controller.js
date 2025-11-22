@@ -150,17 +150,17 @@ export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) throw new Error("email is required");
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).lean();
     // Always respond 200 to avoid exposing whether email exists.
     // If user exists, create OTP and send email. If not, just return success.
     if (!user) {
-      return res.status(200).json({
-        status: "success",
-        message: "If this email exists, a reset code has been sent.",
+      return res.status(404).json({
+        status: "fail",
+        message: "User not found",
       });
     }
     // Create a 6-digit numeric OTP as a string
-    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // e.g. "483721"
+    const otp = Math.floor(100000 + Math.random() * 900000); // e
     // Hash the OTP before storing (so DB doesn't contain raw codes)
     const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
     const resetPasswordTokenExpiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
@@ -174,7 +174,7 @@ export const forgotPassword = async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      message: "If this email exists, a reset code has been sent.",
+      message: "OTP sent successfully.",
     });
   } catch (error) {
     // In case of server error, respond 500
