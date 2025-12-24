@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FaBars, FaSearch, FaTimes } from "react-icons/fa";
 import { useSelector } from "react-redux";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -121,32 +121,50 @@ const Header = () => {
 
           {/* Desktop nav */}
           <nav className="hidden sm:flex items-center gap-6">
-            <Link
+            <NavLink
               to="/"
-              className="text-sm text-black  hover:text-slate-800 hover:font-semibold hover:underline"
+              className={({ isActive }) =>
+                `text-sm hover:text-slate-800 hover:font-semibold hover:underline ${
+                  isActive ? "text-indigo-600 font-semibold" : "text-black"
+                }`
+              }
             >
               Home
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink
               to="/about"
-              className="text-sm text-black  hover:text-slate-800 hover:font-semibold hover:underline"
+              className={({ isActive }) =>
+                `text-sm hover:text-slate-800 hover:font-semibold hover:underline ${
+                  isActive ? "text-indigo-600 font-semibold" : "text-black"
+                }`
+              }
             >
               About
-            </Link>
+            </NavLink>
 
-            <Link
+            <NavLink
               to="/contact"
-              className="text-sm text-black hover:text-slate-800 hover:font-semibold hover:underline"
+              className={({ isActive }) =>
+                `text-sm hover:text-slate-800 hover:font-semibold hover:underline ${
+                  isActive ? "text-indigo-600 font-semibold" : "text-black"
+                }`
+              }
             >
               Contact
-            </Link>
+            </NavLink>
 
-            <Link
+            <NavLink
               to="/create-house"
-              className="px-3 py-1.5 rounded-md text-sm bg-green-50 text-shadow-black-600 border border-black "
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-md text-sm border border-black ${
+                  isActive
+                    ? "bg-green-200 text-black font-semibold"
+                    : "bg-green-50 text-black"
+                }`
+              }
             >
               Create Listing
-            </Link>
+            </NavLink>
 
             <Link
               to={currentUser ? "/profile" : "/sign-in"}
@@ -195,34 +213,52 @@ const Header = () => {
           </form>
 
           <div className="flex flex-col gap-2 px-2 pb-4">
-            <Link
+            <NavLink
               to="/"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-md text-sm text-black hover:text-slate-800 hover:font-semibold hover:underline"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-md text-sm hover:text-slate-800 hover:font-semibold hover:underline ${
+                  isActive ? "text-indigo-600 font-semibold" : "text-black"
+                }`
+              }
             >
               Home
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink
               to="/about"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-md text-sm text-black hover:text-slate-800 hover:font-semibold hover:underline"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-md text-sm hover:text-slate-800 hover:font-semibold hover:underline ${
+                  isActive ? "text-indigo-600 font-semibold" : "text-black"
+                }`
+              }
             >
               About
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink
               to="/contact"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-md text-sm text-black hover:text-slate-800 hover:font-semibold hover:underline"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-md text-sm hover:text-slate-800 hover:font-semibold hover:underline ${
+                  isActive ? "text-indigo-600 font-semibold" : "text-black"
+                }`
+              }
             >
               Contact
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink
               to="/create-house"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-md text-sm bg-green-50 text-black border border-black hover:bg-green-100 hover:font-semibold"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-md text-sm border border-black hover:bg-green-100 hover:font-semibold ${
+                  isActive
+                    ? "bg-green-200 text-black font-semibold"
+                    : "bg-green-50 text-black"
+                }`
+              }
             >
               Create Listing
-            </Link>
+            </NavLink>
             <Link
               to={currentUser ? "/profile" : "/sign-in"}
               onClick={() => setMobileOpen(false)}
