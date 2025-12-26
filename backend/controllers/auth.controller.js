@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { User } from "../models/user.model.js";
-import House from "../models/house.model.js";
 import jwt from "jsonwebtoken";
+import House from "../models/house.model.js";
+import { User } from "../models/user.model.js";
 import {
   sendResetPasswordOtpEmail,
   sendResetPwdSuccessfullyMail,
@@ -150,7 +150,7 @@ export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) throw new Error("email is required");
-    const user = await User.findOne({ email }).lean();
+    const user = await User.findOne({ email });
     // Always respond 200 to avoid exposing whether email exists.
     // If user exists, create OTP and send email. If not, just return success.
     if (!user) {
@@ -162,7 +162,10 @@ export const forgotPassword = async (req, res) => {
     // Create a 6-digit numeric OTP as a string
     const otp = Math.floor(100000 + Math.random() * 900000); // e
     // Hash the OTP before storing (so DB doesn't contain raw codes)
-    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+    const hashedOtp = crypto
+      .createHash("sha256")
+      .update(String(otp))
+      .digest("hex");
     const resetPasswordTokenExpiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
 
     user.resetPasswordToken = hashedOtp;
@@ -242,7 +245,6 @@ export const verifyResetOtp = async (req, res) => {
       status: "success",
       message: "OTP verified successfully",
     });
-
   } catch (error) {
     console.error("verifyResetOtp error:", error);
     res.status(500).json({
