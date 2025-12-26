@@ -328,7 +328,7 @@ export const google = async (req, res) => {
       let password = Math.random().toString(36).slice(-8); // Generate a random 8-character password
       password = await bcrypt.hash(password, 10);
       user = await User.create({
-        username: username.split(" ").join("").toLowerCase(),
+        username: username.toLowerCase(),
         email,
         password,
         avatar,
