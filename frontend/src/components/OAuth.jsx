@@ -11,21 +11,33 @@ const OAuth = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // helper: download remote image URL -> File -> upload to Cloudinary -> return secure_url
   const uploadRemoteImageToCloudinary = async (url) => {
     try {
-      const resp = await fetch(url);
+      console.log("Fetching image from:", url);
+      const resp = await fetch(url, { mode: "cors" });
+
+      if (!resp.ok) {
+        console.error("Failed to fetch image:", resp.status, resp.statusText);
+        return null;
+      }
+
       const blob = await resp.blob();
+      console.log("Blob received, type:", blob.type, "size:", blob.size);
+
       const filename = `avatar_${Date.now()}.${(blob.type || "image/jpeg")
         .split("/")
         .pop()}`;
       const file = new File([blob], filename, {
         type: blob.type || "image/jpeg",
       });
+
+      console.log("Uploading to Cloudinary...");
       const result = await uploadToCloudinary(file, { folder: "avatars" });
+      console.log("Cloudinary upload result:", result);
+
       return result?.secure_url || null;
     } catch (err) {
-      console.error("Cloudinary upload failed:", err);
+      console.error("Cloudinary upload failed:", err.message || err);
       return null;
     }
   };
@@ -38,12 +50,35 @@ const OAuth = () => {
       console.log("OAuth result:", result);
       const user = result.user;
       console.log("OAuth user:", user);
-      // try to upload the google avatar to Cloudinary and use that link
+
       let avatarUrl = user.photoURL || "";
+      console.log("Original avatar URL:", avatarUrl);
+
       if (avatarUrl) {
-        const uploaded = await uploadRemoteImageToCloudinary(avatarUrl);
-        if (uploaded) avatarUrl = uploaded;
+        try {
+          console.log("Attempting to upload avatar to Cloudinary...");
+          const uploaded = await uploadRemoteImageToCloudinary(avatarUrl);
+          if (uploaded) {
+            console.log(
+              "Avatar successfully uploaded to Cloudinary:",
+              uploaded
+            );
+            avatarUrl = uploaded;
+          } else {
+            console.log(
+              "Cloudinary upload returned null, using original Google photo URL"
+            );
+          }
+        } catch (uploadError) {
+          console.error(
+            "Cloudinary upload error, using original Google photo URL:",
+            uploadError
+          );
+          // Keep the original avatarUrl from Google
+        }
       }
+
+      console.log("Final avatar URL to send:", avatarUrl);
 
       const body = {
         username: user.displayName,
