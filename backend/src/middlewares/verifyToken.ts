@@ -28,5 +28,6 @@ export const verifyToken = async (
       status: "fail",
       message: (error as Error).message,
     });
+    return;
   }
 };
