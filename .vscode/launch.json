@@ -2,25 +2,35 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Debug Backend (tsx)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["tsx", "watch", "src/server.ts"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/backend",
+      "skipFiles": ["<node_internals>/**", "node_modules/**"],
+      "restart": true,
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "Debug Backend (nodemon + tsx)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nodemon", "--exec", "tsx", "src/server.ts"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/backend",
+      "skipFiles": ["<node_internals>/**", "node_modules/**"],
+      "restart": true,
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
       "name": "Attach by Process ID",
       "processId": "${command:PickProcess}",
       "request": "attach",
       "skipFiles": ["<node_internals>/**"],
       "type": "node"
-    },
-    {
-      "name": "Launch with nodemon",
-      "type": "node",
-      "request": "launch",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["nodemon", "index.js"],
-      "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}/backend",  // Add this line - sets working directory
-      "env": {
-        "NODE_ENV": "development"
-      },
-      "skipFiles": ["<node_internals>/**"],
-      "restart": true
     }
   ]
 }
