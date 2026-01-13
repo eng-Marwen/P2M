@@ -1,6 +1,15 @@
-import House from "../models/house.model.js";
+import { Request, Response } from "express";
+import House from "../models/house.model";
 
-export const postHouse = async (req, res) => {
+// Extend Request with userId
+interface AuthRequest extends Request {
+  userId?: string;
+}
+
+export const postHouse = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   const houseInfo = req.body || {};
   houseInfo.userRef = req.userId;
 
@@ -35,12 +44,15 @@ export const postHouse = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const updateListingById = async (req, res) => {
+export const updateListingById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const houseId = req.params.id;
   const updatedData = { ...(req.body || {}) };
 
@@ -69,10 +81,11 @@ export const updateListingById = async (req, res) => {
     });
 
     if (!updatedHouse) {
-      return res.status(404).json({
+      res.status(404).json({
         status: "fail",
         message: "HOUSE NOT FOUND",
       });
+      return;
     }
 
     res.status(200).json({
@@ -83,19 +96,23 @@ export const updateListingById = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const getUserHousesByUserId = async (req, res) => {
+export const getUserHousesByUserId = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   try {
     const userId = req.params.id;
     if (req.userId !== userId) {
-      return res.status(403).json({
+      res.status(403).json({
         status: "fail",
         message: "FORBIDDEN: You can only access your own houses",
       });
+      return;
     }
     const userHouses = await House.find({ userRef: userId });
     res.status(200).json({
@@ -106,20 +123,24 @@ export const getUserHousesByUserId = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const getHouseById = async (req, res) => {
+export const getHouseById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const houseId = req.params.id;
     const house = await House.findById(houseId);
     if (!house) {
-      return res.status(404).json({
+      res.status(404).json({
         status: "fail",
         message: "HOUSE NOT FOUND",
       });
+      return;
     }
     res.status(200).json({
       status: "success",
@@ -128,26 +149,31 @@ export const getHouseById = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const deleteHouseById = async (req, res) => {
+export const deleteHouseById = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   try {
     const houseId = req.params.id;
     const houseToDelete = await House.findById(houseId);
     if (!houseToDelete) {
-      return res.status(404).json({
+      res.status(404).json({
         status: "fail",
         message: "HOUSE NOT FOUND",
       });
+      return;
     }
     if (houseToDelete.userRef.toString() !== req.userId) {
-      return res.status(403).json({
+      res.status(403).json({
         status: "fail",
         message: "FORBIDDEN: You can only delete your own houses",
       });
+      return;
     }
     await House.findByIdAndDelete(houseId);
     res.status(200).json({
@@ -157,29 +183,32 @@ export const deleteHouseById = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const getAllHouses = async (req, res) => {
+export const getAllHouses = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const limit = parseInt(req.query.limit) || 9;
-    const pages = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit as string) || 9;
+    const pages = parseInt(req.query.page as string) || 1;
     const skip = (pages - 1) * limit;
     const parkingRaw = req.query.parking;
     const offerRaw = req.query.offer;
     const furnishedRaw = req.query.furnished;
     const typeRaw = req.query.type;
-    const search = req.query.search || "";
-    const sort = req.query.sort || "createdAt";
-    const orderRaw = (req.query.order || "desc").toString().toLowerCase();
+    const search = (req.query.search as string) || "";
+    const sort = (req.query.sort as string) || "createdAt";
+    const orderRaw = ((req.query.order as string) || "desc").toLowerCase();
 
     // parse optional maxPrice query
     const maxPriceRaw = req.query.maxPrice;
 
     // normalize boolean-like query params into Mongo-friendly values
-    const parseBoolValue = (v) => {
+    const parseBoolValue = (v: any) => {
       if (v === undefined || v === "undefined" || v === "all")
         return { $in: [true, false] };
       if (v === "true" || v === "1") return true;
@@ -198,7 +227,7 @@ export const getAllHouses = async (req, res) => {
         : typeRaw;
 
     // build base filter
-    const filter = {
+    const filter: any = {
       name: { $regex: search, $options: "i" },
       type,
       furnished,
@@ -239,7 +268,7 @@ export const getAllHouses = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };

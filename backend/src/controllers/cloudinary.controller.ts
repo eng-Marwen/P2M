@@ -1,6 +1,5 @@
-
 import { v2 as cloudinary } from "cloudinary";
-
+import { Request, Response } from "express";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -8,13 +7,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-
-
-export const deleteImage = async (req, res) => {
+export const deleteImage = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { publicId } = req.body;
 
   if (!publicId) {
-    return res.status(400).json({ message: "Public ID is required" });
+    res.status(400).json({ message: "Public ID is required" });
+    return;
   }
 
   try {
@@ -22,6 +23,11 @@ export const deleteImage = async (req, res) => {
     res.status(200).json({ message: "Image deleted successfully", result });
   } catch (error) {
     console.error("Error deleting image:", error);
-    res.status(500).json({ message: "Error deleting image", error });
+    res
+      .status(500)
+      .json({
+        message: "Error deleting image",
+        error: (error as Error).message,
+      });
   }
 };
