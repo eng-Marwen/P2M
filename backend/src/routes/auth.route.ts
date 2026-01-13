@@ -1,4 +1,4 @@
-import express from "express";
+import express, {Router} from "express";
 import {
   login,
   logout,
@@ -12,9 +12,10 @@ import {
   updateProfile,
   getHouseOwner,
   verifyResetOtp
-} from "../controllers/auth.controller.js";
-import { verifyToken } from "../middlewares/verifyToken.js";
-const router = express.Router();
+} from "../controllers/auth.controller";
+import { verifyToken } from "../middlewares/verifyToken";
+
+const router:Router = express.Router();
 
 router.post("/signup", signup);
 router.post("/signin", login);
@@ -28,4 +29,5 @@ router.get("/check-auth", verifyToken, checkAuth); //for checking of the auth of
 router.post("/google", google); // OAuth route
 router.patch("/update-profile", verifyToken, updateProfile); // Update profile route
 router.get("/houseOwner/:id", getHouseOwner);
+
 export default router;

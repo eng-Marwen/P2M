@@ -1,17 +1,23 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import House from "../models/house.model.js";
-import { User } from "../models/user.model.js";
 import {
   sendResetPasswordOtpEmail,
   sendResetPwdSuccessfullyMail,
   sendVerificatinMail,
   sendWemcomeEmail,
-} from "../sendingMails/emails.js";
-import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
+} from "../mailing-service/emails";
+import House from "../models/house.model";
+import { User } from "../models/user.model";
+import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie";
 
-export const signup = async (req, res) => {
+// Extend Request with userId
+interface AuthRequest extends Request {
+  userId?: string;
+}
+
+export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
     let { email, username, password, address = "", phone = "" } = req.body;
 
@@ -53,24 +59,27 @@ export const signup = async (req, res) => {
         phone,
       });
     }
-    await sendVerificatinMail(user.email, verificationToken);
+    await sendVerificatinMail(user.email, String(verificationToken));
     res.status(201).json({
       status: "success",
       message: "verification email sent successfully",
       data: {
-        ...user._doc,
+        ...user.toObject(),
         password: undefined,
       },
     });
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const verifyMail = async (req, res) => {
+export const verifyMail = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   //1 2 3 6 8 7 form the frontend
   try {
     const { code } = req.body;
@@ -79,22 +88,23 @@ export const verifyMail = async (req, res) => {
       verificationTokenExpiresAt: { $gt: Date.now() },
     });
     if (!user) {
-      return res.status(400).json({
+      res.status(400).json({
         status: "fail",
         message: "invalid or expired verification code",
       });
+      return;
     }
     await sendWemcomeEmail(user.email, user.username);
     user.isVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpiresAt = undefined;
     await user.save();
-    generateTokenAndSetCookie(res, user._id);
+    generateTokenAndSetCookie(res, user._id.toString());
     res.status(200).json({
       status: "success",
       message: "email verified successfully",
       data: {
-        ...user._doc,
+        ...user.toObject(),
         password: undefined,
       },
     });
@@ -103,12 +113,12 @@ export const verifyMail = async (req, res) => {
     console.log("error in send verification mail");
     res.status(404).json({
       status: "failed",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const login = async (req, res) => {
+export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -120,25 +130,25 @@ export const login = async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) throw new Error("invalid password");
     generateTokenAndSetCookie(res, user.id);
-    user.lastLogin = Date.now();
+    user.lastLogin = new Date();
     await user.save();
     res.status(200).json({
       status: "success",
       message: "user logged in successfully",
       data: {
-        ...user._doc,
+        ...user.toObject(),
         password: undefined,
       },
     });
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const logout = async (req, res) => {
+export const logout = async (req: Request, res: Response): Promise<void> => {
   res.clearCookie("auth-token");
   res.status(200).json({
     status: "success",
@@ -146,7 +156,10 @@ export const logout = async (req, res) => {
   });
 };
 
-export const forgotPassword = async (req, res) => {
+export const forgotPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { email } = req.body;
     if (!email) throw new Error("email is required");
@@ -154,10 +167,11 @@ export const forgotPassword = async (req, res) => {
     // Always respond 200 to avoid exposing whether email exists.
     // If user exists, create OTP and send email. If not, just return success.
     if (!user) {
-      return res.status(404).json({
+      res.status(404).json({
         status: "fail",
         message: "User not found",
       });
+      return;
     }
     // Create a 6-digit numeric OTP as a string
     const otp = Math.floor(100000 + Math.random() * 900000); // e
@@ -166,14 +180,14 @@ export const forgotPassword = async (req, res) => {
       .createHash("sha256")
       .update(String(otp))
       .digest("hex");
-    const resetPasswordTokenExpiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+    const resetPasswordTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     user.resetPasswordToken = hashedOtp;
     user.resetPasswordTokenExpiresAt = resetPasswordTokenExpiresAt;
 
     await user.save();
     //TODO: send email reset password otp code
-    await sendResetPasswordOtpEmail(otp, user.email); // function will include OTP in email
+    await sendResetPasswordOtpEmail(String(otp), user.email); // function will include OTP in email
 
     res.status(200).json({
       status: "success",
@@ -184,30 +198,35 @@ export const forgotPassword = async (req, res) => {
     console.error("forgotPassword error:", error);
     res.status(500).json({
       status: "failed",
-      message: error.message || "Server error",
+      message: (error as Error).message || "Server error",
     });
   }
 };
 
 //TODO:verif code
-export const verifyResetOtp = async (req, res) => {
+export const verifyResetOtp = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { email, otp } = req.body;
 
     if (!email || !otp) {
-      return res.status(400).json({
+      res.status(400).json({
         status: "fail",
         message: "Email and OTP are required",
       });
+      return;
     }
 
     const user = await User.findOne({ email });
     if (!user) {
       // Security: do not reveal email existence
-      return res.status(400).json({
+      res.status(400).json({
         status: "fail",
         message: "Invalid or expired OTP",
       });
+      return;
     }
 
     // Hash OTP received from user
@@ -219,25 +238,27 @@ export const verifyResetOtp = async (req, res) => {
     // Compare hashed OTP with DB
     if (
       user.resetPasswordToken !== hashedOtp ||
-      user.resetPasswordTokenExpiresAt < Date.now()
+      !user.resetPasswordTokenExpiresAt ||
+      user.resetPasswordTokenExpiresAt.getTime() < Date.now()
     ) {
-      return res.status(400).json({
+      res.status(400).json({
         status: "fail",
         message: "Invalid or expired OTP",
       });
+      return;
     }
 
     // OTP valid → issue a short-lived token (10 minutes)
     const tempResetToken = jwt.sign(
-      { userId: user._id },
-      process.env.SECRET_KEY,
+      { userId: user._id.toString() },
+      process.env.SECRET_KEY as string,
       { expiresIn: "10m" }
     );
 
     res.cookie("tempResetToken", tempResetToken, {
       httpOnly: true,
       secure: false, // MUST be false on localhost
-      sameSite: "Lax",
+      sameSite: "lax",
       maxAge: 10 * 60 * 1000, // 10 minutes
     });
 
@@ -249,11 +270,14 @@ export const verifyResetOtp = async (req, res) => {
     console.error("verifyResetOtp error:", error);
     res.status(500).json({
       status: "fail",
-      message: error.message || "Server error",
+      message: (error as Error).message || "Server error",
     });
   }
 };
-export const resetPassword = async (req, res) => {
+export const resetPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const tempResetToken = req.cookies.tempResetToken;
     const { newPassword, confirmPassword } = req.body;
@@ -266,7 +290,10 @@ export const resetPassword = async (req, res) => {
       throw new Error("Passwords do not match");
 
     // Verify the temporary token
-    const decoded = jwt.verify(tempResetToken, process.env.SECRET_KEY);
+    const decoded = jwt.verify(
+      tempResetToken,
+      process.env.SECRET_KEY as string
+    ) as { userId: string };
 
     // Find user
     const user = await User.findById(decoded.userId);
@@ -296,14 +323,17 @@ export const resetPassword = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
 //TODO:update password controller req.body password confirm new password
 
-export const checkAuth = async (req, res) => {
+export const checkAuth = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   try {
     const user = await User.findById(req.userId).select("-password");
     if (!user) throw new Error("user not foud");
@@ -314,22 +344,22 @@ export const checkAuth = async (req, res) => {
   } catch (error) {
     res.status(200).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const google = async (req, res) => {
+export const google = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, username, avatar } = req.body;
     // allow optional address/phone from google payload (if any)
     const { address = "", phone = "" } = req.body;
-    let user = await User.findOne({ email }).lean();
+    let user: any = await User.findOne({ email }).lean();
 
     if (!user) {
       let password = Math.random().toString(36).slice(-8); // Generate a random 8-character password
       password = await bcrypt.hash(password, 10);
-      user = await User.create({
+      const newUser = await User.create({
         username: username.toLowerCase(),
         email,
         password,
@@ -338,9 +368,10 @@ export const google = async (req, res) => {
         address,
         phone,
       });
+      user = newUser.toObject();
     }
-    generateTokenAndSetCookie(res, user._id);
-    user = user._doc || user; //in case of new user created
+    if (!user) throw new Error("Failed to create user");
+    generateTokenAndSetCookie(res, user._id.toString());
     res.status(200).json({
       status: "success",
       message: "user logged in with google successfully",
@@ -352,12 +383,15 @@ export const google = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const deleteAccount = async (req, res) => {
+export const deleteAccount = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   try {
     const userId = req.userId;
     await User.findByIdAndDelete(userId);
@@ -369,12 +403,15 @@ export const deleteAccount = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const updateProfile = async (req, res) => {
+export const updateProfile = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   try {
     const userId = req.userId;
     const { username, oldPassword, newPassword, avatar, address, phone } =
@@ -386,7 +423,13 @@ export const updateProfile = async (req, res) => {
       throw new Error("User not found");
     }
 
-    const updateData = {};
+    const updateData: Partial<{
+      username: string;
+      avatar: string;
+      address: string;
+      phone: string;
+      password: string;
+    }> = {};
 
     // Update username if provided
     if (username) {
@@ -440,12 +483,15 @@ export const updateProfile = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };
 
-export const getHouseOwner = async (req, res) => {
+export const getHouseOwner = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const houseId = req.params.id;
     const house = await House.findById(houseId).populate(
@@ -453,10 +499,11 @@ export const getHouseOwner = async (req, res) => {
       "-password"
     );
     if (!house) {
-      return res.status(404).json({
+      res.status(404).json({
         status: "fail",
         message: "HOUSE NOT FOUND",
       });
+      return;
     }
     res.status(200).json({
       status: "success",
@@ -465,7 +512,7 @@ export const getHouseOwner = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 };

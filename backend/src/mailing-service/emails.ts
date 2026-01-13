@@ -1,12 +1,15 @@
 import {
-  VERIFICATION_EMAIL_TEMPLATE,
   PASSWORD_RESET_OTP_TEMPLATE,
-  WELCOME_EMAIL_TEMPLATE,
   PASSWORD_RESET_SUCCESS_TEMPLATE,
+  VERIFICATION_EMAIL_TEMPLATE,
+  WELCOME_EMAIL_TEMPLATE,
 } from "./emailTemplates.js";
 import { sendMail, sender } from "./mail.config.js";
 
-export const sendVerificatinMail = async (email, verificationToken) => {
+export const sendVerificatinMail = async (
+  email: string,
+  verificationToken: string
+): Promise<void> => {
   try {
     const response = await sendMail.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
@@ -23,7 +26,10 @@ export const sendVerificatinMail = async (email, verificationToken) => {
     throw new Error("error sending verification mail" + error);
   }
 };
-export const sendWemcomeEmail = async (email, name) => {
+export const sendWemcomeEmail = async (
+  email: string,
+  name: string
+): Promise<void> => {
   try {
     const response = await sendMail.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
@@ -34,10 +40,13 @@ export const sendWemcomeEmail = async (email, name) => {
     console.log("email is sent successfully", response);
   } catch (error) {
     console.log("error send welcome mail");
-    throw new Error("error sending welcome mail:" + error.message);
+    throw new Error("error sending welcome mail:" + (error as Error).message);
   }
 };
-export const sendResetPasswordOtpEmail = async (otp,email) => {
+export const sendResetPasswordOtpEmail = async (
+  otp: string,
+  email: string
+): Promise<void> => {
   try {
     const response = await sendMail.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
@@ -48,22 +57,27 @@ export const sendResetPasswordOtpEmail = async (otp,email) => {
     console.log("Reset password OTP email sent successfully", response);
   } catch (error) {
     console.log("Error sending reset password OTP email:", error);
-    throw new Error("Error sending reset password OTP email: " + error.message);
+    throw new Error(
+      "Error sending reset password OTP email: " + (error as Error).message
+    );
   }
 };
 
-export const sendResetPwdSuccessfullyMail = async (email) => {
+export const sendResetPwdSuccessfullyMail = async (
+  email: string
+): Promise<void> => {
   try {
     const mailOptions = {
       from: sender.email,
       to: email,
       subject: "Password resetting",
-      html: PASSWORD_RESET_SUCCESS_TEMPLATE
+      html: PASSWORD_RESET_SUCCESS_TEMPLATE,
     };
     const response = await sendMail.sendMail(mailOptions);
   } catch (error) {
     throw new Error(
-      "Error sending reset password successfully email: " + error.message
+      "Error sending reset password successfully email: " +
+        (error as Error).message
     );
   }
 };
