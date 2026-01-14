@@ -216,16 +216,13 @@ const SignUp = () => {
 
             <p className="text-xs text-center text-slate-500">
               By creating an account you agree to our{" "}
-              <Link to="/terms" className="text-black font-semibold underline">
+              <span className="font-semibold text-black hover:underline">
                 Terms
-              </Link>{" "}
-              &{" "}
-              <Link
-                to="/privacy"
-                className="text-black font-semibold underline"
-              >
+              </span> {" "}
+              & {" "}
+              <span className="font-semibold text-black hover:underline">
                 Privacy
-              </Link>
+              </span>
               .
             </p>
           </form>
