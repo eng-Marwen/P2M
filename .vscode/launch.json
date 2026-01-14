@@ -2,18 +2,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Backend (tsx)",
-      "type": "node",
-      "request": "launch",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["tsx", "watch", "src/server.ts"],
-      "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}/backend",
-      "skipFiles": ["<node_internals>/**", "node_modules/**"],
-      "restart": true,
-      "internalConsoleOptions": "neverOpen"
-    },
-    {
       "name": "Debug Backend (nodemon + tsx)",
       "type": "node",
       "request": "launch",
@@ -24,13 +12,6 @@
       "skipFiles": ["<node_internals>/**", "node_modules/**"],
       "restart": true,
       "internalConsoleOptions": "neverOpen"
-    },
-    {
-      "name": "Attach by Process ID",
-      "processId": "${command:PickProcess}",
-      "request": "attach",
-      "skipFiles": ["<node_internals>/**"],
-      "type": "node"
     }
   ]
 }
