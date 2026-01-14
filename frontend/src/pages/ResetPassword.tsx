@@ -1,14 +1,18 @@
-// src/pages/ResetPassword.jsx
+// src/pages/ResetPassword.tsx
 import axios from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { showToast } from "../popups/tostHelper.js";
+import { showToast } from "../popups/tostHelper";
+
+interface ApiResponse {
+  message?: string;
+}
 
 const ResetPassword = () => {
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
   /*
@@ -19,7 +23,7 @@ const ResetPassword = () => {
     if (!tempResetToken) navigate("/forgot-password");
   }, [tempResetToken, navigate]);
 */
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       showToast("Passwords do not match!", "error");
@@ -29,27 +33,34 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      await axios.post(
+      await axios.post<ApiResponse>(
         "/api/auth/reset-password",
         { newPassword, confirmPassword },
         { withCredentials: true }
       );
       // ✅ Clear email from sessionStorage
       sessionStorage.removeItem("resetEmail");
-      showToast(
-        "Password updated successfully! Please sign in.",
-        "success"
-      );
+      showToast("Password updated successfully! Please sign in.", "success");
 
       setTimeout(() => {
         navigate("/sign-in");
       }, 1500);
-    } catch (err) {
-      const message =
-        err.response?.data?.message ||
-        err.response?.data ||
-        err.message ||
-        "Something went wrong";
+    } catch (err: unknown) {
+      let message = "Something went wrong";
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosError = err as {
+          response?: { data?: ApiResponse | string };
+          message?: string;
+        };
+        message =
+          (typeof axiosError.response?.data === "object"
+            ? axiosError.response.data.message
+            : axiosError.response?.data) ||
+          axiosError.message ||
+          message;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
       showToast(message, "error");
     } finally {
       setLoading(false);

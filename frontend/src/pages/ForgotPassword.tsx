@@ -1,21 +1,28 @@
-// src/pages/ForgotPassword.jsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// src/pages/ForgotPassword.tsx
 import axios from "axios";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { showToast } from "../popups/tostHelper.js";
+import { showToast } from "../popups/tostHelper";
+
+interface ApiResponse {
+  message?: string;
+}
 
 const ForgotPassword = () => {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await axios.post("/api/auth/forgot-password", { email });
+      const response = await axios.post<ApiResponse>(
+        "/api/auth/forgot-password",
+        { email }
+      );
       showToast(response.data.message || "OTP sent to your email.", "success");
 
       // Navigate to VerifyResetOtp page after short delay
@@ -23,12 +30,24 @@ const ForgotPassword = () => {
         sessionStorage.setItem("resetEmail", email);
         navigate("/verify-reset-otp");
       }, 1000);
-    } catch (err) {
-      const message =
-        err.response?.data?.message ||
-        err.response?.data ||
-        err.message ||
-        "Something went wrong. Please try again.";
+    } catch (err: unknown) {
+      let message = "Something went wrong. Please try again.";
+
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosError = err as {
+          response?: { data?: ApiResponse | string };
+          message?: string;
+        };
+        message =
+          (typeof axiosError.response?.data === "object"
+            ? axiosError.response.data.message
+            : axiosError.response?.data) ||
+          axiosError.message ||
+          message;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+
       showToast(message, "error");
     } finally {
       setLoading(false);

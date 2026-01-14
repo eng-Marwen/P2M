@@ -6,7 +6,23 @@ import {
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
-const Stat = ({ value, label }) => (
+// Type definitions
+interface StatProps {
+  value: string | React.ReactNode;
+  label: string;
+}
+
+interface Person {
+  avatar: string;
+  name: string;
+  role: string;
+}
+
+interface TeamCardProps {
+  person: Person;
+}
+
+const Stat = ({ value, label }: StatProps) => (
   <div className="flex flex-col items-center">
     <div className="text-3xl md:text-4xl font-extrabold text-slate-900">
       {value}
@@ -15,7 +31,7 @@ const Stat = ({ value, label }) => (
   </div>
 );
 
-const TeamCard = ({ person }) => (
+const TeamCard = ({ person }: TeamCardProps) => (
   <article className="bg-white rounded-xl shadow-sm hover:shadow-md p-4 flex gap-4 items-center">
     <img
       src={person.avatar}
@@ -30,7 +46,6 @@ const TeamCard = ({ person }) => (
 );
 
 const About = () => {
-
   return (
     <main className="min-h-screen bg-linear-to-b from-slate-50 via-white to-slate-50 px-4 py-12">
       <div className="max-w-6xl mx-auto">
@@ -130,7 +145,6 @@ const About = () => {
             />
           </div>
         </section>
-
 
         {/* CTA */}
         <section className="mb-12 rounded-xl bg-linear-to-r from-slate-900 to-black text-white p-6 flex flex-col sm:flex-row items-center justify-between gap-4">

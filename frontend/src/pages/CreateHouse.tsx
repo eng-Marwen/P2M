@@ -2,17 +2,45 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import { uploadToCloudinary } from "../lib/cloudinary";
-import { showToast } from "../popups/tostHelper.js";
+import { showToast } from "../popups/tostHelper";
+
+interface FormData {
+  name: string;
+  description: string;
+  address: string;
+  type: "sale" | "rent" | "";
+  parking: boolean;
+  furnished: boolean;
+  offer: boolean;
+  bedrooms: number;
+  bathrooms: number;
+  regularPrice: number;
+  discountedPrice: number;
+  area: string | number;
+}
+
+interface UploadedImage {
+  url: string;
+  publicId: string;
+}
+
+interface ApiResponse {
+  success?: boolean;
+  message?: string;
+  house?: {
+    _id: string;
+  };
+}
 
 const CreateHouse = () => {
-  const [files, setFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState([]);
-  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [creating, setCreating] = useState<boolean>(false);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
 
   // Add form state (initial values used elsewhere in this file)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     description: "",
     address: "",
@@ -27,8 +55,8 @@ const CreateHouse = () => {
     area: "", // <-- optional area (m²)
   });
 
-  const fileInputRef = useRef(null);
-  const uploadedImagesRef = useRef(uploadedImages);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadedImagesRef = useRef<UploadedImage[]>(uploadedImages);
 
   // keep ref in sync with state so unmount cleanup sees latest images
   useEffect(() => {
@@ -36,7 +64,7 @@ const CreateHouse = () => {
   }, [uploadedImages]);
 
   // keep a ref for formSubmitted to avoid adding it to effect deps
-  const formSubmittedRef = useRef(formSubmitted);
+  const formSubmittedRef = useRef<boolean>(formSubmitted);
   useEffect(() => {
     formSubmittedRef.current = formSubmitted;
   }, [formSubmitted]);
@@ -61,10 +89,11 @@ const CreateHouse = () => {
             );
             console.log("Deleted remote image:", img.publicId);
           } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : String(err);
             console.warn(
               "Could not delete remote image during unmount:",
               img.publicId,
-              err?.message || err
+              errorMsg
             );
           }
         }
@@ -73,8 +102,11 @@ const CreateHouse = () => {
     // run once on mount, cleanup runs on unmount
   }, []);
 
-  const handleChange = (e) => {
-    const { id, value, type, checked } = e.target;
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const target = e.target as HTMLInputElement;
+    const { id, value, type, checked } = target;
 
     setFormData((prev) => {
       if (id === "sale" && checked) {
@@ -99,7 +131,7 @@ const CreateHouse = () => {
     });
   };
 
-  const handleUploadImages = async (e) => {
+  const handleUploadImages = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
     if (files.length === 0) {
@@ -152,7 +184,7 @@ const CreateHouse = () => {
     }
   };
 
-  const handleSubmitForm = async (e) => {
+  const handleSubmitForm = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
     // Add validation before submitting
@@ -206,7 +238,7 @@ const CreateHouse = () => {
 
       console.log("Submitting house data:", houseData);
 
-      const response = await axios.post(
+      const response = await axios.post<ApiResponse>(
         "http://localhost:4000/api/houses",
         houseData,
         {
@@ -252,23 +284,34 @@ const CreateHouse = () => {
       } else {
         throw new Error(response.data?.message || "Failed to create listing");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error creating house listing:", error);
 
       // Handle different types of errors
       let errorMessage = "Failed to create house listing";
 
-      if (error.response) {
-        // Server responded with error status
-        errorMessage =
-          error.response.data?.message ||
-          `Server error: ${error.response.status}`;
-      } else if (error.request) {
-        // Request was made but no response received
-        errorMessage = "No response from server. Please check your connection.";
-      } else {
-        // Something else happened
-        errorMessage = error.message || "An unexpected error occurred";
+      // Check if it's an axios error by checking for response/request properties
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: ApiResponse; status: number };
+          request?: unknown;
+          message?: string;
+        };
+        if (axiosError.response) {
+          // Server responded with error status
+          errorMessage =
+            axiosError.response.data?.message ||
+            `Server error: ${axiosError.response.status}`;
+        } else if (axiosError.request) {
+          // Request was made but no response received
+          errorMessage =
+            "No response from server. Please check your connection.";
+        } else {
+          // Something else happened
+          errorMessage = axiosError.message || "An unexpected error occurred";
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
 
       showToast(errorMessage, "error");
@@ -278,7 +321,7 @@ const CreateHouse = () => {
     }
   };
 
-  const uploadImage = (file) => {
+  const uploadImage = (file: File): Promise<UploadedImage> => {
     return new Promise((resolve, reject) => {
       if (!file) {
         reject(new Error("No file provided"));
@@ -300,8 +343,8 @@ const CreateHouse = () => {
     });
   };
 
-  const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
 
     // Check if total would exceed 6 (existing files + uploaded images + new selection)
     if (uploadedImages.length + files.length + selectedFiles.length > 6) {
@@ -343,7 +386,7 @@ const CreateHouse = () => {
     }
   };
 
-  const removeUploadedImage = async (indexToRemove) => {
+  const removeUploadedImage = async (indexToRemove: number) => {
     const imageToRemove = uploadedImages[indexToRemove];
 
     try {
@@ -357,9 +400,10 @@ const CreateHouse = () => {
           );
           console.log("Deleted Cloudinary image:", imageToRemove.url);
         } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : String(err);
           console.warn(
             "Could not delete remote Cloudinary image (backend may be missing):",
-            err.message || err
+            errorMsg
           );
         }
       }
@@ -375,7 +419,7 @@ const CreateHouse = () => {
     }
   };
 
-  const removeSelectedFile = (indexToRemove) => {
+  const removeSelectedFile = (indexToRemove: number) => {
     const updatedFiles = files.filter((_, index) => index !== indexToRemove);
     setFiles(updatedFiles);
   };
@@ -652,7 +696,8 @@ const CreateHouse = () => {
                       className="w-full h-20 object-cover rounded border"
                       onError={(e) => {
                         console.error("Image load failed:", imageData.url);
-                        e.target.src = "/placeholder-house.jpg";
+                        const target = e.target as HTMLImageElement;
+                        target.src = "/placeholder-house.jpg";
                       }}
                     />
                     <button

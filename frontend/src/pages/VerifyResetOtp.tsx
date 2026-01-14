@@ -1,13 +1,18 @@
-// src/pages/VerifyResetOtp.jsx
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { showToast } from "../popups/tostHelper.js";
+import { showToast } from "../popups/tostHelper";
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
 
 const VerifyResetOtp = () => {
-  const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const inputRefs = useRef([]);
+  const [code, setCode] = useState<string[]>(["", "", "", "", "", ""]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
 
   // Get email from sessionStorage
@@ -23,7 +28,7 @@ const VerifyResetOtp = () => {
   }, [email, navigate]);
 
   // Handle input changes (typing)
-  const handleChange = (index, value) => {
+  const handleChange = (index: number, value: string) => {
     const newCode = [...code];
 
     if (value.length > 1) {
@@ -41,14 +46,17 @@ const VerifyResetOtp = () => {
   };
 
   // Handle backspace navigation
-  const handleKeyDown = (index, e) => {
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
   // Handle paste event
-  const handlePaste = (e) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").replace(/\D/g, ""); // keep digits only
     const pastedCode = pastedData.slice(0, 6).split("");
@@ -57,7 +65,7 @@ const VerifyResetOtp = () => {
     for (let i = 0; i < 6; i++) {
       newCode[i] = pastedCode[i] || "";
       if (inputRefs.current[i]) {
-        inputRefs.current[i].value = newCode[i];
+        inputRefs.current[i]!.value = newCode[i];
       }
     }
 
@@ -66,18 +74,18 @@ const VerifyResetOtp = () => {
     // Focus last filled input
     const lastFilledIndex = pastedCode.length - 1;
     if (inputRefs.current[lastFilledIndex]) {
-      inputRefs.current[lastFilledIndex].focus();
+      inputRefs.current[lastFilledIndex]?.focus();
     }
   };
 
   // Submit OTP
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const verificationCode = code.join("");
     console.log("Verifying OTP for email:", email, "Code:", verificationCode);
 
     try {
-      await axios.post(
+      await axios.post<ApiResponse>(
         "/api/auth/verify-reset-otp",
         { email, otp: verificationCode },
         { withCredentials: true } // backend cookie support
@@ -89,11 +97,12 @@ const VerifyResetOtp = () => {
       setTimeout(() => {
         navigate("/reset-password");
       }, 1000);
-    } catch (err) {
+    } catch (err: unknown) {
+      const error = err as any;
       const message =
-        err.response?.data?.message ||
-        err.response?.data ||
-        err.message ||
+        error.response?.data?.message ||
+        error.response?.data ||
+        error.message ||
         "Something went wrong";
       showToast(message, "error");
     }
@@ -115,9 +124,11 @@ const VerifyResetOtp = () => {
               {code.map((digit, index) => (
                 <input
                   key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
                   type="text"
-                  maxLength="1"
+                  maxLength={1}
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}

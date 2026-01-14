@@ -3,27 +3,58 @@ import { useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { signInSuccess, signOut } from "../app/user/userSlice.js";
+import { AppDispatch, RootState } from "../app/store";
+import { signInSuccess, signOut } from "../app/user/userSlice";
 import { uploadToCloudinary } from "../lib/cloudinary";
-import { showToast } from "../popups/tostHelper.js";
+import { showToast } from "../popups/tostHelper";
 
-//TODO: add new password and current one for updating 
+interface FormData {
+  username: string;
+  address: string;
+  phone: string;
+  currentPassword: string;
+  password: string;
+}
+
+interface Listing {
+  _id: string;
+  name: string;
+  address: string;
+  type: "sale" | "rent";
+  bedrooms: number;
+  bathrooms: number;
+  area?: number | string;
+  images?: string[];
+}
+
+interface UpdateData {
+  username?: string;
+  address?: string;
+  phone?: string;
+  avatar?: string;
+}
+
+interface ApiResponse {
+  status?: string;
+  data?: any;
+  message?: string;
+}
 
 const Profile = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const [userListings, setUserListings] = useState([]);
-  const [loadingListings, setLoadingListings] = useState(false);
+  const [userListings, setUserListings] = useState<Listing[]>([]);
+  const [loadingListings, setLoadingListings] = useState<boolean>(false);
 
-  const [file, setFile] = useState(null);
-  const [url, setUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [showEdit, setShowEdit] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [url, setUrl] = useState<string>("");
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [showEdit, setShowEdit] = useState<boolean>(false);
 
-  const currentUser = useSelector((state) => state.user.currentUser);
+  const currentUser = useSelector((state: RootState) => state.user.currentUser);
   // initialize form with current user values (if available)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     username: currentUser?.username || "",
     address: currentUser?.address || "",
     phone: currentUser?.phone || "",
@@ -32,14 +63,14 @@ const Profile = () => {
   });
 
   // Handle form input changes
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.id]: e.target.value,
     });
   };
 
-  const uploadImage = async () => {
+  const uploadImage = async (): Promise<string | null> => {
     if (!file) return null;
 
     setUploading(true);
@@ -48,17 +79,18 @@ const Profile = () => {
       setUrl(result.secure_url);
       setFile(null);
       return result.secure_url;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Upload error:", error);
-      showToast("Upload failed: " + (error.message || "unknown"), "error");
+      const errorMsg = error instanceof Error ? error.message : "unknown";
+      showToast("Upload failed: " + errorMsg, "error");
       return null;
     } finally {
       setUploading(false);
     }
   };
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpdateProfile = async (e) => {
+  const handleUpdateProfile = async (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
     setUploading(true);
 
@@ -71,7 +103,7 @@ const Profile = () => {
         if (uploaded) avatarUrl = uploaded;
       }
 
-      const updateData = {
+      const updateData: UpdateData = {
         username: formData.username,
         address: formData.address,
         phone: formData.phone,
@@ -80,12 +112,13 @@ const Profile = () => {
 
       // Remove empty fields
       Object.keys(updateData).forEach((key) => {
-        if (updateData[key] === "" || updateData[key] === undefined) {
-          delete updateData[key];
+        const typedKey = key as keyof UpdateData;
+        if (updateData[typedKey] === "" || updateData[typedKey] === undefined) {
+          delete updateData[typedKey];
         }
       });
 
-      const response = await axios.patch(
+      const response = await axios.patch<ApiResponse>(
         "/api/auth/update-profile",
         updateData,
         {
@@ -102,9 +135,15 @@ const Profile = () => {
       } else {
         showToast("Update returned unexpected response", "error");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Update error:", error);
-      const message = error.response?.data?.message || "Update failed";
+      let message = "Update failed";
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
+        message = axiosError.response?.data?.message || message;
+      }
       showToast(message, "error");
     } finally {
       setUploading(false);
@@ -121,7 +160,7 @@ const Profile = () => {
     }
 
     try {
-      const response = await axios.delete("/api/auth/delete", {
+      const response = await axios.delete<ApiResponse>("/api/auth/delete", {
         withCredentials: true,
       });
       if (response.data.status === "success") {
@@ -131,9 +170,15 @@ const Profile = () => {
           navigate("/sign-in");
         }, 1000);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Delete error:", error);
-      const message = error.response?.data?.message || "Delete failed";
+      let message = "Delete failed";
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
+        message = axiosError.response?.data?.message || message;
+      }
       showToast(message, "error");
     }
   };
@@ -141,43 +186,61 @@ const Profile = () => {
   const handleShowListings = async () => {
     try {
       setLoadingListings(true);
-      const response = await axios.get(`/api/houses/${currentUser._id}`, {
-        withCredentials: true,
-      });
+      const response = await axios.get<{ data?: Listing[] }>(
+        `/api/houses/${currentUser?._id}`,
+        {
+          withCredentials: true,
+        }
+      );
       setUserListings(response.data.data || []);
       setLoadingListings(false);
-    } catch (error) {
+    } catch (error: unknown) {
       setLoadingListings(false);
       console.error("Navigation error:", error);
-      const message = error.response?.data?.message || "Navigation failed";
+      let message = "Navigation failed";
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
+        message = axiosError.response?.data?.message || message;
+      }
       showToast(message, "error");
     }
   };
 
-  const deleteListing = async (listingId) => {
+  const deleteListing = async (listingId: string) => {
     if (!window.confirm("Are you sure you want to delete this listing?")) {
       return;
     }
     try {
-      const response = await axios.delete(`/api/houses/${listingId}`, {
-        withCredentials: true,
-      });
+      const response = await axios.delete<ApiResponse>(
+        `/api/houses/${listingId}`,
+        {
+          withCredentials: true,
+        }
+      );
       if (response.data.status === "success") {
         showToast("Listing deleted successfully!", "success");
         setUserListings((prev) =>
           prev.filter((listing) => listing._id !== listingId)
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Delete listing error:", error);
-      const message = error.response?.data?.message || "Delete failed";
+      let message = "Delete failed";
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
+        message = axiosError.response?.data?.message || message;
+      }
       showToast(message, "error");
     }
   };
 
   const handleSignOut = async () => {
     try {
-      const response = await axios.post(
+      const response = await axios.post<ApiResponse>(
         "http://localhost:4000/api/auth/logout",
         {},
         { withCredentials: true }
@@ -186,9 +249,15 @@ const Profile = () => {
         dispatch(signOut());
         navigate("/sign-in");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Logout error:", error);
-      const message = error.response?.data?.message || "Logging out failed";
+      let message = "Logging out failed";
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
+        message = axiosError.response?.data?.message || message;
+      }
       showToast(message, "error");
     }
   };
@@ -204,7 +273,7 @@ const Profile = () => {
               hidden
               accept="image/*"
               ref={fileInputRef}
-              onChange={(e) => setFile(e.target.files[0])}
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
             <img
               src={encodeURI(
@@ -214,7 +283,8 @@ const Profile = () => {
               onClick={() => fileInputRef.current?.click()}
               className="w-28 h-28 rounded-full object-cover cursor-pointer ring-2 ring-indigo-100"
               onError={(e) => {
-                e.target.src = "/placeholder-profile.png";
+                const target = e.target as HTMLImageElement;
+                target.src = "/placeholder-profile.png";
               }}
             />
             <div className="text-lg font-semibold text-gray-900">
@@ -243,10 +313,10 @@ const Profile = () => {
           <div className="mt-4 flex flex-col gap-3">
             <button
               onClick={() => setShowEdit((s) => !s)}
-              className="w-full px-4 py-2 bg-black/4 text-black border border-black rounded-md ">
+              className="w-full px-4 py-2 bg-black/4 text-black border border-black rounded-md "
+            >
               {showEdit ? "Close Edit" : "Edit Profile"}
             </button>
-
 
             <button
               onClick={handleShowListings}

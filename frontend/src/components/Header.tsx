@@ -2,15 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { FaBars, FaSearch, FaTimes } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { RootState } from "../app/store";
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const currentUser = useSelector((state) => state.user.currentUser);
+  const currentUser = useSelector((state: RootState) => state.user.currentUser);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const inputRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const urlSearchParams = new URLSearchParams(location.search);
@@ -18,9 +19,10 @@ const Header = () => {
     setSearchQuery(searchParam);
   }, [location.search]);
 
-  const handleSearchChange = (e) => setSearchQuery(e.target.value);
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setSearchQuery(e.target.value);
 
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
     const urlSearchParams = new URLSearchParams(window.location.search);
     urlSearchParams.set("search", searchQuery);

@@ -1,4 +1,17 @@
-export async function uploadToCloudinary(file, { folder } = {}) {
+interface CloudinaryUploadOptions {
+  folder?: string;
+}
+
+interface CloudinaryResponse {
+  secure_url: string;
+  public_id: string;
+  raw: any;
+}
+
+export async function uploadToCloudinary(
+  file: File,
+  { folder }: CloudinaryUploadOptions = {}
+): Promise<CloudinaryResponse> {
   const url = `https://api.cloudinary.com/v1_1/dgmaxi7wu/upload`;
   const formData = new FormData();
   formData.append("file", file);
@@ -24,7 +37,10 @@ export async function uploadToCloudinary(file, { folder } = {}) {
   };
 }
 
-export async function uploadMultipleToCloudinary(files = [], opts = {}) {
+export async function uploadMultipleToCloudinary(
+  files: File[] | FileList = [],
+  opts: CloudinaryUploadOptions = {}
+): Promise<CloudinaryResponse[]> {
   const promises = Array.from(files).map((f) => uploadToCloudinary(f, opts));
   return Promise.all(promises);
 }

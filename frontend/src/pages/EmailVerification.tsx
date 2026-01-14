@@ -3,16 +3,22 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { signInFailure, signInSuccess } from "../app/user/userSlice.js";
-import { showToast } from "../popups/tostHelper.js";
+import { AppDispatch } from "../app/store";
+import { signInFailure, signInSuccess } from "../app/user/userSlice";
+import { showToast } from "../popups/tostHelper";
+
+interface ApiResponse {
+  data: any;
+  message?: string;
+}
 
 const EmailVerification = () => {
-  const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const inputRefs = useRef([]);
+  const [code, setCode] = useState<string[]>(["", "", "", "", "", ""]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
-  const handleChange = (index, value) => {
+  const handleChange = (index: number, value: string) => {
     const newCode = [...code];
 
     // Handle pasted content
@@ -26,30 +32,33 @@ const EmailVerification = () => {
       // Focus on the last non-empty input or the first empty one
       const lastFilledIndex = newCode.findLastIndex((digit) => digit !== "");
       const focusIndex = lastFilledIndex < 5 ? lastFilledIndex + 1 : 5;
-      inputRefs.current[focusIndex].focus();
+      inputRefs.current[focusIndex]?.focus();
     } else {
       newCode[index] = value;
       setCode(newCode);
 
       // Move focus to the next input field if value is entered
       if (value && index < 5) {
-        inputRefs.current[index + 1].focus();
+        inputRefs.current[index + 1]?.focus();
       }
     }
   };
 
-  const handleKeyDown = (index, e) => {
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
-      inputRefs.current[index - 1].focus();
+      inputRefs.current[index - 1]?.focus();
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const verificationCode = code.join("");
 
     axios
-      .post("http://localhost:4000/api/auth/verify-email", {
+      .post<ApiResponse>("http://localhost:4000/api/auth/verify-email", {
         code: verificationCode,
       })
       .then((response) => {
@@ -91,9 +100,11 @@ const EmailVerification = () => {
               {code.map((digit, index) => (
                 <input
                   key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
                   type="text"
-                  maxLength="6"
+                  maxLength={6}
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
@@ -102,8 +113,6 @@ const EmailVerification = () => {
               ))}
             </div>
             <button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
               type="submit"
               className="w-full  bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50"
             >
