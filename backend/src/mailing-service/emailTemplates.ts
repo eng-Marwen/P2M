@@ -6,7 +6,7 @@ export const VERIFICATION_EMAIL_TEMPLATE = `
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="x-apple-disable-message-reformatting">
-  <title>Verify Your Email - Samsar Pro Max</title>
+  <title>Verify Your Email - Samsar ProMax</title>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -31,7 +31,7 @@ export const VERIFICATION_EMAIL_TEMPLATE = `
                 </tr>
                 <tr>
                   <td align="center" style="padding-top: 15px;">
-                    <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">Samsar Pro Max</h1>
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">Samsar ProMax</h1>
                   </td>
                 </tr>
                 <tr>
@@ -53,7 +53,7 @@ export const VERIFICATION_EMAIL_TEMPLATE = `
                 </tr>
                 <tr>
                   <td style="font-size: 16px; color: #555555; font-family: Arial, Helvetica, sans-serif; padding-bottom: 30px;">
-                    Thank you for signing up with <strong style="color: #667eea;">Samsar Pro Max</strong>! Use the verification code below to complete your registration:
+                    Thank you for signing up with <strong style="color: #667eea;">Samsar ProMax</strong>! Use the verification code below to complete your registration:
                   </td>
                 </tr>
                 <tr>
@@ -92,7 +92,7 @@ export const VERIFICATION_EMAIL_TEMPLATE = `
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td align="center" style="font-size: 14px; font-weight: 600; color: #667eea; font-family: Arial, Helvetica, sans-serif; padding-bottom: 10px;">
-                    Samsar Pro Max Team
+                    Samsar ProMax Team
                   </td>
                 </tr>
                 <tr>
@@ -118,7 +118,7 @@ export const WELCOME_EMAIL_TEMPLATE = `
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="x-apple-disable-message-reformatting">
-  <title>Welcome to Samsar Pro Max</title>
+  <title>Welcome to Samsar ProMax</title>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -143,7 +143,7 @@ export const WELCOME_EMAIL_TEMPLATE = `
                 </tr>
                 <tr>
                   <td align="center" style="padding-top: 15px;">
-                    <h1 style="margin: 0; font-size: 32px; font-weight: 600; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">Welcome to Samsar Pro Max!</h1>
+                    <h1 style="margin: 0; font-size: 32px; font-weight: 600; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">Welcome to Samsar ProMax!</h1>
                   </td>
                 </tr>
                 <tr>
@@ -165,7 +165,7 @@ export const WELCOME_EMAIL_TEMPLATE = `
                 </tr>
                 <tr>
                   <td style="font-size: 16px; color: #555555; font-family: Arial, Helvetica, sans-serif; padding-bottom: 25px;">
-                    We're thrilled to have you join the <strong>Samsar Pro Max</strong> family! You've just unlocked access to the best real estate platform in town.
+                    We're thrilled to have you join the <strong>Samsar ProMax</strong> family! You've just unlocked access to the best real estate platform in town.
                   </td>
                 </tr>
                 <!-- Features Box -->
@@ -240,7 +240,7 @@ export const WELCOME_EMAIL_TEMPLATE = `
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td align="center" style="font-size: 14px; font-weight: 600; color: #667eea; font-family: Arial, Helvetica, sans-serif; padding-bottom: 10px;">
-                    The Samsar Pro Max Team
+                    The Samsar ProMax Team
                   </td>
                 </tr>
                 <tr>
@@ -250,7 +250,7 @@ export const WELCOME_EMAIL_TEMPLATE = `
                 </tr>
                 <tr>
                   <td align="center" style="font-size: 11px; color: #bbbbbb; font-family: Arial, Helvetica, sans-serif;">
-                    &copy; 2025 Samsar Pro Max. All rights reserved.
+                    &copy; 2025 Samsar ProMax. All rights reserved.
                   </td>
                 </tr>
               </table>
@@ -271,7 +271,7 @@ export const PASSWORD_RESET_OTP_TEMPLATE = `
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="x-apple-disable-message-reformatting">
-  <title>Reset Your Password - Samsar Pro Max</title>
+  <title>Reset Your Password - Samsar ProMax</title>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -296,7 +296,7 @@ export const PASSWORD_RESET_OTP_TEMPLATE = `
                 </tr>
                 <tr>
                   <td align="center" style="padding-top: 15px;">
-                    <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">Samsar Pro Max</h1>
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">Samsar ProMax</h1>
                   </td>
                 </tr>
                 <tr>
@@ -365,7 +365,7 @@ export const PASSWORD_RESET_OTP_TEMPLATE = `
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td align="center" style="font-size: 14px; font-weight: 600; color: #667eea; font-family: Arial, Helvetica, sans-serif; padding-bottom: 10px;">
-                    Samsar Pro Max Team
+                    Samsar ProMax Team
                   </td>
                 </tr>
                 <tr>
@@ -392,7 +392,7 @@ export const PASSWORD_RESET_SUCCESS_TEMPLATE = `
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="x-apple-disable-message-reformatting">
-  <title>Password Reset Successful - Samsar Pro Max</title>
+  <title>Password Reset Successful - Samsar ProMax</title>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -417,7 +417,7 @@ export const PASSWORD_RESET_SUCCESS_TEMPLATE = `
                 </tr>
                 <tr>
                   <td align="center" style="padding-top: 15px;">
-                    <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">Samsar Pro Max</h1>
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">Samsar ProMax</h1>
                   </td>
                 </tr>
                 <tr>
@@ -533,7 +533,7 @@ export const PASSWORD_RESET_SUCCESS_TEMPLATE = `
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td align="center" style="font-size: 14px; font-weight: 600; color: #667eea; font-family: Arial, Helvetica, sans-serif; padding-bottom: 10px;">
-                    Samsar Pro Max Team
+                    Samsar ProMax Team
                   </td>
                 </tr>
                 <tr>

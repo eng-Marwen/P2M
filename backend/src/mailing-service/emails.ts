@@ -3,8 +3,8 @@ import {
   PASSWORD_RESET_SUCCESS_TEMPLATE,
   VERIFICATION_EMAIL_TEMPLATE,
   WELCOME_EMAIL_TEMPLATE,
-} from "./emailTemplates.js";
-import { sendMail, sender } from "./mail.config.js";
+} from "./emailTemplates";
+import { sendMail, sender } from "./mail.config";
 
 export const sendVerificatinMail = async (
   email: string,
@@ -26,6 +26,7 @@ export const sendVerificatinMail = async (
     throw new Error("error sending verification mail" + error);
   }
 };
+
 export const sendWemcomeEmail = async (
   email: string,
   name: string
@@ -43,6 +44,7 @@ export const sendWemcomeEmail = async (
     throw new Error("error sending welcome mail:" + (error as Error).message);
   }
 };
+
 export const sendResetPasswordOtpEmail = async (
   otp: string,
   email: string
@@ -67,18 +69,18 @@ export const sendResetPwdSuccessfullyMail = async (
   email: string
 ): Promise<void> => {
   try {
-    const mailOptions = {
-      from: sender.email,
+    const response = await sendMail.sendMail({
+      from: `"${sender.name}" <${sender.email}>`,
       to: email,
       subject: "Password resetting",
       html: PASSWORD_RESET_SUCCESS_TEMPLATE,
-    };
-    const response = await sendMail.sendMail(mailOptions);
+    });
+    console.log("Reset password success email sent successfully", response);
   } catch (error) {
+    console.log("Error sending reset password success email:", error);
     throw new Error(
       "Error sending reset password successfully email: " +
         (error as Error).message
     );
   }
 };
-//TODO; send reset password email with otp code

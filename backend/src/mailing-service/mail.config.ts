@@ -5,20 +5,15 @@ interface Sender {
   name: string;
 }
 
-interface Auth {
-  user: string;
-  pass: string;
-}
-
 export const sendMail: Transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.MAIL_SERVICE_OWNER as string,
-    pass: process.env.MAIL_SERVICE_PASSWORD as string, // Gmail App Password
+    pass: process.env.MAIL_SERVICE_PASSWORD as string,
   },
 });
 
 export const sender: Sender = {
-  email: process.env.MAIL_SERVICE_OWNER as string, //the account that is linked with the service
-  name: "Marwen from Auth Project",
+  email: process.env.MAIL_SERVICE_OWNER as string,
+  name: "Support Team From Samsar ProMax",
 };

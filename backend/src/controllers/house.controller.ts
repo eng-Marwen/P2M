@@ -38,7 +38,7 @@ export const postHouse = async (
     const newHouse = await House.create(houseInfo);
     res.status(201).json({
       status: "success",
-      message: "HOUSE ADDED SUCCESSFULLY",
+      message: "House added successfully",
       data: newHouse,
     });
   } catch (error) {
@@ -110,11 +110,11 @@ export const getUserHousesByUserId = async (
     if (req.userId !== userId) {
       res.status(403).json({
         status: "fail",
-        message: "FORBIDDEN: You can only access your own houses",
+        message: "FORBIDDEN: You can only access to your own houses",
       });
       return;
     }
-    const userHouses = await House.find({ userRef: userId });
+    const userHouses = await House.find({ userRef: userId }).lean();
     res.status(200).json({
       status: "success",
       results: userHouses.length,
@@ -160,11 +160,11 @@ export const deleteHouseById = async (
 ): Promise<void> => {
   try {
     const houseId = req.params.id;
-    const houseToDelete = await House.findById(houseId);
+    const houseToDelete = await House.findById(houseId).lean();
     if (!houseToDelete) {
       res.status(404).json({
         status: "fail",
-        message: "HOUSE NOT FOUND",
+        message: "House not found!",
       });
       return;
     }
@@ -178,7 +178,7 @@ export const deleteHouseById = async (
     await House.findByIdAndDelete(houseId);
     res.status(200).json({
       status: "success",
-      message: "HOUSE DELETED SUCCESSFULLY",
+      message: "House deleted successfully",
     });
   } catch (error) {
     res.status(400).json({
@@ -253,9 +253,11 @@ export const getAllHouses = async (
     const sortOrder = orderRaw === "asc" || orderRaw === "1" ? 1 : -1;
 
     const houses = await House.find(filter)
+      .lean()
       .sort({ [sort]: sortOrder })
       .skip(skip)
       .limit(limit);
+      
 
     const total = await House.countDocuments(filter);
 
