@@ -16,10 +16,13 @@ COPY package*.json ./
 RUN npm ci
 
 # Copy all source code and config files
+# This includes .env which contains VITE_* environment variables
 COPY . .
 
 # Build the React app for production
 # Creates optimized static files in dist/ folder(html css js)
+# Vite reads .env and embeds VITE_* variables directly into the JavaScript bundle
+# After build, .env is not copied to the final image (only the dist/ folder is)
 RUN npm run build
 
 # ========================================
