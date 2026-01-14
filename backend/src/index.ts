@@ -4,4 +4,4 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Use dynamic import to ensure dotenv runs before server.ts executes
-await import("./server");
+await import("./server.js");

@@ -3,8 +3,8 @@ import {
   PASSWORD_RESET_SUCCESS_TEMPLATE,
   VERIFICATION_EMAIL_TEMPLATE,
   WELCOME_EMAIL_TEMPLATE,
-} from "./emailTemplates";
-import { sendMail, sender } from "./mail.config";
+} from "./emailTemplates.js";
+import { sendMail, sender } from "./mail.config.js";
 
 export const sendVerificatinMail = async (
   email: string,
