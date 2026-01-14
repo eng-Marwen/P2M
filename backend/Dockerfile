@@ -7,7 +7,7 @@ FROM node:20-alpine AS builder
 # Set working directory inside the container
 WORKDIR /app
 
-# Copy package files first (for better Docker layer caching)
+# Copy package files first (for better Docker layer caching)(*:any file that is packagexxx.json)
 # If package.json hasn't changed, Docker reuses cached layers
 COPY package*.json ./
 
@@ -19,7 +19,7 @@ RUN npm ci
 COPY tsconfig.json ./
 
 # Copy all source code
-COPY src ./src
+COPY . .
 
 # Compile TypeScript to JavaScript
 # Output goes to dist/ folder as configured in tsconfig.json
@@ -43,10 +43,6 @@ COPY package*.json ./
 # Install ONLY production dependencies (excludes devDependencies)
 # --omit=dev skips TypeScript, @types/*, etc. to reduce image size
 RUN npm ci --omit=dev
-
-# Copy environment variables file
-# Contains DB connection strings, API keys, etc.
-COPY .env ./
 
 # Copy compiled JavaScript from build stage
 # Only copy dist/ folder, not the TypeScript source code
