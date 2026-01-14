@@ -71,7 +71,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: (error as Error).message
+      message: (error as Error).message,
     });
   }
 };
@@ -184,7 +184,7 @@ export const forgotPassword = async (
     user.resetPasswordTokenExpiresAt = resetPasswordTokenExpiresAt;
 
     await user.save();
-    await sendResetPasswordOtpEmail(String(otp), user.email); // function will include OTP in email
+    await sendResetPasswordOtpEmail(String(otp), user.email, user.username); // function will include OTP in email
 
     res.status(200).json({
       status: "success",
@@ -307,7 +307,7 @@ export const resetPassword = async (
       httpOnly: true,
       sameSite: "lax",
     });
-    await sendResetPwdSuccessfullyMail(user.email);
+    await sendResetPwdSuccessfullyMail(user.email, user.username);
 
     res.status(200).json({
       status: "success",
@@ -320,8 +320,6 @@ export const resetPassword = async (
     });
   }
 };
-
-//TODO:update password controller req.body password confirm new password
 
 export const checkAuth = async (
   req: AuthRequest,

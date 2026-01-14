@@ -110,6 +110,7 @@ export const VERIFICATION_EMAIL_TEMPLATE = `
 </body>
 </html>
 `;
+
 export const WELCOME_EMAIL_TEMPLATE = `
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -263,6 +264,7 @@ export const WELCOME_EMAIL_TEMPLATE = `
 </body>
 </html>
 `;
+
 export const PASSWORD_RESET_OTP_TEMPLATE = `
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -313,7 +315,7 @@ export const PASSWORD_RESET_OTP_TEMPLATE = `
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td style="font-size: 16px; color: #555555; font-family: Arial, Helvetica, sans-serif; padding-bottom: 20px;">
-                    Hello there! &#128075;
+                    Hello {userName}! &#128075;
                   </td>
                 </tr>
                 <tr>
@@ -434,7 +436,7 @@ export const PASSWORD_RESET_SUCCESS_TEMPLATE = `
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td style="font-size: 16px; color: #555555; font-family: Arial, Helvetica, sans-serif; padding-bottom: 20px;">
-                    Hello there! &#128075;
+                    Hello {userName}! &#128075;
                   </td>
                 </tr>
                 <tr>
@@ -551,5 +553,3 @@ export const PASSWORD_RESET_SUCCESS_TEMPLATE = `
 </body>
 </html>
 `;
-
-//TODO: add reset password email with otp code template
