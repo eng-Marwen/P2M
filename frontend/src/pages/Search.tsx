@@ -131,8 +131,7 @@ const Search = () => {
 
   const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
-    showToast("Searching...", "success");
-
+    
     const queryParams = new URLSearchParams();
     if (sideBar.searchTerm) queryParams.append("search", sideBar.searchTerm);
     if (sideBar.type && sideBar.type !== "all")
