@@ -2,16 +2,16 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Backend (nodemon + tsx)",
+      "name": "Debug Backend",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["nodemon", "--exec", "tsx", "src/server.ts"],
+      "runtimeArgs": ["tsx", "src/index.ts"],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}/backend",
       "skipFiles": ["<node_internals>/**", "node_modules/**"],
-      "restart": true,
-      "internalConsoleOptions": "neverOpen"
+      "internalConsoleOptions": "neverOpen",
+      "outputCapture": "std"
     }
   ]
 }
