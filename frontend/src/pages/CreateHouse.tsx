@@ -605,7 +605,7 @@ const CreateHouse = () => {
           {/* Submit button */}
           <button
             type="submit"
-            className="bg-slate-700 text-white p-3 rounded-lg hover:opacity-95 uppercase font-semibold"
+            className="bg-black text-white font-semibold p-3 rounded-lg hover:opacity-95 uppercase "
             onClick={handleSubmitForm}
           >
             {creating ? "Creating Listing..." : "Create Listing"}

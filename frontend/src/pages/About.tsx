@@ -5,7 +5,7 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
-
+import bigLogo from "../assets/bigLogo-removebg.png"
 // Type definitions
 interface StatProps {
   value: string | React.ReactNode;
@@ -80,7 +80,7 @@ const About = () => {
           <div className="order-first lg:order-last">
             <div className="rounded-2xl overflow-hidden shadow-lg bg-white">
               <img
-                src="https://github.com/eng-Marwen/images/blob/main/bigLogo-removebg.png?raw=true"
+                src={bigLogo}
                 alt="About hero"
                 className="w-full h-64 sm:h-72 object-cover"
               />
