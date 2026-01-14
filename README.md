@@ -1,183 +1,334 @@
-# P2M 2025
-Samsar ProMax - Rental Management Platform
-📖 Project Overview
-Samsar ProMax is a comprehensive Web application-based rental management platform that provides a seamless, personalized, and scalable property rental experience. The platform connects tenants and property owners, enabling efficient property search, listing, and management.
+# Samsar ProMax 🏡
 
-🎯 Problem Statement
-Traditional rental applications often lack personalization, data intelligence, and automated management:
+**Samsar ProMax** - Modern Real Estate Platform for Property Listings and Management
 
-Tenants struggle to find suitable properties
+## 📖 Project Overview
 
-Property owners face challenges in setting competitive prices and engaging tenants
+Samsar ProMax is a comprehensive full-stack web application for real estate management that provides a seamless, personalized property rental and sales experience. The platform connects property seekers with property owners, enabling efficient property search, listing management, and direct communication.
 
-Manual processes slow down innovation and reliability
+## 🎯 Problem Statement
 
-✨ Features
-User Accounts: Secure login for Tenants, Owners, and Admin roles
+Traditional rental and property sale applications often lack personalization, data intelligence, and automated management:
 
-Property Management: Add, edit, and track rental listings
+- **Property seekers** struggle to find suitable properties with advanced filtering
+- **Property owners** face challenges in listing and managing their properties effectively
+- **Manual processes** slow down communication and transaction flows
+- Lack of integrated solutions for property images, user authentication, and email notifications
 
-Smart Search: Filter by location, price, amenities with map view
+## ✨ Features
 
-Online Payments: Secure rent payments and digital contracts
+### User Management
 
-In-App Chat: Direct communication between tenants and owners
+- 🔐 **Secure Authentication**: JWT-based authentication with email verification
+- 👤 **User Profiles**: Update profile information, avatar upload via Cloudinary
+- 🔑 **Password Recovery**: Forgot password with OTP verification
+- 🔥 **OAuth Integration**: Google sign-in via Firebase
 
-Maintenance Requests: Report and manage repairs efficiently
+### Property Management
 
-Analytics: Track income, occupancy, and property performance
+- 🏠 **Create Listings**: Add properties with images, details, and pricing
+- ✏️ **Edit Listings**: Update property information and images
+- 🗑️ **Delete Listings**: Remove properties from the platform
+- 📍 **Location-based**: Properties tagged with addresses
+- 🏷️ **Property Types**: Support for rent and sale listings
+- 🖼️ **Image Upload**: Multiple images per property via Cloudinary
 
-🏗️ Tech Stack
-Backend
-Runtime: Node.js
+### Search & Discovery
 
-Framework: Express.js
+- 🔍 **Advanced Search**: Filter by location, type, price range, bedrooms, bathrooms
+- 📊 **Property Cards**: Beautiful card-based property display
+- 📱 **Responsive Design**: Mobile-first design with Tailwind CSS
 
-Database: MongoDB
+### User Experience
 
-Authentication: JWT / Firebase Auth
+- 🎨 **Modern UI**: Clean interface with Poppins font
+- 🌓 **Loading States**: User-friendly loading indicators
+- 📧 **Email Notifications**: Welcome emails and OTP verification via Gmail SMTP
+- ⚡ **Real-time Updates**: Redux state management for instant UI updates
+- 🎯 **Toast Notifications**: User feedback for all actions
 
-Email Service: Mailtrap
+## 🏗️ Tech Stack
 
-Frontend
-Framework: React.js
+### Backend
 
-Styling: CSS3
+- **Runtime**: Node.js with TypeScript
+- **Framework**: Express.js
+- **Database**: MongoDB with Mongoose
+- **Authentication**: JWT + bcryptjs
+- **File Upload**: Cloudinary
+- **Email Service**: Gmail SMTP (Nodemailer)
+- **Security**: cookie-parser, CORS
 
-Backend Integration: Supabase Client
+### Frontend
 
-Authentication: Firebase
+- **Framework**: React 19 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS v4
+- **State Management**: Redux Toolkit + Redux Persist
+- **Routing**: React Router DOM v7
+- **HTTP Client**: Axios
+- **Authentication**: Firebase (OAuth)
+- **UI Components**: React Icons, Swiper
+- **Notifications**: React Toastify
 
-Development Server: Vite (Port 5173)
+## 📁 Project Structure
 
-📁 Project Structure
-text
-samsar-promax/
+```
+WEB_PROJECT/
 ├── backend/
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   ├── middlewares/
-│   ├── utils/
-│   ├── sendingMails/
-│   ├── mailtrap/
-│   ├── .env
-│   └── index.js
+│   ├── src/
+│   │   ├── controllers/
+│   │   │   ├── auth.controller.ts       # Authentication logic
+│   │   │   ├── cloudinary.controller.ts # Image upload
+│   │   │   └── house.controller.ts      # Property CRUD
+│   │   ├── DB/
+│   │   │   └── connectDB.ts             # MongoDB connection
+│   │   ├── mailing-service/
+│   │   │   ├── emails.ts                # Email sending logic
+│   │   │   ├── emailTemplates.ts        # HTML email templates
+│   │   │   └── mail.config.ts           # Gmail SMTP config
+│   │   ├── middlewares/
+│   │   │   └── verifyToken.ts           # JWT verification
+│   │   ├── models/
+│   │   │   ├── house.model.ts           # Property schema
+│   │   │   └── user.model.ts            # User schema
+│   │   ├── routes/
+│   │   │   ├── auth.route.ts
+│   │   │   ├── cloudinary.route.ts
+│   │   │   └── house.route.ts
+│   │   ├── utils/
+│   │   │   └── generateTokenAndSetCookie.ts
+│   │   ├── index.ts                     # Entry point
+│   │   └── server.ts                    # Express server setup
+│   ├── package.json
+│   └── tsconfig.json
 ├── frontend/
 │   ├── src/
 │   │   ├── app/
+│   │   │   ├── store.ts                 # Redux store
+│   │   │   └── user/
+│   │   │       └── userSlice.ts         # User state slice
 │   │   ├── components/
-│   │   ├── pages/
-│   │   ├── popups/
+│   │   │   ├── Header.tsx               # Navigation bar
+│   │   │   ├── House.tsx                # Property card component
+│   │   │   ├── OAuth.tsx                # Google OAuth button
+│   │   │   └── PrivateRoute.tsx         # Protected routes
 │   │   ├── lib/
-│   │   ├── App.jsx
-│   │   ├── firebase.js
-│   │   └── supabaseClient.js
-│   ├── public/
-│   ├── .env
+│   │   │   └── cloudinary.ts            # Cloudinary upload utility
+│   │   ├── pages/
+│   │   │   ├── About.tsx
+│   │   │   ├── ContactUs.tsx
+│   │   │   ├── CreateHouse.tsx          # Add property
+│   │   │   ├── EditListing.tsx          # Edit property
+│   │   │   ├── EmailVerification.tsx    # OTP verification
+│   │   │   ├── ForgotPassword.tsx
+│   │   │   ├── Home.tsx                 # Landing page
+│   │   │   ├── Listing.tsx              # Property details
+│   │   │   ├── Profile.tsx              # User profile & listings
+│   │   │   ├── ResetPassword.tsx
+│   │   │   ├── Search.tsx               # Property search
+│   │   │   ├── SignIn.tsx
+│   │   │   ├── SignUp.tsx
+│   │   │   └── VerifyResetOtp.tsx
+│   │   ├── popups/
+│   │   │   └── tostHelper.ts            # Toast notifications
+│   │   ├── assets/                      # Images and static files
+│   │   ├── App.tsx
+│   │   ├── firebase.js                  # Firebase config
+│   │   ├── main.tsx
+│   │   ├── index.css
+│   │   └── vite-env.d.ts
+│   ├── index.html
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── vite.config.js
 │   └── eslint.config.js
 ├── .gitignore
 └── README.md
-🚀 Installation & Setup
-Prerequisites
-Node.js (v14 or higher)
+```
 
-MongoDB installed locally or cloud connection
+## 🚀 Installation & Setup
 
-npm or yarn package manager
+### Prerequisites
 
-Backend Setup
-Navigate to backend directory:
+- Node.js (v16 or higher)
+- MongoDB (local or MongoDB Atlas)
+- npm or yarn package manager
+- Cloudinary account
+- Gmail account with App Password enabled
+- Firebase project (for OAuth)
 
-bash
+### Backend Setup
+
+1. Navigate to backend directory:
+
+```bash
 cd backend
-Install dependencies:
+```
 
-bash
+2. Install dependencies:
+
+```bash
 npm install
-Configure environment variables:
-Create/update .env file in backend directory with:
+```
 
-env
-PORT=3000
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-FIREBASE_CONFIG=your_firebase_config
-MAILTRAP_API_KEY=your_mailtrap_key
-Start the backend server:
+3. Configure environment variables:
+   Create `.env` file in backend directory:
 
-bash
-npm run start
-Backend will run on http://localhost:3000
+```env
+PORT=4000
+CONNECTION_STRING=your_mongodb_connection_string
+SECRET_KEY=your_jwt_secret_key
 
-Frontend Setup
-Navigate to frontend directory:
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
-bash
+# Gmail SMTP
+MAIL_SERVICE_OWNER=your_gmail_address@gmail.com
+MAIL_SERVICE_PASSWORD=your_gmail_app_password
+
+NODE_ENV=development
+PWD=your_mongodb_password
+```
+
+4. Start the backend server:
+
+```bash
+npm start
+```
+
+Backend will run on **http://localhost:4000**
+
+### Frontend Setup
+
+1. Navigate to frontend directory:
+
+```bash
 cd frontend
-Install dependencies:
+```
 
-bash
+2. Install dependencies:
+
+```bash
 npm install
-Configure environment variables:
-Create/update .env file in frontend directory with:
+```
 
-env
-VITE_API_BASE_URL=http://localhost:3000
-VITE_FIREBASE_CONFIG=your_firebase_config
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_KEY=your_supabase_key
-Start the development server:
+3. Configure environment variables:
+   Create `.env` file in frontend directory:
 
-bash
+````env
+# Firebase Configuration
+VITE_API_KEY=your_firebase_api_key
+
+4. Start the development server:
+
+```bash
 npm run dev
-Frontend will run on http://localhost:5173
+````
 
-🔧 Environment Variables
-Backend (.env)
-PORT: Server port (default: 3000)
+Frontend will run on **http://localhost:5173**
 
-MONGODB_URI: MongoDB connection string
+## 🔧 Environment Variables
 
-JWT_SECRET: Secret key for JWT tokens
+### Backend (.env)
 
-FIREBASE_CONFIG: Firebase configuration
+| Variable                | Description                          |
+| ----------------------- | ------------------------------------ |
+| `PORT`                  | Server port (default: 4000)          |
+| `CONNECTION_STRING`     | MongoDB connection string            |
+| `SECRET_KEY`            | Secret key for JWT tokens            |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name                |
+| `CLOUDINARY_API_KEY`    | Cloudinary API key                   |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret                |
+| `MAIL_SERVICE_OWNER`    | Gmail address for sending emails     |
+| `MAIL_SERVICE_PASSWORD` | Gmail app password                   |
+| `NODE_ENV`              | Environment (development/production) |
+| `PWD`                   | MongoDB password                     |
 
-MAILTRAP_API_KEY: Mailtrap API key for emails
+### Frontend (.env)
 
-Frontend (.env)
-VITE_API_BASE_URL: Backend API base URL
+| Variable       | Description  |
+| -------------- | ------------ |
+| `VITE_API_KEY` | Firebase API |
 
-VITE_FIREBASE_CONFIG: Firebase configuration
+## 📋 API Endpoints
 
-VITE_SUPABASE_URL: Supabase project URL
+### Authentication Routes
 
-VITE_SUPABASE_KEY: Supabase API key
+- `POST /api/auth/signup` - Register new user
+- `POST /api/auth/verify-email` - Verify email with OTP
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/verify-reset-otp` - Verify reset OTP
+- `POST /api/auth/reset-password` - Reset password
+- `PATCH /api/auth/update-profile` - Update user profile
+- `DELETE /api/auth/delete` - Delete user account
 
-🤝 Contribution
-Fork the repository
+### House Routes
 
-Create a feature branch (git checkout -b feature/AmazingFeature)
+- `GET /api/houses` - Get all properties
+- `GET /api/houses/:userId` - Get user's properties
+- `GET /api/houses/listing/:id` - Get single property
+- `POST /api/houses/create` - Create new property
+- `PUT /api/houses/:id` - Update property
+- `DELETE /api/houses/:id` - Delete property
 
-Commit your changes (git commit -m 'Add some AmazingFeature')
+### Cloudinary Routes
 
-Push to the branch (git push origin feature/AmazingFeature)
+- `POST /api/cloudinary/upload` - Upload image to Cloudinary
 
-Open a Pull Request
+## 🎨 Key Features Implementation
 
-📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Authentication Flow
 
-🏆 Acknowledgments
-React.js community
+1. User signs up with email, username, and password
+2. OTP sent to email via Mailtrap
+3. User verifies email with OTP
+4. JWT token generated and stored in HTTP-only cookie
+5. Redux stores user data with persistence
 
-MongoDB Atlas
+### Property Management Flow
 
-Firebase team
+1. Authenticated users can create listings
+2. Images uploaded to Cloudinary
+3. Property data stored in MongoDB
+4. Users can view, edit, and delete their own listings
+5. Public users can search and view all listings
 
-Supabase team
+### Search Functionality
 
-Mailtrap service
+- Filter by property type (rent/sale)
+- Search by location
+- Price range filtering
+- Bedroom and bathroom count filtering
+- Results displayed in responsive grid
 
-Samsar ProMax - Revolutionizing rental management with technology and intelligence.
+## 🤝 Contributing
 
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🏆 Acknowledgments
+
+- React.js and TypeScript communities
+- MongoDB and Mongoose
+- Express.js framework
+- Cloudinary for image management
+- Gmail SMTP for email delivery
+- Firebase for OAuth integration
+- Tailwind CSS for styling
+- Redux Toolkit for state management
+
+---
+
+**Samsar ProMax** - Revolutionizing real estate management with modern technology 🚀
