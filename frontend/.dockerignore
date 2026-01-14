@@ -4,6 +4,5 @@ build
 dist
 .git
 .gitignore
-.env
-#.env: should exist here and not pushed the env file are injected mannually
-#before that the image is working either in dev or prod
+# .env is NOT ignored - it's needed during Docker build for Vite to embed VITE_* variables
+# The .env file is only used during build stage and won't exist in the final nginx image
