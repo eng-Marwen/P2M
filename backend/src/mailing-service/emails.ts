@@ -47,14 +47,18 @@ export const sendWemcomeEmail = async (
 
 export const sendResetPasswordOtpEmail = async (
   otp: string,
-  email: string
+  email: string,
+  name: string
 ): Promise<void> => {
   try {
     const response = await sendMail.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
       to: email,
       subject: "Your Password Reset OTP",
-      html: PASSWORD_RESET_OTP_TEMPLATE.replace("{otpCode}", otp),
+      html: PASSWORD_RESET_OTP_TEMPLATE.replace("{otpCode}", otp).replace(
+        "{userName}",
+        name
+      ),
     });
     console.log("Reset password OTP email sent successfully", response);
   } catch (error) {
@@ -66,14 +70,15 @@ export const sendResetPasswordOtpEmail = async (
 };
 
 export const sendResetPwdSuccessfullyMail = async (
-  email: string
+  email: string,
+  name: string
 ): Promise<void> => {
   try {
     const response = await sendMail.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
       to: email,
       subject: "Password resetting",
-      html: PASSWORD_RESET_SUCCESS_TEMPLATE,
+      html: PASSWORD_RESET_SUCCESS_TEMPLATE.replace("{userName}", name),
     });
     console.log("Reset password success email sent successfully", response);
   } catch (error) {
