@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
@@ -61,6 +61,38 @@ const Profile = () => {
     currentPassword: "",
     password: "",
   });
+
+  // Load user listings on component mount
+  useEffect(() => {
+    const loadListings = async () => {
+      if (!currentUser?._id) return;
+
+      try {
+        setLoadingListings(true);
+        const response = await axios.get<{ data?: Listing[] }>(
+          `/api/houses/${currentUser._id}`,
+          {
+            withCredentials: true,
+          }
+        );
+        setUserListings(response.data.data || []);
+      } catch (error: unknown) {
+        console.error("Failed to load listings:", error);
+        let message = "Failed to load listings";
+        if (error && typeof error === "object" && "response" in error) {
+          const axiosError = error as {
+            response?: { data?: { message?: string } };
+          };
+          message = axiosError.response?.data?.message || message;
+        }
+        showToast(message, "error");
+      } finally {
+        setLoadingListings(false);
+      }
+    };
+
+    loadListings();
+  }, [currentUser?._id]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,9 +296,9 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-start">
         {/* Profile section */}
-        <aside className="lg:col-span-1 bg-white rounded-lg shadow p-6">
+        <aside className="lg:col-span-1 lg:sticky lg:top-8 bg-white rounded-lg shadow p-6 max-h-[calc(100vh-4rem)] overflow-y-auto">
           <div className="flex flex-col items-center text-center gap-3">
             <input
               type="file"
@@ -316,13 +348,6 @@ const Profile = () => {
               className="w-full px-4 py-2 bg-black/4 text-black border border-black rounded-md "
             >
               {showEdit ? "Close Edit" : "Edit Profile"}
-            </button>
-
-            <button
-              onClick={handleShowListings}
-              className="w-full px-4 py-2 border rounded-md hover:bg-gray-50"
-            >
-              {loadingListings ? "Loading..." : "Show My Listings"}
             </button>
 
             <button
@@ -425,20 +450,20 @@ const Profile = () => {
               {userListings.map((listing) => (
                 <div
                   key={listing._id}
-                  className="bg-white rounded-lg shadow hover:shadow-md transition p-4 flex gap-4"
+                  className="bg-white rounded-lg shadow hover:shadow-md transition p-4 flex gap-4 min-h-[120px]"
                 >
                   <img
                     src={listing.images?.[0] || "/placeholder-house.jpg"}
                     alt={listing.name}
                     className="w-28 h-20 rounded-md object-cover shrink-0"
                   />
-                  <div className="flex-1 flex flex-col">
-                    <div className="flex justify-between items-start">
-                      <div className="font-semibold text-gray-800 truncate">
+                  <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                    <div className="flex items-start gap-2 mb-1">
+                      <div className="font-semibold text-gray-800 truncate flex-1 min-w-0">
                         {listing.name}
                       </div>
                       <span
-                        className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap shrink-0 ${
                           listing.type === "rent"
                             ? "bg-blue-100 text-blue-800"
                             : "bg-green-100 text-green-800"
@@ -447,18 +472,18 @@ const Profile = () => {
                         {listing.type === "rent" ? "For Rent" : "For Sale"}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-500 mt-1 line-clamp-2">
+                    <div className="text-sm text-gray-500 truncate">
                       📍 {listing.address}
                     </div>
 
-                    <div className="mt-auto flex items-center justify-between pt-2">
-                      <div className="text-xs text-gray-500">
+                    <div className="mt-auto flex items-center justify-between pt-2 gap-2">
+                      <div className="text-xs text-gray-500 truncate">
                         🛏 {listing.bedrooms} • 🚿 {listing.bathrooms}{" "}
                         {listing.area !== undefined &&
                           listing.area !== null &&
                           listing.area !== "" && <>• 📐 {listing.area} m²</>}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 shrink-0">
                         <button
                           onClick={() =>
                             navigate(`/edit-listing/${listing._id}`)

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { FaBars, FaSearch, FaTimes } from "react-icons/fa";
+import logoImage from "../assets/image-removebg-preview.png";
 import { useSelector } from "react-redux";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { RootState } from "../app/store";
@@ -38,14 +39,14 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <img
-              src="https://github.com/eng-Marwen/images/blob/main/logoSamsar.png?raw=true"
+              src={logoImage}
               className="w-15  rounded-lg"
             />
             <div className="hidden sm:flex flex-col leading-tight">
               <span className="text-xl font-semibold text-shadow-black">
                 Samsar
               </span>
-              <span className="text-lg font-medium text-slate-500 -mt-0.5">
+              <span className="text-lg font-semibold text-red-800 -mt-0.5">
                 ProMax
               </span>
             </div>
@@ -126,8 +127,8 @@ const Header = () => {
             <NavLink
               to="/"
               className={({ isActive }) =>
-                `text-sm hover:text-slate-800 hover:font-semibold hover:underline ${
-                  isActive ? "text-indigo-600 font-semibold" : "text-black"
+                ` hover:text-slate-800 hover:font-semibold hover:underline ${
+                  isActive ? "text-black font-semibold underline" : "text-sm text-black"
                 }`
               }
             >
@@ -136,8 +137,8 @@ const Header = () => {
             <NavLink
               to="/about"
               className={({ isActive }) =>
-                `text-sm hover:text-slate-800 hover:font-semibold hover:underline ${
-                  isActive ? "text-indigo-600 font-semibold" : "text-black"
+                ` hover:text-slate-800 hover:font-semibold hover:underline ${
+                  isActive ? "text-black font-semibold underline" : "text-black text-sm"
                 }`
               }
             >
@@ -148,7 +149,7 @@ const Header = () => {
               to="/contact"
               className={({ isActive }) =>
                 `text-sm hover:text-slate-800 hover:font-semibold hover:underline ${
-                  isActive ? "text-indigo-600 font-semibold" : "text-black"
+                  isActive ? "text-balck font-semibold underline" : "text-sm text-black"
                 }`
               }
             >

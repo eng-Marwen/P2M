@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { AppDispatch } from "../app/store";
 import { signInFailure } from "../app/user/userSlice";
+import logoImage from "../assets/image-removebg-preview.png";
 import OAuth from "../components/OAuth";
 import { showToast } from "../popups/tostHelper";
 
@@ -89,31 +90,12 @@ const SignUp = () => {
             Create an account to list properties, save favorites and manage your
             profile.
           </p>
-          <div className="mt-6 w-40 h-40 rounded-xl bg-white/60 shadow-inner grid place-items-center">
-            {/* svg */}
-            <svg
-              width="72"
-              height="72"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="text-rose-400"
-            >
-              <path
-                d="M3 9.75L12 4l9 5.75v8.5A1.75 1.75 0 0 1 19.25 20H4.75A1.75 1.75 0 0 1 3 18.25v-8.5z"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M7 21v-6.5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1V21"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
+
+          <img
+            src={logoImage}
+            alt="Samsar Logo"
+            className="w-32 h-32 object-contain"
+          />
         </div>
 
         {/* Right - form */}

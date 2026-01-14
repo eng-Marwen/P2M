@@ -865,7 +865,7 @@ const EditListing = () => {
           {/* Submit button */}
           <button
             type="submit"
-            className="bg-slate-700 text-white p-3 rounded-lg hover:opacity-95 uppercase font-semibold"
+            className="bg-black text-white p-3 font-semibold rounded-lg hover:opacity-95 uppercase "
             onClick={handleSubmitForm}
           >
             {creating ? "Updating Listing..." : "Update Listing"}
