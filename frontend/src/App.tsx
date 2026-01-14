@@ -20,6 +20,7 @@ import VerifyResetOtp from "./pages/VerifyResetOtp";
 // Set default config for all axios requests
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = 'http://localhost:4000';
+
 function App() {
   return (
     <BrowserRouter>
