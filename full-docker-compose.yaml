@@ -1,7 +1,7 @@
 version: "1"
 services:
   frontend:
-#TODO: find a replacement for including the env file
+#TODO: find a replacement for including the env file (config.js.template)
     image: engmarwen/samsar:frontend-1.0
     ports:
         - 5173:80
