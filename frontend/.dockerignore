@@ -1,0 +1,9 @@
+#these files can't be inside the image at all
+node_modules
+build
+dist
+.git
+.gitignore
+.env
+#.env: should exist here and not pushed the env file are injected mannually
+#before that the image is working either in dev or prod
