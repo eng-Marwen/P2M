@@ -1,13 +1,12 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import dotenv from "dotenv"; //+dotenv.config() for accessing to strings in env file(do it just here)
 import express, { Express } from "express";
 import morgan from "morgan";
-import { connectDB } from "./DB/connectDB"; //use  when u import local files
+import { connectDB } from "./DB/connectDB";
 import authRoutes from "./routes/auth.route";
 import cloudinaryRoutes from "./routes/cloudinary.route";
 import houseRoutes from "./routes/house.route";
-dotenv.config();
+
 const app: Express = express();
 app.use(
   cors({

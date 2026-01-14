@@ -25,7 +25,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       throw new Error("EMAIL, USERNAME AND PASSWORD ARE REQUIRED!");
     }
 
-    const isExisted = await User.findOne({ email });
+    const isExisted = await User.findOne({ email }).lean();
     if (isExisted && isExisted.isVerified)
       throw new Error("USER ALREADY EXISTS");
     const verificationToken = Math.floor(100000 + Math.random() * 900000); //6 digits code
@@ -71,7 +71,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: (error as Error).message,
+      message: (error as Error).message
     });
   }
 };
@@ -162,10 +162,8 @@ export const forgotPassword = async (
 ): Promise<void> => {
   try {
     const { email } = req.body;
-    if (!email) throw new Error("email is required");
+    if (!email) throw new Error("email is required!");
     const user = await User.findOne({ email });
-    // Always respond 200 to avoid exposing whether email exists.
-    // If user exists, create OTP and send email. If not, just return success.
     if (!user) {
       res.status(404).json({
         status: "fail",
@@ -186,7 +184,6 @@ export const forgotPassword = async (
     user.resetPasswordTokenExpiresAt = resetPasswordTokenExpiresAt;
 
     await user.save();
-    //TODO: send email reset password otp code
     await sendResetPasswordOtpEmail(String(otp), user.email); // function will include OTP in email
 
     res.status(200).json({
@@ -194,7 +191,6 @@ export const forgotPassword = async (
       message: "OTP sent successfully.",
     });
   } catch (error) {
-    // In case of server error, respond 500
     console.error("forgotPassword error:", error);
     res.status(500).json({
       status: "failed",
@@ -203,7 +199,6 @@ export const forgotPassword = async (
   }
 };
 
-//TODO:verif code
 export const verifyResetOtp = async (
   req: Request,
   res: Response
@@ -219,9 +214,8 @@ export const verifyResetOtp = async (
       return;
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).lean();
     if (!user) {
-      // Security: do not reveal email existence
       res.status(400).json({
         status: "fail",
         message: "Invalid or expired OTP",
@@ -274,6 +268,7 @@ export const verifyResetOtp = async (
     });
   }
 };
+
 export const resetPassword = async (
   req: Request,
   res: Response
@@ -308,12 +303,10 @@ export const resetPassword = async (
     user.resetPasswordTokenExpiresAt = undefined;
 
     await user.save();
-    // ✅ CLEAR COOKIE
     res.clearCookie("tempResetToken", {
       httpOnly: true,
       sameSite: "lax",
     });
-    // ✅ Send success email
     await sendResetPwdSuccessfullyMail(user.email);
 
     res.status(200).json({
