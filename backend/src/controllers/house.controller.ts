@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import House from "../models/house.model";
+import House from "../models/house.model.js";
 
 // Extend Request with userId
 interface AuthRequest extends Request {
@@ -257,7 +257,6 @@ export const getAllHouses = async (
       .sort({ [sort]: sortOrder })
       .skip(skip)
       .limit(limit);
-      
 
     const total = await House.countDocuments(filter);
 

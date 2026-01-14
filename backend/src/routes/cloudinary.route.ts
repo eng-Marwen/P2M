@@ -1,9 +1,7 @@
-import express, {Router} from "express";
-import {
-  deleteImage
-} from "../controllers/cloudinary.controller";
+import express, { Router } from "express";
+import { deleteImage } from "../controllers/cloudinary.controller.js";
 
-const router:Router = express.Router();
+const router: Router = express.Router();
 
 router.post("/delete", deleteImage);
 

@@ -2,10 +2,10 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { Express } from "express";
 import morgan from "morgan";
-import { connectDB } from "./DB/connectDB";
-import authRoutes from "./routes/auth.route";
-import cloudinaryRoutes from "./routes/cloudinary.route";
-import houseRoutes from "./routes/house.route";
+import { connectDB } from "./DB/connectDB.js";
+import authRoutes from "./routes/auth.route.js";
+import cloudinaryRoutes from "./routes/cloudinary.route.js";
+import houseRoutes from "./routes/house.route.js";
 
 const app: Express = express();
 app.use(

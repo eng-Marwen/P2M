@@ -1,15 +1,15 @@
-import express, {Router} from "express";
+import express, { Router } from "express";
 import {
   deleteHouseById,
+  getAllHouses,
+  getHouseById,
   getUserHousesByUserId,
   postHouse,
   updateListingById,
-  getHouseById,
-  getAllHouses
-} from "../controllers/house.controller";
-import { verifyToken } from "../middlewares/verifyToken";
+} from "../controllers/house.controller.js";
+import { verifyToken } from "../middlewares/verifyToken.js";
 
-const router:Router = express.Router();
+const router: Router = express.Router();
 
 router.post("/", verifyToken, postHouse);
 router.get("/house/:id", getHouseById);

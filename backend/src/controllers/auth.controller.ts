@@ -7,10 +7,10 @@ import {
   sendResetPwdSuccessfullyMail,
   sendVerificatinMail,
   sendWemcomeEmail,
-} from "../mailing-service/emails";
-import House from "../models/house.model";
-import { User } from "../models/user.model";
-import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie";
+} from "../mailing-service/emails.js";
+import House from "../models/house.model.js";
+import { User } from "../models/user.model.js";
+import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
 
 // Extend Request with userId
 interface AuthRequest extends Request {
