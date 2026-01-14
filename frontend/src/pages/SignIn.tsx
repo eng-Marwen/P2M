@@ -3,33 +3,49 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { signInFailure, signInSuccess } from "../app/user/userSlice.js";
-import OAuth from "../components/OAuth.jsx";
-import { showToast } from "../popups/tostHelper.js";
+import { AppDispatch } from "../app/store";
+import { signInFailure, signInSuccess } from "../app/user/userSlice";
+import OAuth from "../components/OAuth";
+import { showToast } from "../popups/tostHelper";
+
+interface SignInForm {
+  email: string;
+  password: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
 
 const SignIn = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<SignInForm>({
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleChange = (e) =>
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData((s) => ({ ...s, [e.target.id]: e.target.value }));
 
-  const handleFormSubmit = async (e) => {
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.post(
+      const response = await axios.post<ApiResponse>(
         "http://localhost:4000/api/auth/signin",
         formData
       );
       showToast("Signed in successfully", "success");
       dispatch(signInSuccess(response.data.data));
       setTimeout(() => navigate("/"), 1200);
-    } catch (error) {
+    } catch (err: unknown) {
       dispatch(signInFailure("Sign in failed"));
+      const error = err as any;
       const message =
         error.response?.data?.message ||
         error.response?.data ||
@@ -121,7 +137,9 @@ const SignIn = () => {
           </form>
 
           <div className="flex gap-2 pt-5">
-            <p className="text-sm text-black text-nowrap">Don't have an account yet?</p>
+            <p className="text-sm text-black text-nowrap">
+              Don't have an account yet?
+            </p>
             <Link
               to="/sign-up"
               className="text-black font-semibold underline text-sm text-nowrap"

@@ -3,15 +3,71 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { uploadToCloudinary } from "../lib/cloudinary";
-import { showToast } from "../popups/tostHelper.js";
+import { showToast } from "../popups/tostHelper";
+
+interface FormData {
+  name: string;
+  description: string;
+  address: string;
+  type: "sale" | "rent" | "";
+  parking: boolean;
+  furnished: boolean;
+  offer: boolean;
+  bedrooms: number;
+  bathrooms: number;
+  regularPrice: number;
+  discountedPrice: number;
+  area: string | number;
+}
+
+interface UploadedImage {
+  url: string;
+  publicId: string;
+}
+
+interface ExistingImage {
+  url: string;
+  id: string;
+  isExisting: boolean;
+  publicId: string | null;
+}
+
+interface ListingData {
+  _id: string;
+  name: string;
+  description: string;
+  address: string;
+  type: "sale" | "rent";
+  parking: boolean;
+  furnished: boolean;
+  offer: boolean;
+  bedrooms: number;
+  bathrooms: number;
+  regularPrice: number;
+  discountedPrice?: number;
+  area?: number;
+  images: string[];
+}
+
+interface ApiResponse {
+  success?: boolean;
+  message?: string;
+  data?: ListingData;
+}
+
+interface CloudinaryDeleteResponse {
+  status?: string;
+  result?: string;
+  message?: string;
+}
 
 const EditListing = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [listing, setListing] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [listing, setListing] = useState<ListingData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     description: "",
     address: "",
@@ -27,16 +83,16 @@ const EditListing = () => {
   });
 
   // Image states
-  const [files, setFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState([]);
-  const [existingImages, setExistingImages] = useState([]); // Add this for existing images
-  const [formSubmitted, setFormSubmitted] = useState(false);
-  const fileInputRef = useRef(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [creating, setCreating] = useState<boolean>(false);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [existingImages, setExistingImages] = useState<ExistingImage[]>([]); // Add this for existing images
+  const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper: extract Cloudinary public_id from a secure_url
-  const extractPublicIdFromUrl = (url) => {
+  const extractPublicIdFromUrl = (url: string): string | null => {
     try {
       if (!url || !url.includes("/res.cloudinary.com/")) return null;
       // Match everything after /upload/ optionally skipping version like v123456789/
@@ -60,7 +116,7 @@ const EditListing = () => {
         console.log("Fetching listing with ID:", id);
 
         // Update the API endpoint to match your backend
-        const response = await axios.get(
+        const response = await axios.get<ApiResponse>(
           `http://localhost:4000/api/houses/house/${id}`,
           {
             withCredentials: true,
@@ -70,6 +126,10 @@ const EditListing = () => {
         console.log("Full response:", response.data);
 
         const listingData = response.data.data;
+        if (!listingData) {
+          throw new Error("Listing data not found");
+        }
+
         setListing(listingData);
 
         // Populate form data (include optional area)
@@ -105,10 +165,15 @@ const EditListing = () => {
           setExistingImages(existingImagesData);
           console.log("Existing images loaded:", existingImagesData);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error fetching listing:", error);
-        const message =
-          error.response?.data?.message || "Failed to load listing";
+        let message = "Failed to load listing";
+        if (error && typeof error === "object" && "response" in error) {
+          const axiosError = error as {
+            response?: { data?: { message?: string } };
+          };
+          message = axiosError.response?.data?.message || message;
+        }
         showToast(message, "error");
       } finally {
         setLoading(false);
@@ -127,12 +192,12 @@ const EditListing = () => {
 
   // --- Replace previous cleanup useCallback + effect with ref-based one-time listeners ---
   // Keep refs in sync so unload handlers see the latest state without re-subscribing
-  const uploadedImagesRef = useRef(uploadedImages);
+  const uploadedImagesRef = useRef<UploadedImage[]>(uploadedImages);
   useEffect(() => {
     uploadedImagesRef.current = uploadedImages;
   }, [uploadedImages]);
 
-  const formSubmittedRef = useRef(formSubmitted);
+  const formSubmittedRef = useRef<boolean>(formSubmitted);
   useEffect(() => {
     formSubmittedRef.current = formSubmitted;
   }, [formSubmitted]);
@@ -154,11 +219,12 @@ const EditListing = () => {
         .then((res) => {
           console.log("Deleted remote image:", img.publicId, res.data);
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
+          const errorMsg = err instanceof Error ? err.message : String(err);
           console.warn(
             "Could not delete remote image during unload:",
             img.publicId,
-            err?.message || err
+            errorMsg
           );
         });
     });
@@ -167,7 +233,7 @@ const EditListing = () => {
   };
 
   useEffect(() => {
-    const handleBeforeUnload = (event) => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (uploadedImagesRef.current.length > 0 && !formSubmittedRef.current) {
         // best-effort async cleanup (may not complete in all browsers)
         cleanupUploadedImagesOnUnload();
@@ -192,8 +258,11 @@ const EditListing = () => {
     };
   }, []);
 
-  const handleChange = (e) => {
-    const { id, value, type, checked } = e.target;
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const target = e.target as HTMLInputElement;
+    const { id, value, type, checked } = target;
 
     setFormData((prev) => {
       if (id === "sale" && checked) {
@@ -219,8 +288,8 @@ const EditListing = () => {
     });
   };
 
-  const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
     const totalImages = getTotalImagesCount();
 
     // Check if total would exceed 6
@@ -257,7 +326,7 @@ const EditListing = () => {
     }
   };
 
-  const handleUploadImages = async (e) => {
+  const handleUploadImages = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
     if (files.length === 0) {
@@ -304,7 +373,7 @@ const EditListing = () => {
     }
   };
 
-  const uploadImage = (file) => {
+  const uploadImage = (file: File): Promise<UploadedImage> => {
     return new Promise((resolve, reject) => {
       if (!file) {
         reject(new Error("No file provided"));
@@ -335,7 +404,7 @@ const EditListing = () => {
   };
 
   // Remove existing image (delete from Cloudinary when possible)
-  const removeExistingImage = async (indexToRemove) => {
+  const removeExistingImage = async (indexToRemove: number) => {
     const imageData = existingImages[indexToRemove];
     if (!imageData) {
       showToast("Image not found", "error");
@@ -355,7 +424,7 @@ const EditListing = () => {
     }
 
     try {
-      const res = await axios.post(
+      const res = await axios.post<CloudinaryDeleteResponse>(
         "http://localhost:4000/api/cloudinary/delete",
         { publicId },
         { withCredentials: true }
@@ -377,27 +446,39 @@ const EditListing = () => {
         console.error("Cloudinary delete response:", res.data);
         showToast("Failed to delete image from storage", "error");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error deleting existing image from Cloudinary:", error);
 
-      const status = error.response?.status;
+      let status: number | undefined;
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { status?: number; data?: { message?: string } };
+        };
+        status = axiosError.response?.status;
+      }
+
       if (status === 404) {
         // Already gone on Cloudinary — remove locally
         setExistingImages((prev) => prev.filter((_, i) => i !== indexToRemove));
-        showToast("Image not found on Cloudinary — removed locally", "warning");
+        showToast("Image not found on Cloudinary — removed locally", "success");
         return;
       }
 
-      showToast(
-        error.response?.data?.message ||
-          "Failed to delete image from Cloudinary. See console for details.",
-        "error"
-      );
+      let errorMessage =
+        "Failed to delete image from Cloudinary. See console for details.";
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
+        errorMessage = axiosError.response?.data?.message || errorMessage;
+      }
+
+      showToast(errorMessage, "error");
     }
   };
 
   // Remove uploaded image (and delete from Cloudinary)
-  const removeUploadedImage = async (indexToRemove) => {
+  const removeUploadedImage = async (indexToRemove: number) => {
     const imageToRemove = uploadedImages[indexToRemove];
 
     if (!imageToRemove) {
@@ -429,7 +510,7 @@ const EditListing = () => {
     }
   };
 
-  const removeSelectedFile = (indexToRemove) => {
+  const removeSelectedFile = (indexToRemove: number) => {
     const updatedFiles = files.filter((_, index) => index !== indexToRemove);
     setFiles(updatedFiles);
   };
@@ -441,7 +522,7 @@ const EditListing = () => {
     }
   };
 
-  const handleSubmitForm = async (e) => {
+  const handleSubmitForm = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
     // Validation
@@ -495,8 +576,8 @@ const EditListing = () => {
         ...uploadedImages.map((img) => img.url),
       ];
 
-      // Prepare payload
-      const houseData = {
+      // Prepare payload (use any type to allow dynamic property deletion)
+      const houseData: any = {
         ...formData,
         images: allImages,
         // ensure numeric fields are numbers
@@ -504,18 +585,15 @@ const EditListing = () => {
         bathrooms: Number(formData.bathrooms) || 0,
         regularPrice: Number(formData.regularPrice) || 0,
         discountedPrice:
-          formData.offer && formData.discountedPrice !== ""
+          formData.offer && formData.discountedPrice > 0
             ? Number(formData.discountedPrice) || 0
             : undefined,
       };
 
       // Normalize optional area: send numeric value or omit the field entirely
       if (Object.prototype.hasOwnProperty.call(houseData, "area")) {
-        if (
-          houseData.area === "" ||
-          houseData.area === null ||
-          houseData.area === undefined
-        ) {
+        const areaValue = houseData.area;
+        if (areaValue === "" || areaValue === null || areaValue === undefined) {
           delete houseData.area;
         } else {
           const areaNum = Number(houseData.area);
@@ -538,7 +616,7 @@ const EditListing = () => {
       console.log("Updating house data:", houseData);
 
       // Use PATCH for updating
-      const response = await axios.patch(
+      const response = await axios.patch<ApiResponse>(
         `http://localhost:4000/api/houses/${id}`,
         houseData,
         {
@@ -559,19 +637,29 @@ const EditListing = () => {
       } else {
         throw new Error(response.data?.message || "Failed to update listing");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error updating house listing:", error);
 
       let errorMessage = "Failed to update house listing";
 
-      if (error.response) {
-        errorMessage =
-          error.response.data?.message ||
-          `Server error: ${error.response.status}`;
-      } else if (error.request) {
-        errorMessage = "No response from server. Please check your connection.";
-      } else {
-        errorMessage = error.message || "An unexpected error occurred";
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string }; status: number };
+          request?: unknown;
+          message?: string;
+        };
+        if (axiosError.response) {
+          errorMessage =
+            axiosError.response.data?.message ||
+            `Server error: ${axiosError.response.status}`;
+        } else if (axiosError.request) {
+          errorMessage =
+            "No response from server. Please check your connection.";
+        } else {
+          errorMessage = axiosError.message || "An unexpected error occurred";
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
 
       showToast(errorMessage, "error");

@@ -3,8 +3,35 @@ import { useEffect, useState } from "react";
 import { FaFilter, FaSearch } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import House from "../components/House.jsx";
-import { showToast } from "../popups/tostHelper.js";
+import House from "../components/House";
+import { showToast } from "../popups/tostHelper";
+
+interface SideBarState {
+  searchTerm: string;
+  type: "all" | "rent" | "sale";
+  offer: boolean;
+  parking: boolean;
+  furnished: boolean;
+  sortOrder: string;
+  order: "asc" | "desc";
+}
+
+interface HouseData {
+  _id: string;
+  name: string;
+  address: string;
+  type: "sale" | "rent";
+  images?: string[];
+  regularPrice: number;
+  discountedPrice?: number;
+  offer?: boolean;
+  bedrooms: number;
+  bathrooms: number;
+}
+
+interface ApiResponse {
+  data?: HouseData[];
+}
 
 const COLORS = {
   pageBg: "bg-slate-50",
@@ -27,10 +54,10 @@ const COLORS = {
 const Search = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [loading, setLoading] = useState(false);
-  const [houses, setHouses] = useState([]);
-  const [showFilters, setShowFilters] = useState(false);
-  const [sideBar, setSideBar] = useState({
+  const [loading, setLoading] = useState<boolean>(false);
+  const [houses, setHouses] = useState<HouseData[]>([]);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [sideBar, setSideBar] = useState<SideBarState>({
     searchTerm: "",
     type: "all",
     offer: false,
@@ -40,7 +67,9 @@ const Search = () => {
     order: "desc",
   });
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     if (
       e.target.id === "all" ||
       e.target.id === "rent" ||
@@ -48,7 +77,7 @@ const Search = () => {
     ) {
       setSideBar((prev) => ({
         ...prev,
-        type: e.target.id,
+        type: e.target.id as "all" | "rent" | "sale",
       }));
     } else if (e.target.id === "search") {
       setSideBar((prev) => ({
@@ -60,10 +89,11 @@ const Search = () => {
       e.target.id === "parking" ||
       e.target.id === "furnished"
     ) {
+      const target = e.target as HTMLInputElement;
       setSideBar((prev) => ({
         ...prev,
         [e.target.id]:
-          e.target.checked || e.target.checked === "true" ? true : false,
+          target.checked || (target.checked as any) === "true" ? true : false,
       }));
     } else if (e.target.id === "sort_order") {
       const val = (e.target.value || "").toString();
@@ -72,16 +102,16 @@ const Search = () => {
 
       if (val.includes("_")) {
         const parts = val.split("_");
-        order = parts.pop().toLowerCase();
+        order = parts.pop()?.toLowerCase() || "desc";
         sort = parts.join("_");
       } else if (val.includes("-")) {
         const parts = val.split("-");
-        order = parts.pop().toLowerCase();
+        order = parts.pop()?.toLowerCase() || "desc";
         sort = parts.join("-");
       } else {
         const parts = val.split(/(?=[A-Z])/);
         if (parts.length > 1) {
-          order = parts.pop().toLowerCase();
+          order = parts.pop()?.toLowerCase() || "desc";
           sort = parts.join("");
         } else {
           sort = val || sort;
@@ -94,22 +124,23 @@ const Search = () => {
       setSideBar((prev) => ({
         ...prev,
         sortOrder: sort,
-        order: order || "desc",
+        order: (order || "desc") as "asc" | "desc",
       }));
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
-    showToast("Searching...", "info");
+    showToast("Searching...", "success");
 
     const queryParams = new URLSearchParams();
     if (sideBar.searchTerm) queryParams.append("search", sideBar.searchTerm);
     if (sideBar.type && sideBar.type !== "all")
       queryParams.append("type", sideBar.type);
-    if (sideBar.offer) queryParams.append("offer", sideBar.offer);
-    if (sideBar.parking) queryParams.append("parking", sideBar.parking);
-    if (sideBar.furnished) queryParams.append("furnished", sideBar.furnished);
+    if (sideBar.offer) queryParams.append("offer", String(sideBar.offer));
+    if (sideBar.parking) queryParams.append("parking", String(sideBar.parking));
+    if (sideBar.furnished)
+      queryParams.append("furnished", String(sideBar.furnished));
     if (sideBar.sortOrder) queryParams.append("sort", sideBar.sortOrder);
     if (sideBar.order) queryParams.append("order", sideBar.order);
     const queryString = queryParams.toString();
@@ -122,7 +153,7 @@ const Search = () => {
     const searchTerm = urlParams.get("search") || "";
     const type = urlParams.get("type") || "all";
 
-    const parseBool = (v) => v === "true" || v === "1";
+    const parseBool = (v: string | null): boolean => v === "true" || v === "1";
     const offer = parseBool(urlParams.get("offer"));
     const parking = parseBool(urlParams.get("parking"));
     const furnished = parseBool(urlParams.get("furnished"));
@@ -134,12 +165,12 @@ const Search = () => {
       setSideBar((prev) => ({
         ...prev,
         searchTerm,
-        type,
+        type: type as "all" | "rent" | "sale",
         offer,
         parking,
         furnished,
         sortOrder,
-        order,
+        order: order as "asc" | "desc",
       }));
     }
 
@@ -150,16 +181,16 @@ const Search = () => {
         const url = `http://localhost:4000/api/houses${
           searchQuery ? `?${searchQuery}` : ""
         }`;
-        const response = await axios.get(url);
+        const response = await axios.get<ApiResponse>(url);
         const data = response?.data;
         if (!data) {
           setHouses([]);
-          showToast("No results found", "info");
+          showToast("No results found", "error");
         } else {
           const housesArray = Array.isArray(data.data)
             ? data.data
             : Array.isArray(data)
-            ? data
+            ? (data as any)
             : [];
           setHouses(housesArray);
           if (housesArray.length === 0) {
@@ -168,10 +199,14 @@ const Search = () => {
             showToast(`${housesArray.length} result(s) found`, "success");
           }
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(
           "Error fetching houses:",
-          err?.response?.data || err.message
+          err && typeof err === "object" && "response" in err
+            ? (err as any).response?.data
+            : err instanceof Error
+            ? err.message
+            : err
         );
         setHouses([]);
         showToast("Error fetching results", "error");

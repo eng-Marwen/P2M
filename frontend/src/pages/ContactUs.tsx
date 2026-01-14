@@ -1,31 +1,39 @@
 import { useState } from "react";
 import { FaEnvelope, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
 import { ToastContainer } from "react-toastify";
-import { showToast } from "../popups/tostHelper.js";
+import { showToast } from "../popups/tostHelper";
 
 //TODO: connect this form to backend (not implemented yet)
 
+interface ContactForm {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
 const ContactUs = () => {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ContactForm>({
     name: "",
     email: "",
     subject: "",
     message: "",
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleChange = (e) =>
-    setForm((s) => ({ ...s, [e.target.id]: e.target.value }));
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => setForm((s) => ({ ...s, [e.target.id]: e.target.value }));
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) {
       showToast("Please fill name, email and message.", "error");
       return;
     }
     setLoading(true);
-          showToast("Message sent — we'll reply soon!", "success");
-      setForm({ name: "", email: "", subject: "", message: "" });
+    showToast("Message sent — we'll reply soon!", "success");
+    setForm({ name: "", email: "", subject: "", message: "" });
   };
 
   return (

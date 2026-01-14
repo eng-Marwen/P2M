@@ -12,10 +12,39 @@ import { Swiper, SwiperSlide } from "swiper/react";
 const placeholder =
   "https://images.unsplash.com/photo-1505691723518-36a1fb0a5c5a?w=1200&q=60&auto=format&fit=crop";
 
-const Card = ({ listing }) => {
+interface Listing {
+  _id: string;
+  name: string;
+  description?: string;
+  address?: string;
+  location?: string;
+  type: "sale" | "rent";
+  images?: string[];
+  regularPrice: number;
+  discountedPrice?: number;
+  offer?: boolean;
+  rooms?: number;
+}
+
+interface CardProps {
+  listing: Listing;
+}
+
+interface SectionHeaderProps {
+  title: string;
+  to?: string;
+}
+
+interface ApiResponse {
+  data?: Listing[];
+}
+
+const Card = ({ listing }: CardProps) => {
   const img = listing?.images?.[0] || placeholder;
   const discountPercent =
-    listing?.discountedPrice > 0 && listing?.regularPrice
+    listing?.discountedPrice &&
+    listing.discountedPrice > 0 &&
+    listing?.regularPrice
       ? Math.round(
           ((listing.regularPrice - listing.discountedPrice) /
             listing.regularPrice) *
@@ -53,7 +82,7 @@ const Card = ({ listing }) => {
           <div className="text-right">
             <div className="text-sm font-semibold text-indigo-600">
               $
-              {listing.discountedPrice > 0
+              {listing.discountedPrice && listing.discountedPrice > 0
                 ? listing.discountedPrice
                 : listing.regularPrice}
             </div>
@@ -77,7 +106,7 @@ const Card = ({ listing }) => {
   );
 };
 
-const SectionHeader = ({ title, to }) => (
+const SectionHeader = ({ title, to }: SectionHeaderProps) => (
   <div className="flex items-center justify-between mb-4">
     <h2 className="text-xl font-semibold text-slate-800">{title}</h2>
     {to && (
@@ -89,17 +118,20 @@ const SectionHeader = ({ title, to }) => (
 );
 
 const Home = () => {
-  const [offerListings, setOfferListings] = useState([]);
-  const [saleListings, setSaleListings] = useState([]);
-  const [rentListings, setRentListings] = useState([]);
+  const [offerListings, setOfferListings] = useState<Listing[]>([]);
+  const [saleListings, setSaleListings] = useState<Listing[]>([]);
+  const [rentListings, setRentListings] = useState<Listing[]>([]);
 
   useEffect(() => {
-    const fetch = async (url, setter) => {
+    const fetch = async (
+      url: string,
+      setter: React.Dispatch<React.SetStateAction<Listing[]>>
+    ) => {
       try {
-        const { data } = await axios.get(url);
+        const { data } = await axios.get<ApiResponse>(url);
         setter(data?.data || []);
         console.log("Fetched data from", url, data);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Fetch error", err);
       }
     };
@@ -164,8 +196,9 @@ const Home = () => {
                 {offerListings?.[0]?.offer && (
                   <span className="absolute top-4 left-4 z-30 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600 text-white text-sm font-semibold shadow">
                     <FaTag className="w-4 h-4" />
-                    {offerListings?.[0]?.discountedPrice > 0 &&
-                    offerListings?.[0]?.regularPrice
+                    {offerListings[0]?.discountedPrice &&
+                    offerListings[0].discountedPrice > 0 &&
+                    offerListings[0]?.regularPrice
                       ? `${Math.round(
                           ((offerListings[0].regularPrice -
                             offerListings[0].discountedPrice) /

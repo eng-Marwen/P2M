@@ -15,16 +15,51 @@ import "swiper/css/bundle";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import { Navigation } from "swiper/modules";
+
+interface ListingData {
+  _id: string;
+  name: string;
+  description?: string;
+  address: string;
+  type: "sale" | "rent";
+  images?: string[];
+  regularPrice: number;
+  discountedPrice?: number;
+  offer?: boolean;
+  bedrooms: number;
+  bathrooms: number;
+  furnished: boolean;
+  parking: boolean;
+  area?: number | string;
+  createdAt: string;
+}
+
+interface OwnerData {
+  name?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  photo?: string;
+  avatar?: string;
+  profilePic?: string;
+}
+
+interface ApiResponse {
+  data?: ListingData | OwnerData;
+  message?: string;
+}
+
 const Listing = () => {
   SwiperCore.use([Navigation]);
-  const { id } = useParams();
-  const [listingData, setListingData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [ownerData, setOwnerData] = useState(null);
-  const [ownerLoading, setOwnerLoading] = useState(false);
-  const [ownerError, setOwnerError] = useState(null);
-  const [showOwnerCard, setShowOwnerCard] = useState(false);
+  const { id } = useParams<{ id: string }>();
+  const [listingData, setListingData] = useState<ListingData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [ownerData, setOwnerData] = useState<OwnerData | null>(null);
+  const [ownerLoading, setOwnerLoading] = useState<boolean>(false);
+  const [ownerError, setOwnerError] = useState<string | null>(null);
+  const [showOwnerCard, setShowOwnerCard] = useState<boolean>(false);
 
   useEffect(() => {
     console.log("useEffect triggered with id:", id);
@@ -35,22 +70,31 @@ const Listing = () => {
         setError(null);
         console.log("Fetching listing data for ID:", id);
 
-        const response = await axios.get(
+        const response = await axios.get<ApiResponse>(
           `http://localhost:4000/api/houses/house/${id}`,
           {
             withCredentials: true,
           }
         );
         if (response.data.data) {
-          setListingData(response.data.data);
+          setListingData(response.data.data as ListingData);
         }
         console.log("Listing data fetched:", response.data.data);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error fetching listing data:", error);
-        const errorMessage =
-          error.response?.data?.message ||
-          error.message ||
-          "Failed to fetch listing data";
+        let errorMessage = "Failed to fetch listing data";
+        if (error && typeof error === "object" && "response" in error) {
+          const axiosError = error as {
+            response?: { data?: { message?: string } };
+            message?: string;
+          };
+          errorMessage =
+            axiosError.response?.data?.message ||
+            axiosError.message ||
+            errorMessage;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
         setError(errorMessage);
       } finally {
         setLoading(false);
@@ -66,7 +110,10 @@ const Listing = () => {
   }, [id]);
 
   // helper: request smaller Cloudinary image without cropping (no c_fill)
-  const transformCloudinaryUrlNoCrop = (url, width = 800) => {
+  const transformCloudinaryUrlNoCrop = (
+    url: string,
+    width: number = 800
+  ): string => {
     try {
       if (!url || !url.includes("/upload/")) return url;
       const token = "/upload/";
@@ -174,7 +221,9 @@ const Listing = () => {
 
           <div className="w-full sm:w-44 text-right">
             {/* Price: show crossed original when offer exists, highlight offer in red */}
-            {listingData.offer && listingData.discountedPrice > 0 ? (
+            {listingData.offer &&
+            listingData.discountedPrice &&
+            listingData.discountedPrice > 0 ? (
               <div className="flex flex-col items-end">
                 <div className="text-sm text-gray-500 line-through">
                   {listingData.regularPrice}$
@@ -191,7 +240,7 @@ const Listing = () => {
               </div>
             ) : (
               <div className="text-3xl font-bold text-green-600">
-                {(listingData.discountedPrice > 0
+                {(listingData.discountedPrice && listingData.discountedPrice > 0
                   ? listingData.discountedPrice
                   : listingData.regularPrice) ?? 0}
                 $
@@ -325,17 +374,28 @@ const Listing = () => {
                   try {
                     setOwnerLoading(true);
                     setOwnerError(null);
-                    const res = await axios.get(
+                    const res = await axios.get<ApiResponse>(
                       `http://localhost:4000/api/auth/houseOwner/${id}`,
                       { withCredentials: true }
                     );
-                    setOwnerData(res.data?.data ?? res.data ?? null);
-                  } catch (err) {
-                    setOwnerError(
-                      err.response?.data?.message ||
-                        err.message ||
-                        "Failed to load owner"
+                    setOwnerData(
+                      (res.data?.data ?? res.data ?? null) as OwnerData | null
                     );
+                  } catch (err: unknown) {
+                    let errorMsg = "Failed to load owner";
+                    if (err && typeof err === "object" && "response" in err) {
+                      const axiosError = err as {
+                        response?: { data?: { message?: string } };
+                        message?: string;
+                      };
+                      errorMsg =
+                        axiosError.response?.data?.message ||
+                        axiosError.message ||
+                        errorMsg;
+                    } else if (err instanceof Error) {
+                      errorMsg = err.message;
+                    }
+                    setOwnerError(errorMsg);
                   } finally {
                     setOwnerLoading(false);
                   }

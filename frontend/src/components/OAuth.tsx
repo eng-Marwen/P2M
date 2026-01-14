@@ -2,16 +2,20 @@ import axios from "axios";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { signInFailure, signInSuccess } from "../app/user/userSlice.js";
+import { AppDispatch } from "../app/store";
+import { signInFailure, signInSuccess } from "../app/user/userSlice";
 import { app } from "../firebase";
-import { uploadToCloudinary } from "../lib/cloudinary.js";
-import { showToast } from "../popups/tostHelper.js";
+import { uploadToCloudinary } from "../lib/cloudinary";
+import { showToast } from "../popups/tostHelper";
 
 const OAuth = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
-  const uploadRemoteImageToCloudinary = async (url) => {
+  // Helper to upload remote image to Cloudinary
+  const uploadRemoteImageToCloudinary = async (
+    url: string
+  ): Promise<string | null> => {
     try {
       console.log("Fetching image from:", url);
       const resp = await fetch(url, { mode: "cors" });

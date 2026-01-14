@@ -3,11 +3,26 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { signInFailure } from "../app/user/userSlice.js";
-import OAuth from "../components/OAuth.jsx";
-import { showToast } from "../popups/tostHelper.js";
+import { AppDispatch } from "../app/store";
+import { signInFailure } from "../app/user/userSlice";
+import OAuth from "../components/OAuth";
+import { showToast } from "../popups/tostHelper";
 
-const COUNTRY_CODES = [
+interface CountryCode {
+  code: string;
+  label: string;
+  flag: string;
+}
+
+interface SignUpForm {
+  email: string;
+  username: string;
+  password: string;
+  address: string;
+  phone: string;
+}
+
+const COUNTRY_CODES: CountryCode[] = [
   { code: "+216", label: "Tunisia", flag: "🇹🇳" },
   { code: "+212", label: "Morocco", flag: "🇲🇦" },
   { code: "+33", label: "France", flag: "🇫🇷" },
@@ -16,10 +31,10 @@ const COUNTRY_CODES = [
 ];
 
 const SignUp = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SignUpForm>({
     email: "",
     username: "",
     password: "",
@@ -27,15 +42,13 @@ const SignUp = () => {
     phone: "",
   });
 
-  // phone prefix (flag + dial code)
-  const [phonePrefix, setPhonePrefix] = useState("+216");
+  const [phonePrefix, setPhonePrefix] = useState<string>("+216");
+  const [load, setLoad] = useState<boolean>(false);
 
-  const [load, setLoad] = useState(false);
-
-  const handleChange = (e) =>
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData((s) => ({ ...s, [e.target.id]: e.target.value }));
 
-  const handleFormSubmit = async (e) => {
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoad(true);
     try {
@@ -46,12 +59,13 @@ const SignUp = () => {
 
       await axios.post("http://localhost:4000/api/auth/signup", payload);
       showToast("OTP code sent to your mail address!", "success");
-      
-        // dispatch(signInSuccess(response.data.data));
-      
+
+      // dispatch(signInSuccess(response.data.data));
+
       setTimeout(() => navigate("/verify-email"), 1200);
-    } catch (error) {
+    } catch (err: unknown) {
       dispatch(signInFailure("Signup failed"));
+      const error = err as any;
       const message =
         error.response?.data?.message ||
         error.response?.data ||

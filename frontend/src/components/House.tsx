@@ -1,8 +1,40 @@
-import { FaBath, FaBed, FaParking, FaRulerCombined, FaTag } from "react-icons/fa";
+import {
+  FaBath,
+  FaBed,
+  FaParking,
+  FaRulerCombined,
+  FaTag,
+} from "react-icons/fa";
 import { MdLocationOn } from "react-icons/md";
 import { Link } from "react-router-dom";
 
-const House = ({ house }) => {
+// 1. Define the House interface - matches your backend model
+interface HouseData {
+  _id: string;
+  name?: string;
+  address?: string;
+  regularPrice: number;
+  discountedPrice?: number;
+  discountPrice?: number; // legacy field
+  offer?: boolean;
+  type: "rent" | "sale";
+  bedrooms: number;
+  bathrooms: number;
+  area?: number;
+  size?: number; // legacy field
+  parking?: boolean;
+  imageUrls?: string[];
+  images?: string[]; // legacy field
+  createdAt?: string;
+}
+
+// 2. Define props interface
+interface HouseProps {
+  house: HouseData;
+}
+
+// 3. Type the component props
+const House = ({ house }: HouseProps) => {
   if (!house) return null;
 
   const image =
@@ -23,7 +55,8 @@ const House = ({ house }) => {
 
   const hasOffer = Boolean(house.offer) && discountedVal > 0;
 
-  const formatCurrency = (v) =>
+  // Helper function with explicit return type
+  const formatCurrency = (v: number): string =>
     Number(v).toLocaleString("en-US", {
       style: "currency",
       currency: "USD",
@@ -108,16 +141,23 @@ const House = ({ house }) => {
 
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs shadow-sm ${
-              hasParking ? "bg-green-50 text-green-800" : "bg-gray-50 text-gray-700"
+              hasParking
+                ? "bg-green-50 text-green-800"
+                : "bg-gray-50 text-gray-700"
             }`}
           >
             <FaParking className="w-3.5 h-3.5" />
-            <span className="font-medium">{hasParking ? "Parking" : "No Parking"}</span>
+            <span className="font-medium">
+              {hasParking ? "Parking" : "No Parking"}
+            </span>
           </div>
 
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-full text-xs text-gray-700 shadow-sm">
             <FaRulerCombined className="w-3.5 h-3.5 text-indigo-600" />
-            <span className="font-medium">{area}{area !== "—" && " m²"}</span>
+            <span className="font-medium">
+              {area}
+              {area !== "—" && " m²"}
+            </span>
           </div>
         </div>
 
