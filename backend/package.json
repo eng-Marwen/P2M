@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "prod": "nodemon dist/server.js",
-    "start": "nodemon --exec tsx src/server.ts",
+    "start": "nodemon --exec tsx src/index.ts",
     "comment:build": "# Compile TypeScript to JavaScript (dist folder)",
     "comment:start": "# Run compiled JS with auto-reload (after npm run build)",
     "comment:dev": "# Run TypeScript directly(tsx) with auto-reload (development)"
