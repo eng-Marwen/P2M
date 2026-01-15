@@ -177,7 +177,7 @@ const Search = () => {
       setLoading(true);
       try {
         const searchQuery = urlParams.toString();
-        const url = `http://localhost:4000/api/houses${
+        const url = `/api/houses${
           searchQuery ? `?${searchQuery}` : ""
         }`;
         const response = await axios.get<ApiResponse>(url);

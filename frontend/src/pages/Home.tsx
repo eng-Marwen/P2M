@@ -136,9 +136,9 @@ const Home = () => {
       }
     };
 
-    fetch("http://localhost:4000/api/houses/?offer=true", setOfferListings);
-    fetch("http://localhost:4000/api/houses/?type=sale", setSaleListings);
-    fetch("http://localhost:4000/api/houses/?type=rent", setRentListings);
+    fetch("/api/houses/?offer=true", setOfferListings);
+    fetch("/api/houses/?type=sale", setSaleListings);
+    fetch("/api/houses/?type=rent", setRentListings);
   }, []);
 
   return (

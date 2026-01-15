@@ -238,13 +238,9 @@ const CreateHouse = () => {
 
       console.log("Submitting house data:", houseData);
 
-      const response = await axios.post<ApiResponse>(
-        "http://localhost:4000/api/houses",
-        houseData,
-        {
-          withCredentials: true, // If using cookies for auth
-        }
-      );
+      const response = await axios.post<ApiResponse>("/api/houses", houseData, {
+        withCredentials: true, // If using cookies for auth
+      });
 
       console.log("Server response:", response.data);
 
@@ -394,7 +390,7 @@ const CreateHouse = () => {
         try {
           console.log("Deleting Cloudinary image:", imageToRemove.url);
           await axios.post(
-            "http://localhost:4000/api/cloudinary/delete",
+            "/api/cloudinary/delete",
             { publicId: imageToRemove.publicId },
             { withCredentials: true }
           );

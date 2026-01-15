@@ -37,7 +37,7 @@ const SignIn = () => {
     setLoading(true);
     try {
       const response = await axios.post<ApiResponse>(
-        "http://localhost:4000/api/auth/signin",
+        "/api/auth/signin",
         formData
       );
       showToast("Signed in successfully", "success");

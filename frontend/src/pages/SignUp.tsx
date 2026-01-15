@@ -58,7 +58,7 @@ const SignUp = () => {
         phone: formData.phone ? `${phonePrefix}${formData.phone}` : "",
       };
 
-      await axios.post("http://localhost:4000/api/auth/signup", payload);
+      await axios.post("/api/auth/signup", payload);
       showToast("OTP code sent to your mail address!", "success");
 
       // dispatch(signInSuccess(response.data.data));

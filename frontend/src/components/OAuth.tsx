@@ -41,7 +41,10 @@ const OAuth = () => {
 
       return result?.secure_url || null;
     } catch (err) {
-      console.error("Cloudinary upload failed:", err.message || err);
+      console.error(
+        "Cloudinary upload failed:",
+        err instanceof Error ? err.message : err
+      );
       return null;
     }
   };
@@ -89,8 +92,8 @@ const OAuth = () => {
         email: user.email,
         avatar: avatarUrl,
       };
-      const response = await axios.post(
-        "http://localhost:4000/api/auth/google",
+      const response = await axios.post<{ data: any }>(
+        "/api/auth/google",
         body,
         { withCredentials: true }
       );
@@ -108,10 +111,11 @@ const OAuth = () => {
       dispatch(signInFailure("Something went wrong with Google OAuth"));
       console.error("OAuth error:", error);
       console.error("There was an error signing up!", error);
+      const axiosError = error as any;
       const message =
-        error.response?.data?.message || // if your backend sends { message: "..." }
-        error.response?.data || // if backend sends plain text
-        error.message || // fallback from axios
+        axiosError.response?.data?.message || // if your backend sends { message: "..." }
+        axiosError.response?.data || // if backend sends plain text
+        axiosError.message || // fallback from axios
         "Something went wrong with Google OAuth";
       console.log(message);
       showToast(message, "error");

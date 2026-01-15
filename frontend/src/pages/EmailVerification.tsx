@@ -58,7 +58,7 @@ const EmailVerification = () => {
     const verificationCode = code.join("");
 
     axios
-      .post<ApiResponse>("http://localhost:4000/api/auth/verify-email", {
+      .post<ApiResponse>("/api/auth/verify-email", {
         code: verificationCode,
       })
       .then((response) => {

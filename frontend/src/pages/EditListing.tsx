@@ -117,7 +117,7 @@ const EditListing = () => {
 
         // Update the API endpoint to match your backend
         const response = await axios.get<ApiResponse>(
-          `http://localhost:4000/api/houses/house/${id}`,
+          `/api/houses/house/${id}`,
           {
             withCredentials: true,
           }
@@ -212,7 +212,7 @@ const EditListing = () => {
       if (!img?.publicId) return Promise.resolve();
       return axios
         .post(
-          "http://localhost:4000/api/cloudinary/delete",
+          "/api/cloudinary/delete",
           { publicId: img.publicId },
           { withCredentials: true }
         )
@@ -425,7 +425,7 @@ const EditListing = () => {
 
     try {
       const res = await axios.post<CloudinaryDeleteResponse>(
-        "http://localhost:4000/api/cloudinary/delete",
+        "/api/cloudinary/delete",
         { publicId },
         { withCredentials: true }
       );
@@ -488,7 +488,7 @@ const EditListing = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:4000/api/cloudinary/delete",
+        "/api/cloudinary/delete",
         { publicId: imageToRemove.publicId },
         { withCredentials: true }
       );
@@ -617,7 +617,7 @@ const EditListing = () => {
 
       // Use PATCH for updating
       const response = await axios.patch<ApiResponse>(
-        `http://localhost:4000/api/houses/${id}`,
+        `/api/houses/${id}`,
         houseData,
         {
           withCredentials: true,

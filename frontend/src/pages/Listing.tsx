@@ -71,7 +71,7 @@ const Listing = () => {
         console.log("Fetching listing data for ID:", id);
 
         const response = await axios.get<ApiResponse>(
-          `http://localhost:4000/api/houses/house/${id}`,
+          `/api/houses/house/${id}`,
           {
             withCredentials: true,
           }
@@ -375,7 +375,7 @@ const Listing = () => {
                     setOwnerLoading(true);
                     setOwnerError(null);
                     const res = await axios.get<ApiResponse>(
-                      `http://localhost:4000/api/auth/houseOwner/${id}`,
+                      `/api/auth/houseOwner/${id}`,
                       { withCredentials: true }
                     );
                     setOwnerData(
