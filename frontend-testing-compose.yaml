@@ -1,8 +1,9 @@
 version: "1"
 services:
   frontend:
-    image: frontend:1.0
+    image: engmarwen/samsar:frontend-1.2
     ports:
       - 5173:80
-    env_file:
-      - ./frontend/.env
+    environment:
+      API_URL: "http://localhost:4000"
+      FIREBASE_API_KEY: "AIzaSyDxxlLzE6XtYske4-XYMqFc68Rj_RxAMEE"
