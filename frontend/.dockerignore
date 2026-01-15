@@ -6,3 +6,4 @@ dist
 .gitignore
 # .env is NOT ignored - it's needed during Docker build for Vite to embed VITE_* variables
 # The .env file is only used during build stage and won't exist in the final nginx image
+.env.local
