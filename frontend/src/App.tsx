@@ -16,12 +16,10 @@ import Search from "./pages/Search";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import VerifyResetOtp from "./pages/VerifyResetOtp";
+import { ENV } from "./config/env";
 
 // Set default config for all axios requests
-const API_URL =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:4000"
-    : import.meta.env.VITE_API_URL;
+const API_URL =ENV.API_URL
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = API_URL;

@@ -16,7 +16,6 @@ COPY package*.json ./
 RUN npm ci
 
 # Copy all source code and config files
-# This includes .env which contains VITE_* environment variables
 COPY . .
 
 # Build the React app for production
@@ -31,6 +30,9 @@ RUN npm run build
 # Use lightweight nginx Alpine image to serve static files
 FROM nginx:alpine
 
+# Install gettext for envsubst command
+RUN apk add --no-cache gettext
+
 # Remove default nginx static files
 RUN rm -rf /usr/share/nginx/html/*
 
@@ -38,11 +40,17 @@ RUN rm -rf /usr/share/nginx/html/*
 # nginx will serve these static files (HTML, CSS, JS)
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Copy env.js as a template file
+COPY --from=builder /app/public/env.js /usr/share/nginx/html/env.template.js
+
+# Copy and set up entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Expose port 80 (default HTTP port for nginx)
 EXPOSE 80
 
-# Start nginx in foreground mode
-# "daemon off" keeps the container running
-CMD ["nginx", "-g", "daemon off;"]
+# Start nginx via entrypoint which replaces env vars
+CMD ["/entrypoint.sh"]
 
 
