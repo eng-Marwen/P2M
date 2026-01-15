@@ -273,7 +273,7 @@ const Profile = () => {
   const handleSignOut = async () => {
     try {
       const response = await axios.post<ApiResponse>(
-        "http://localhost:4000/api/auth/logout",
+        "/api/auth/logout",
         {},
         { withCredentials: true }
       );

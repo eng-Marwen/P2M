@@ -1,25 +1,32 @@
+import axios from "axios";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Header from "./components/Header";
+import PrivateRoute from "./components/PrivateRoute";
 import About from "./pages/About";
-import Home from "./pages/Home";
-import Profile from "./pages/Profile";
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
+import ContactUs from "./pages/ContactUs";
+import CreateHouse from "./pages/CreateHouse";
 import EditListing from "./pages/EditListing";
 import EmailVerification from "./pages/EmailVerification";
-import PrivateRoute from "./components/PrivateRoute";
-import axios from 'axios';
-import CreateHouse from "./pages/CreateHouse";
-import Listing from "./pages/Listing";
-import Search from "./pages/Search";
-import ContactUs from "./pages/ContactUs";
 import ForgotPassword from "./pages/ForgotPassword";
+import Home from "./pages/Home";
+import Listing from "./pages/Listing";
+import Profile from "./pages/Profile";
 import ResetPassword from "./pages/ResetPassword";
+import Search from "./pages/Search";
+import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
 import VerifyResetOtp from "./pages/VerifyResetOtp";
 
 // Set default config for all axios requests
+const API_URL =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:4000"
+    : import.meta.env.VITE_API_URL;
+
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = 'http://localhost:4000';
+axios.defaults.baseURL = API_URL;
+
+console.log("🔗 Backend URL:", API_URL, "| Mode:", import.meta.env.MODE);
 
 function App() {
   return (
