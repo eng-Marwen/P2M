@@ -4,26 +4,46 @@ import {
   VERIFICATION_EMAIL_TEMPLATE,
   WELCOME_EMAIL_TEMPLATE,
 } from "./emailTemplates.js";
-import { sendMail, sender } from "./mail.config.js";
+import { mailjetClient, sender } from "./mail.config.js";
 
 export const sendVerificatinMail = async (
   email: string,
   verificationToken: string
 ): Promise<void> => {
   try {
-    const response = await sendMail.sendMail({
-      from: `"${sender.name}" <${sender.email}>`,
-      to: email,
-      subject: "Verify your email",
-      html: VERIFICATION_EMAIL_TEMPLATE.replace(
-        "{verificationCode}",
-        verificationToken
-      ),
+    console.log("📧 Attempting to send verification email to:", email);
+    console.log("From:", sender.email);
+    
+    const request = mailjetClient.post("send", { version: "v3.1" }).request({
+      Messages: [
+        {
+          From: {
+            Email: sender.email,
+            Name: sender.name,
+          },
+          To: [
+            {
+              Email: email,
+            },
+          ],
+          Subject: "Verify your email - Samsar ProMax",
+          HTMLPart: VERIFICATION_EMAIL_TEMPLATE.replace(
+            "{verificationCode}",
+            verificationToken
+          ),
+        },
+      ],
     });
-    console.log("email is sent successfully", response);
-  } catch (error) {
-    console.log("error send verification mail");
-    throw new Error("error sending verification mail" + error);
+
+    const response = await request;
+    console.log("✅ Verification email sent successfully!");
+    console.log("Message ID:", response.body.Messages[0].To[0].MessageID);
+    console.log("Status:", response.body.Messages[0].Status);
+  } catch (error: any) {
+    console.error("❌ ERROR sending verification mail to:", email);
+    console.error("Error message:", error.message);
+    console.error("Error details:", error.statusCode, error.response?.body);
+    throw new Error("Error sending verification mail: " + error.message);
   }
 };
 
@@ -32,16 +52,31 @@ export const sendWemcomeEmail = async (
   name: string
 ): Promise<void> => {
   try {
-    const response = await sendMail.sendMail({
-      from: `"${sender.name}" <${sender.email}>`,
-      to: email,
-      subject: "welcome to auth project",
-      html: WELCOME_EMAIL_TEMPLATE.replace("{userName}", name),
+    console.log("📧 Sending welcome email to:", email);
+    
+    const request = mailjetClient.post("send", { version: "v3.1" }).request({
+      Messages: [
+        {
+          From: {
+            Email: sender.email,
+            Name: sender.name,
+          },
+          To: [
+            {
+              Email: email,
+            },
+          ],
+          Subject: "Welcome to Samsar ProMax!",
+          HTMLPart: WELCOME_EMAIL_TEMPLATE.replace("{userName}", name),
+        },
+      ],
     });
-    console.log("email is sent successfully", response);
-  } catch (error) {
-    console.log("error send welcome mail");
-    throw new Error("error sending welcome mail:" + (error as Error).message);
+
+    const response = await request;
+    console.log("✅ Welcome email sent successfully!");
+  } catch (error: any) {
+    console.error("❌ ERROR sending welcome mail:", error.message);
+    throw new Error("Error sending welcome mail: " + error.message);
   }
 };
 
@@ -51,21 +86,34 @@ export const sendResetPasswordOtpEmail = async (
   name: string
 ): Promise<void> => {
   try {
-    const response = await sendMail.sendMail({
-      from: `"${sender.name}" <${sender.email}>`,
-      to: email,
-      subject: "Your Password Reset OTP",
-      html: PASSWORD_RESET_OTP_TEMPLATE.replace("{otpCode}", otp).replace(
-        "{userName}",
-        name
-      ),
+    console.log("📧 Sending password reset OTP to:", email);
+    
+    const request = mailjetClient.post("send", { version: "v3.1" }).request({
+      Messages: [
+        {
+          From: {
+            Email: sender.email,
+            Name: sender.name,
+          },
+          To: [
+            {
+              Email: email,
+            },
+          ],
+          Subject: "Password Reset Code - Samsar ProMax",
+          HTMLPart: PASSWORD_RESET_OTP_TEMPLATE.replace("{otpCode}", otp).replace(
+            "{userName}",
+            name
+          ),
+        },
+      ],
     });
-    console.log("Reset password OTP email sent successfully", response);
-  } catch (error) {
-    console.log("Error sending reset password OTP email:", error);
-    throw new Error(
-      "Error sending reset password OTP email: " + (error as Error).message
-    );
+
+    const response = await request;
+    console.log("✅ Reset OTP email sent successfully!");
+  } catch (error: any) {
+    console.error("❌ ERROR sending reset OTP:", error.message);
+    throw new Error("Error sending reset password OTP email: " + error.message);
   }
 };
 
@@ -74,18 +122,30 @@ export const sendResetPwdSuccessfullyMail = async (
   name: string
 ): Promise<void> => {
   try {
-    const response = await sendMail.sendMail({
-      from: `"${sender.name}" <${sender.email}>`,
-      to: email,
-      subject: "Password resetting",
-      html: PASSWORD_RESET_SUCCESS_TEMPLATE.replace("{userName}", name),
+    console.log("📧 Sending password reset success email to:", email);
+    
+    const request = mailjetClient.post("send", { version: "v3.1" }).request({
+      Messages: [
+        {
+          From: {
+            Email: sender.email,
+            Name: sender.name,
+          },
+          To: [
+            {
+              Email: email,
+            },
+          ],
+          Subject: "Password Successfully Reset - Samsar ProMax",
+          HTMLPart: PASSWORD_RESET_SUCCESS_TEMPLATE.replace("{userName}", name),
+        },
+      ],
     });
-    console.log("Reset password success email sent successfully", response);
-  } catch (error) {
-    console.log("Error sending reset password success email:", error);
-    throw new Error(
-      "Error sending reset password successfully email: " +
-        (error as Error).message
-    );
+
+    const response = await request;
+    console.log("✅ Reset success email sent successfully!");
+  } catch (error: any) {
+    console.error("❌ ERROR sending reset success email:", error.message);
+    throw new Error("Error sending reset password success email: " + error.message);
   }
 };
