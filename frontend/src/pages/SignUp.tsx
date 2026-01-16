@@ -120,6 +120,9 @@ const SignUp = () => {
                 placeholder="you@example.com"
                 aria-label="Email"
               />
+              <div className="text-xs text-amber-600 mt-1 flex items-start gap-1">
+                  Please use a non-institutional address
+              </div>
             </label>
 
             {/* Username (full width) */}
@@ -218,8 +221,8 @@ const SignUp = () => {
               By creating an account you agree to our{" "}
               <span className="font-semibold text-black hover:underline">
                 Terms
-              </span> {" "}
-              & {" "}
+              </span>{" "}
+              &{" "}
               <span className="font-semibold text-black hover:underline">
                 Privacy
               </span>
