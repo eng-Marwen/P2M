@@ -1,19 +1,20 @@
-import nodemailer, { Transporter } from "nodemailer";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const Mailjet = require("node-mailjet");
 
 interface Sender {
   email: string;
   name: string;
 }
 
-export const sendMail: Transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.MAIL_SERVICE_OWNER as string,
-    pass: process.env.MAIL_SERVICE_PASSWORD as string,
-  },
-});
+const mailjetClient = Mailjet.apiConnect(
+  process.env.MAILJET_API_KEY as string,
+  process.env.MAILJET_SECRET_KEY as string
+);
+
+export { mailjetClient };
 
 export const sender: Sender = {
-  email: process.env.MAIL_SERVICE_OWNER as string,
+  email: "support@prmax.me",
   name: "Support Team From Samsar ProMax",
 };
