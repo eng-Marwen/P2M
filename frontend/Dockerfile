@@ -50,7 +50,8 @@ RUN chmod +x /entrypoint.sh
 # Expose port 80 (default HTTP port for nginx)
 EXPOSE 80
 
-# Start nginx via entrypoint which replaces env vars
+# Set entrypoint to run our script which substitutes env vars and starts nginx
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/entrypoint.sh"]
 
 
