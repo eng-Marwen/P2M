@@ -55,7 +55,7 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/samsar-backend:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ env.IMAGE_TAG }}
       #Build & push frontend Docker image
       - name: build and push frontend image to docker hub
         uses: docker/build-push-action@v5
@@ -64,7 +64,7 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/samsar-frontend:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ env.IMAGE_TAG }}
       # - name: Deploy to Render
       #   run: |
       #     curl -X POST https://api.render.com/deploy/srv-d5j7lp0gjchc73d0060g \
