@@ -6,6 +6,7 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "strict": true,
+    "isolatedModules": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -15,7 +16,7 @@
     "checkJs": false,
     "noImplicitAny": false,
     "sourceMap": true,
-    "types": ["node"]
+    "types": ["node", "jest"]
   },
   "ts-node": {
     "esm": true,
