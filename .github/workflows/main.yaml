@@ -24,12 +24,12 @@ jobs:
       #Installs packages from package.json
       - name: install dependencies
         run: |
-          cd app
+          cd backend
           npm install
       #Run Jest tests
       - name: run tests
         run: |
-          cd app
+          cd backend
           npm test
       #prepare docker for building images
       - name: Set up Docker Buildx
@@ -44,7 +44,7 @@ jobs:
       - name: Get version and commit
         id: meta
         run: |
-          VERSION=$(node -p "require('./app/package.json').version")
+          VERSION=$(node -p "require('./backend/package.json').version")
           SHA=$(echo $GITHUB_SHA | cut -c1-7)
           echo "IMAGE_TAG=v${VERSION}-${SHA}" >> $GITHUB_ENV
       #Build & push Docker image
@@ -80,7 +80,6 @@ jobs:
 #          ↓
 #      Deploy on render
 #
-
 
 # B. Continuous Integration (CI) — Testing & Validation
 
