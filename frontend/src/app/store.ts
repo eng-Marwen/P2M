@@ -7,7 +7,6 @@ import userReducer from "./user/userSlice";
 const rootReducer = combineReducers({
   user: userReducer,
 });
-
 // 2. Redux persist configuration
 const persistConfig = {
   key: "root",
