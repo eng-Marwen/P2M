@@ -1,14 +1,18 @@
-name: CI/CD
+name: CI/CD Backend
 #event listners to triggers jobs
 on:
   push:
+    paths:
+      - "backend/**"
     branches: [main]
   pull_request:
+    paths:
+      - "backend/**"
     branches: [main]
 #actions
 jobs:
   #job name
-  ci-cd:
+  CI_CD_Backend:
     #GitHub gives you a temporary VM comes with the most used tools :docker ,node git ... the vm is destroyd after the job end
     runs-on: ubuntu-latest
     #steps run sequentially one step fail --> job stop
