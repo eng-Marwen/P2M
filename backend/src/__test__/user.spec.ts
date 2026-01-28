@@ -241,7 +241,6 @@ describe("Auth Controller Tests", () => {
 
       (User.findOne as jest.Mock).mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       const response = await request(app).post("/api/auth/signin").send({
         email: "test@example.com",
         password: "password123",
