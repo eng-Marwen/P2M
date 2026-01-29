@@ -55,3 +55,4 @@ EXPOSE 4000
 # Start the application
 # Run index.js (which loads dotenv then run the server) 
 CMD ["node", "dist/index.js"]
+
