@@ -82,7 +82,6 @@ jobs:
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-
       - name: Create and push Git tag
         if: steps.version.outputs.tag != ''
         run: |
