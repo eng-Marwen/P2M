@@ -28,6 +28,9 @@ jobs:
       - name: Get version from Git tags
         id: version
         run: |
+
+          echo $DOCKER_IMAGE
+
           # Get the latest tag for this specific service
           LATEST_TAG=$(git tag -l "${SERVICE_NAME}-v*" | sort -V | tail -n 1)
           
@@ -111,7 +114,6 @@ jobs:
           push: true
           tags: |
             ${{ env.DOCKER_IMAGE }}:backend-${{ steps.version.outputs.version }}
-            ${{ env.DOCKER_IMAGE }}:backend-latest
 
       - name: Create and push Git tag
         run: |
