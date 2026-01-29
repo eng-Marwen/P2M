@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "backend/**"
+      - ".github/workflows/backend.yaml"
     branches: [main]
   pull_request:
     paths:
@@ -122,7 +123,7 @@ jobs:
           git tag $TAG_NAME
           git push origin $TAG_NAME
           echo "✅ Created tag: $TAG_NAME"
-          
+
       ###!!!!!!!!!!!!!only when feat fix BREAKING CHANGE
       # - name: Deploy to Render
       #   run: |
