@@ -79,7 +79,7 @@ jobs:
 
           # Set outputs for later steps
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_ENV
           echo $TAG
 
       - name: Create and push Git tag
