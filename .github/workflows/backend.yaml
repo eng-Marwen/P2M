@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0  # Important: fetch all tags
 
-      - name: Get version from Git tags and update 
+      - name: Get version from Git tags
         id: version
         run: |
           # Fetch latest tags
@@ -82,6 +82,9 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo $TAG
 
+      - name: Create and push Git tag
+        if: steps.version.outputs.tag != ''
+        run: |
           # Only create tag if the commit was fix/feat/feat!
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists, skipping creation."
@@ -91,6 +94,7 @@ jobs:
             git tag $TAG
             git push origin $TAG
             echo "****$TAG"
+            echo "****$tag"
             echo "✅ Created and pushed tag: $TAG"
           fi
         env:
