@@ -1,5 +1,5 @@
 name: CI/CD Backend
-#event listners to triggers jobs
+
 on:
   push:
     paths:
@@ -8,28 +8,28 @@ on:
   pull_request:
     paths:
       - "backend/**"
-      -  ".github/workflow/backend.yaml"
+      - ".github/workflows/backend.yaml"
     branches: [main]
-#actions
+
+env:
+  SERVICE_PATH: backend
+  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/samsar
+
 jobs:
-  #job name
   CI_CD_Backend:
-    #GitHub gives you a temporary VM comes with the most used tools :docker ,node git ... the vm is destroyd after the job end
     runs-on: ubuntu-latest
-    #steps run sequentially one step fail --> job stop
+    
     steps:
-      #Clones your GitHub repository into the VM its like git clone your-repo
       - name: checkout repo
-        uses: actions/checkout@v4 #existen
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
 
       - name: Read and bump version
         id: version
         run: |
           # Read current version from version.txt
-          CURRENT_VERSION=$(cat ./backend/version.txt)
+          CURRENT_VERSION=$(cat ./${SERVICE_PATH}/version.txt)
           echo "Current version: $CURRENT_VERSION"
           
           # Parse version (MAJOR.MINOR.PATCH)
@@ -65,53 +65,37 @@ jobs:
           NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
           echo "New version: $NEW_VERSION"
           
-          # Update version.txt file
-          echo "$NEW_VERSION" > ${SERVICE_PATH}/version.txt
+          # Update version.txt file - FIX: use correct path
+          echo "$NEW_VERSION" > ./${SERVICE_PATH}/version.txt
           
           # Set output for later steps
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "tag=v${NEW_VERSION}" >> $GITHUB_OUTPUT
 
-     
-
-
-
-
-
-
-      #Installs Node.js v18 in the VM
       - name: setup node js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-      #Installs packages from package.json
+          
       - name: install dependencies
         run: |
           cd backend
           npm install
-      #Run Jest tests
+          
       - name: run tests
         run: |
           cd backend
           npm test
-      #prepare docker for building images
+          
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      #Authenticates GitHub VM with Docker Hub
+        
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      #for image tag
-      # - name: Get version and commit
-      #   id: meta
-      #   run: |
-      #     VERSION=$(node -p "require('./backend/package.json').version")
-      #     SHA=$(echo $GITHUB_SHA | cut -c1-7)
-      #     echo "IMAGE_TAG=v${VERSION}-${SHA}" >> $GITHUB_ENV
           
-      #Build & push backend Docker image
       - name: build and push backend image to docker hub
         uses: docker/build-push-action@v5
         with:
@@ -119,8 +103,26 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ steps.version.outputs.version }}
-     
+            ${{ env.DOCKER_IMAGE }}:backend-${{ steps.version.outputs.version }}
+            ${{ env.DOCKER_IMAGE }}:backend-latest
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ./${SERVICE_PATH}/version.txt
+          git commit -m "chore(${SERVICE_PATH}): bump version to ${{ steps.version.outputs.version }} [skip ci]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Git tag
+        run: |
+          TAG_NAME="${SERVICE_PATH}-${{ steps.version.outputs.tag }}"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+          echo "✅ Created tag: $TAG_NAME"
+          
       ###!!!!!!!!!!!!!only when feat fix BREAKING CHANGE
       # - name: Deploy to Render
       #   run: |
