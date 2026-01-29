@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - "backend/**"
+      -  ".github/workflow/backend.yaml"
     branches: [main]
 #actions
 jobs:
@@ -20,6 +21,64 @@ jobs:
       #Clones your GitHub repository into the VM its like git clone your-repo
       - name: checkout repo
         uses: actions/checkout@v4 #existen
+        with:
+          fetch-depth: 0
+
+
+      - name: Read and bump version
+        id: version
+        run: |
+          # Read current version from version.txt
+          CURRENT_VERSION=$(cat ${SERVICE_PATH}/version.txt)
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Parse version (MAJOR.MINOR.PATCH)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          
+          # Get commit message
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit message: $COMMIT_MSG"
+          
+          # Determine version bump based on commit message
+          if echo "$COMMIT_MSG" | grep -qiE '^feat!:|^fix!:|BREAKING CHANGE:'; then
+            # Breaking change - bump MAJOR
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            echo "🚀 Bumping MAJOR version (breaking change)"
+          elif echo "$COMMIT_MSG" | grep -qiE '^feat:'; then
+            # New feature - bump MINOR
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            echo "✨ Bumping MINOR version (new feature)"
+          elif echo "$COMMIT_MSG" | grep -qiE '^fix:'; then
+            # Bug fix - bump PATCH
+            PATCH=$((PATCH + 1))
+            echo "🐛 Bumping PATCH version (bug fix)"
+          else
+            # Default - bump PATCH
+            PATCH=$((PATCH + 1))
+            echo "📦 Bumping PATCH version (default)"
+          fi
+          
+          # Create new version
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "New version: $NEW_VERSION"
+          
+          # Update version.txt file
+          echo "$NEW_VERSION" > ${SERVICE_PATH}/version.txt
+          
+          # Set output for later steps
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v${NEW_VERSION}" >> $GITHUB_OUTPUT
+
+     
+
+
+
+
+
+
       #Installs Node.js v18 in the VM
       - name: setup node js
         uses: actions/setup-node@v4
@@ -45,12 +104,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       #for image tag
-      - name: Get version and commit
-        id: meta
-        run: |
-          VERSION=$(node -p "require('./backend/package.json').version")
-          SHA=$(echo $GITHUB_SHA | cut -c1-7)
-          echo "IMAGE_TAG=v${VERSION}-${SHA}" >> $GITHUB_ENV
+      # - name: Get version and commit
+      #   id: meta
+      #   run: |
+      #     VERSION=$(node -p "require('./backend/package.json').version")
+      #     SHA=$(echo $GITHUB_SHA | cut -c1-7)
+      #     echo "IMAGE_TAG=v${VERSION}-${SHA}" >> $GITHUB_ENV
           
       #Build & push backend Docker image
       - name: build and push backend image to docker hub
@@ -60,16 +119,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ env.IMAGE_TAG }}
-      #Build & push frontend Docker image
-      - name: build and push frontend image to docker hub
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ steps.version.outputs.version }}
+     
       ###!!!!!!!!!!!!!only when feat fix BREAKING CHANGE
       # - name: Deploy to Render
       #   run: |
