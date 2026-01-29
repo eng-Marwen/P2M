@@ -37,6 +37,7 @@ jobs:
             # No tags exist yet, start with 0.0.0
             VERSION="0.0.0"
             echo "No existing tags found, starting with version: $VERSION"
+            
           else
             # Extract version from tag (remove backend-v prefix)
             VERSION="${LATEST_TAG#${SERVICE_NAME}-v}"
