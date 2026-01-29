@@ -34,7 +34,6 @@ jobs:
 
           # Get latest tag for this service
           LATEST_TAG=$(git tag -l "${SERVICE_NAME}-v*" | sort -V | tail -n1)
-
           if [ -z "$LATEST_TAG" ]; then
             VERSION="0.0.0"
             TAG="${SERVICE_NAME}-v$VERSION"
@@ -81,6 +80,7 @@ jobs:
           # Set outputs for later steps
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo $GITHUB_OUTPUT
 
 
       - name: Create and push Git tag
@@ -98,7 +98,6 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 
 
 
