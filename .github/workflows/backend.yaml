@@ -77,7 +77,6 @@ jobs:
             echo "No version bump, keeping tag $TAG"
           fi
 
-
           # Set outputs for later steps
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
