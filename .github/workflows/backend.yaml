@@ -81,7 +81,23 @@ jobs:
           # Set outputs for later steps
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-   
+
+
+      - name: Create and push Git tag
+        if: steps.version.outputs.tag != ''
+        run: |
+          # Only create tag if the commit was fix/feat/feat!
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, skipping creation."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag $TAG
+            git push origin $TAG
+            echo "✅ Created and pushed tag: $TAG"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
 
@@ -119,21 +135,7 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ steps.version.outputs.version }}
 
-      - name: Create and push Git tag
-        if: steps.version.outputs.tag != ''
-        run: |
-          # Only create tag if the commit was fix/feat/feat!
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists, skipping creation."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag $TAG
-            git push origin $TAG
-            echo "✅ Created and pushed tag: $TAG"
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
 
       ###!!!!!!!!!!!!!only when feat fix BREAKING CHANGE
