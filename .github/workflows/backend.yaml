@@ -79,13 +79,13 @@ jobs:
 
           # Set outputs for later steps
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$TAG" >> $GITHUB_ENV
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo $TAG
 
       - name: Create and push Git tag
         if: steps.version.outputs.tag != ''
         run: |
-          echo "$TAG ***** $tag *** tag****"
+          echo ${{ steps.version.outputs.version }}
           # # Only create tag if the commit was fix/feat/feat!
           # if git rev-parse "$TAG" >/dev/null 2>&1; then
           #   echo "Tag $TAG already exists, skipping creation."
