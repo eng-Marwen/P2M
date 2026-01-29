@@ -93,6 +93,7 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git tag $TAG
             git push origin $TAG
+            echo "****$TAG"
             echo "✅ Created and pushed tag: $TAG"
           fi
         env:
