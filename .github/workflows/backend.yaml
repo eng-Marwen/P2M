@@ -30,9 +30,6 @@ jobs:
         id: version
         run: |
 
-          echo $DOCKER_IMAGE
-          echo ${{ secrets.DOCKER_USERNAME }}
-
           # Get the latest tag for this specific service
           LATEST_TAG=$(git tag -l "${SERVICE_NAME}-v*" | sort -V | tail -n 1)
           
@@ -115,7 +112,7 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKER_IMAGE }}:backend-${{ steps.version.outputs.version }}
+            ${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ steps.version.outputs.version }}
 
       - name: Create and push Git tag
         run: |
