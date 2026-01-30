@@ -195,7 +195,6 @@ describe("Auth Controller Tests", () => {
       const response = await request(app)
         .post("/api/auth/verify-email")
         .send({ code: "123456" });
-
       expect(response.status).toBe(200);
       expect(response.body.status).toBe("success");
       expect(response.body.message).toBe("email verified successfully");
