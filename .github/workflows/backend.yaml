@@ -71,7 +71,6 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}
-            ${{ secrets.DOCKER_USERNAME }}/samsar:backend-latest
 
 
       ###!!!!!!!!!!!!!only when feat fix BREAKING CHANGE
