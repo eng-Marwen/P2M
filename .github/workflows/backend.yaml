@@ -16,6 +16,7 @@ env:
   SERVICE_NAME: backend
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/samsar
 
+
 jobs:
   test:
     runs-on: ubuntu-latest
