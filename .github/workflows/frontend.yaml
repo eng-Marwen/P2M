@@ -4,15 +4,18 @@ on:
   push:
     paths:
       - "frontend/**"
+      - ".github/workflows/frontend.yaml"
+
     branches: [main]
   pull_request:
     paths:
       - "frontend/**"
+      - ".github/workflows/frontend.yaml"
     branches: [main]
 #actions
 jobs:
   #job name
-  CI_CD_Frontend:
+  BuilCode:
     #GitHub gives you a temporary VM comes with the most used tools :docker ,node git ... the vm is destroyd after the job end
     runs-on: ubuntu-latest
     #steps run sequentially one step fail --> job stop
@@ -26,6 +29,18 @@ jobs:
         with:
           node-version: 18
 
+  version:
+    needs: BuilCode
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/version-and-tag.yml
+    with:
+      service_name: backend
+    secrets: inherit
+    
+  BuildAndPushDockerImage:
+    runs-on: ubuntu-latest
+    needs: version
+    steps:
       #prepare docker for building images
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
