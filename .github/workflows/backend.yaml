@@ -40,6 +40,7 @@ jobs:
           # 5. Run SonarCloud analysis
           
   sonarqube:
+    needs: test
     name: SonarQube
     runs-on: ubuntu-latest
     steps:
@@ -51,9 +52,8 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-
   version:
-    needs: test
+    needs: sonarqube
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/version-and-tag.yml
     with:
