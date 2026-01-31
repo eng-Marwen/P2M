@@ -53,7 +53,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   version:
-    needs: sonarqube
+    needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/version-and-tag.yml
     with:
