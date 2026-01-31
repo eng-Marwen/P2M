@@ -37,6 +37,15 @@ jobs:
         run: |
           cd backend
           npm test
+          # 5. Run SonarCloud analysis
+          
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: backend
 
   version:
     needs: test
