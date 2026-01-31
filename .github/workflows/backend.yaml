@@ -38,7 +38,7 @@ jobs:
           cd backend
           npm test
           # 5. Run SonarCloud analysis
-          
+  
   sonarqube:
     needs: test
     name: SonarQube
