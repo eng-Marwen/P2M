@@ -2,7 +2,6 @@ import axios from "axios";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
 import { AppDispatch } from "../app/store";
 import { signInFailure } from "../app/user/userSlice";
 import logoImage from "../assets/image-removebg-preview.png";
@@ -121,7 +120,7 @@ const SignUp = () => {
                 aria-label="Email"
               />
               <div className="text-xs text-amber-600 mt-1 flex items-start gap-1">
-                  Please use a non-institutional address
+                Please use a non-institutional address
               </div>
             </label>
 
@@ -238,8 +237,6 @@ const SignUp = () => {
           </div>
         </div>
       </div>
-
-      <ToastContainer />
     </div>
   );
 };
