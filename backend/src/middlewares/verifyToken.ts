@@ -9,25 +9,37 @@ interface AuthRequest extends Request {
 export const verifyToken = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const token = req.cookies["auth-token"];
-    if (!token) throw new Error("Unauthorized - invalid token");
+    if (!token) {
+      res.status(401).json({
+        status: "fail",
+        message: "Unauthorized - No token",
+      });
+      return;
+    }
 
     const decoded = jwt.verify(
       token,
-      process.env.SECRET_KEY as string
+      process.env.SECRET_KEY as string,
     ) as JwtPayload & { userId: string };
-    if (!decoded) throw new Error("Unauthorized - invalid token");
 
     req.userId = decoded.userId;
     next();
   } catch (error) {
-    res.status(403).json({
+    if (error instanceof Error && error.name === "TokenExpiredError") {
+      res.status(401).json({
+        status: "fail",
+        message: "Token expired",
+      });
+      return;
+    }
+
+    res.status(401).json({
       status: "fail",
-      message: (error as Error).message,
+      message: "Invalid token",
     });
-    return;
   }
 };
