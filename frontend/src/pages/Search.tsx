@@ -2,7 +2,6 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { FaFilter, FaSearch } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
 import House from "../components/House";
 import { showToast } from "../popups/tostHelper";
 
@@ -68,7 +67,7 @@ const Search = () => {
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     if (
       e.target.id === "all" ||
@@ -131,7 +130,7 @@ const Search = () => {
 
   const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
-    
+
     const queryParams = new URLSearchParams();
     if (sideBar.searchTerm) queryParams.append("search", sideBar.searchTerm);
     if (sideBar.type && sideBar.type !== "all")
@@ -177,9 +176,7 @@ const Search = () => {
       setLoading(true);
       try {
         const searchQuery = urlParams.toString();
-        const url = `/api/houses${
-          searchQuery ? `?${searchQuery}` : ""
-        }`;
+        const url = `/api/houses${searchQuery ? `?${searchQuery}` : ""}`;
         const response = await axios.get<ApiResponse>(url);
         const data = response?.data;
         if (!data) {
@@ -189,8 +186,8 @@ const Search = () => {
           const housesArray = Array.isArray(data.data)
             ? data.data
             : Array.isArray(data)
-            ? (data as any)
-            : [];
+              ? (data as any)
+              : [];
           setHouses(housesArray);
           if (housesArray.length === 0) {
             showToast("No results found", "error");
@@ -204,8 +201,8 @@ const Search = () => {
           err && typeof err === "object" && "response" in err
             ? (err as any).response?.data
             : err instanceof Error
-            ? err.message
-            : err
+              ? err.message
+              : err,
         );
         setHouses([]);
         showToast("Error fetching results", "error");
@@ -447,8 +444,6 @@ const Search = () => {
         </div>
       </div>
       {/* TODO: add show more less */}
-
-      <ToastContainer />
     </div>
   );
 };
