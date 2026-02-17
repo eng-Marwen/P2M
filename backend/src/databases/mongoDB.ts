@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export const connectToMongoDB = async () :Promise<void> => { //promise return nothing
+export const connectMongoDB = async () :Promise<void> => { //promise return nothing
   try {
     await mongoose.connect(process.env.CONNECTION_STRING as string);
     console.log("Connected to mongoDB");
