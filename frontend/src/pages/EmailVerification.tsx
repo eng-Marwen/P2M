@@ -2,7 +2,6 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
 import { AppDispatch } from "../app/store";
 import { signInFailure, signInSuccess } from "../app/user/userSlice";
 import { showToast } from "../popups/tostHelper";
@@ -46,7 +45,7 @@ const EmailVerification = () => {
 
   const handleKeyDown = (
     index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
@@ -121,7 +120,6 @@ const EmailVerification = () => {
           </form>
         </div>
       </div>
-      <ToastContainer />
     </>
   );
 };
