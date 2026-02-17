@@ -2,7 +2,6 @@
 import axios from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
 import { showToast } from "../popups/tostHelper";
 
 interface ApiResponse {
@@ -36,7 +35,7 @@ const ResetPassword = () => {
       await axios.post<ApiResponse>(
         "/api/auth/reset-password",
         { newPassword, confirmPassword },
-        { withCredentials: true }
+        { withCredentials: true },
       );
       // ✅ Clear email from sessionStorage
       sessionStorage.removeItem("resetEmail");
@@ -117,7 +116,6 @@ const ResetPassword = () => {
           </form>
         </div>
       </div>
-      <ToastContainer />
     </>
   );
 };
