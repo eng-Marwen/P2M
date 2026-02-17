@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { AppDispatch } from "../app/store";
@@ -22,23 +23,23 @@ const SignIn = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState<SignInForm>({
-    email: "",
-    password: "",
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignInForm>({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
+
   const [loading, setLoading] = useState<boolean>(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setFormData((s) => ({ ...s, [e.target.id]: e.target.value }));
-
-  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e?.preventDefault();
+  const handleFormSubmit = async (data: SignInForm) => {
     setLoading(true);
     try {
-      const response = await axios.post<ApiResponse>(
-        "/api/auth/signin",
-        formData,
-      );
+      const response = await axios.post<ApiResponse>("/api/auth/signin", data);
       showToast("Signed in successfully", "success");
       dispatch(signInSuccess(response.data.data));
       navigate("/");
@@ -77,32 +78,56 @@ const SignIn = () => {
             Sign in to manage listings and more!
           </p>
 
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
             <label className="block">
               <span className="text-sm text-black">Email</span>
               <input
-                id="email"
                 type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-400 focus:ring-2 focus:ring-rose-100 focus:border-rose-300"
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address",
+                  },
+                })}
+                className={`mt-1 w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-rose-100 ${
+                  errors.email
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-gray-400 focus:border-rose-300"
+                }`}
                 placeholder="you@example.com"
                 aria-label="Email"
               />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.email.message}
+                </p>
+              )}
             </label>
 
             <label className="block">
               <span className="text-sm text-black">Password</span>
               <input
-                id="password"
                 type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-400 focus:ring-2 focus:ring-rose-50 focus:border-rose-200"
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 6,
+                    message: "Password must be at least 6 characters",
+                  },
+                })}
+                className={`mt-1 w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-rose-50 ${
+                  errors.password
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-gray-400 focus:border-rose-200"
+                }`}
                 placeholder="Your password"
               />
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.password.message}
+                </p>
+              )}
             </label>
 
             <button
