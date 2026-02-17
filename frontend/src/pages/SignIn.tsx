@@ -42,7 +42,7 @@ const SignIn = () => {
       const response = await axios.post<ApiResponse>("/api/auth/signin", data);
       showToast("Signed in successfully", "success");
       dispatch(signInSuccess(response.data.data));
-      navigate("/");
+      navigate("/create-house");
     } catch (err: unknown) {
       dispatch(signInFailure("Sign in failed"));
       const error = err as any;
