@@ -1,7 +1,6 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
 import { showToast } from "../popups/tostHelper";
 
 interface ApiResponse {
@@ -48,7 +47,7 @@ const VerifyResetOtp = () => {
   // Handle backspace navigation
   const handleKeyDown = (
     index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
@@ -88,7 +87,7 @@ const VerifyResetOtp = () => {
       await axios.post<ApiResponse>(
         "/api/auth/verify-reset-otp",
         { email, otp: verificationCode },
-        { withCredentials: true } // backend cookie support
+        { withCredentials: true }, // backend cookie support
       );
 
       showToast("OTP verified successfully!", "success");
@@ -147,7 +146,6 @@ const VerifyResetOtp = () => {
           </form>
         </div>
       </div>
-      <ToastContainer />
     </>
   );
 };
