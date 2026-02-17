@@ -104,7 +104,7 @@ const OAuth = () => {
       dispatch(signInSuccess(response.data.data));
 
       showToast("User is signed up!", "success");
-      navigate("/");
+      navigate("/create-house");
     } catch (error) {
       dispatch(signInFailure("Something went wrong with Google OAuth"));
       console.error("OAuth error:", error);
