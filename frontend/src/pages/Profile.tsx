@@ -54,6 +54,8 @@ const Profile = () => {
   // Confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [listingToDelete, setListingToDelete] = useState<string | null>(null);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] =
+    useState<boolean>(false);
 
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   // initialize form with current user values (if available)
@@ -99,7 +101,7 @@ const Profile = () => {
 
   // Freeze page when modal is open
   useEffect(() => {
-    if (showDeleteModal) {
+    if (showDeleteModal || showDeleteAccountModal) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
@@ -108,7 +110,7 @@ const Profile = () => {
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [showDeleteModal]);
+  }, [showDeleteModal, showDeleteAccountModal]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,15 +200,15 @@ const Profile = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete your account? This action cannot be undone.",
-      )
-    ) {
-      return;
-    }
+  const openDeleteAccountModal = () => {
+    setShowDeleteAccountModal(true);
+  };
 
+  const closeDeleteAccountModal = () => {
+    setShowDeleteAccountModal(false);
+  };
+
+  const handleDeleteAccount = async () => {
     try {
       const response = await axios.delete<ApiResponse>("/api/auth/delete", {
         withCredentials: true,
@@ -214,6 +216,7 @@ const Profile = () => {
       if (response.data.status === "success") {
         showToast("Account deleted successfully!", "success");
         dispatch(signOut());
+        closeDeleteAccountModal();
         setTimeout(() => {
           navigate("/sign-in");
         }, 1000);
@@ -228,6 +231,7 @@ const Profile = () => {
         message = axiosError.response?.data?.message || message;
       }
       showToast(message, "error");
+      closeDeleteAccountModal();
     }
   };
 
@@ -385,7 +389,7 @@ const Profile = () => {
             </button>
 
             <button
-              onClick={handleDeleteAccount}
+              onClick={openDeleteAccountModal}
               className="w-full px-4 py-2 text-sm text-white bg-red-600 rounded-md hover:bg-red-700"
             >
               Delete Account
@@ -579,6 +583,56 @@ const Profile = () => {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteAccountModal && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={closeDeleteAccountModal}
+        >
+          <div
+            className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+              Delete Account?
+            </h3>
+            <p className="text-gray-600 text-center mb-6">
+              Are you sure you want to delete your account? This action cannot
+              be undone and all your data will be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={closeDeleteAccountModal}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+              >
+                Delete Account
               </button>
             </div>
           </div>
