@@ -5,8 +5,10 @@ type ToastType = "success" | "error";
 
 export const showToast = (
   message: string,
-  type: ToastType = "success"
+  type: ToastType = "success",
 ): void => {
+  console.log("🔔 showToast called:", { message, type });
+
   const options = {
     position: "top-center" as const,
     autoClose: 2000,
@@ -20,7 +22,9 @@ export const showToast = (
 
   if (type === "success") {
     toast.success(message, options);
+    console.log("✅ Toast success called");
   } else if (type === "error") {
     toast.error(message, options);
+    console.log(" Toast error called");
   }
 };
