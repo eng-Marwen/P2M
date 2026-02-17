@@ -2,7 +2,6 @@ import axios from "axios";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
 import { AppDispatch } from "../app/store";
 import { signInFailure, signInSuccess } from "../app/user/userSlice";
 import OAuth from "../components/OAuth";
@@ -38,11 +37,11 @@ const SignIn = () => {
     try {
       const response = await axios.post<ApiResponse>(
         "/api/auth/signin",
-        formData
+        formData,
       );
       showToast("Signed in successfully", "success");
       dispatch(signInSuccess(response.data.data));
-      setTimeout(() => navigate("/"), 1200);
+      navigate("/");
     } catch (err: unknown) {
       dispatch(signInFailure("Sign in failed"));
       const error = err as any;
@@ -149,8 +148,6 @@ const SignIn = () => {
           </div>
         </div>
       </div>
-
-      <ToastContainer />
     </div>
   );
 };
