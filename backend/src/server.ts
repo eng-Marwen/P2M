@@ -2,7 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { Express } from "express";
 import morgan from "morgan";
-import { connectDB } from "./DB/connectDB.js";
+import { connectToMongoDB } from "./databases/mongoDB.js";
 import authRoutes from "./routes/auth.route.js";
 import cloudinaryRoutes from "./routes/cloudinary.route.js";
 import houseRoutes from "./routes/house.route.js";
@@ -28,6 +28,6 @@ app.use("/api/cloudinary", cloudinaryRoutes);
 //----------------------------Start Server-----------------------------
 
 app.listen(port, () => {
-  connectDB();
+  connectToMongoDB();
   console.log("Server starting on port", port);
 });
