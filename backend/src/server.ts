@@ -2,7 +2,8 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { Express } from "express";
 import morgan from "morgan";
-import { connectToMongoDB } from "./databases/mongoDB.js";
+import { connectMongoDB } from "./databases/mongoDB.js";
+import {connectRedis} from "./databases/redis.js";
 import authRoutes from "./routes/auth.route.js";
 import cloudinaryRoutes from "./routes/cloudinary.route.js";
 import houseRoutes from "./routes/house.route.js";
@@ -28,6 +29,7 @@ app.use("/api/cloudinary", cloudinaryRoutes);
 //----------------------------Start Server-----------------------------
 
 app.listen(port, () => {
-  connectToMongoDB();
+  connectMongoDB();
+  connectRedis();
   console.log("Server starting on port", port);
 });
