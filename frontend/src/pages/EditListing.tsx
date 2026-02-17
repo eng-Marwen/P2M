@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
 import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper";
 
@@ -67,20 +67,33 @@ const EditListing = () => {
   const [listing, setListing] = useState<ListingData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    description: "",
-    address: "",
-    type: "",
-    parking: false,
-    furnished: false,
-    offer: false,
-    bedrooms: 1,
-    bathrooms: 1,
-    regularPrice: 50,
-    discountedPrice: 0,
-    area: "", // <-- optional area (m²), keep empty string when not set
+  // React Hook Form setup
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    reset,
+    setValue,
+  } = useForm<FormData>({
+    defaultValues: {
+      name: "",
+      description: "",
+      address: "",
+      type: "",
+      parking: false,
+      furnished: false,
+      offer: false,
+      bedrooms: 1,
+      bathrooms: 1,
+      regularPrice: 50,
+      discountedPrice: 0,
+      area: "",
+    },
   });
+
+  // Watch form values
+  const formData = watch();
 
   // Image states
   const [files, setFiles] = useState<File[]>([]);
@@ -98,7 +111,7 @@ const EditListing = () => {
       // Match everything after /upload/ optionally skipping version like v123456789/
       // and strip the file extension and any query string
       const m = url.match(
-        /\/upload\/(?:v\d+\/)?(.+?)\.(?:jpg|jpeg|png|gif|webp|bmp|tiff)(?:$|\?)/i
+        /\/upload\/(?:v\d+\/)?(.+?)\.(?:jpg|jpeg|png|gif|webp|bmp|tiff)(?:$|\?)/i,
       );
       if (!m || !m[1]) return null;
       return decodeURIComponent(m[1]);
@@ -120,7 +133,7 @@ const EditListing = () => {
           `/api/houses/house/${id}`,
           {
             withCredentials: true,
-          }
+          },
         );
 
         console.log("Full response:", response.data);
@@ -132,8 +145,8 @@ const EditListing = () => {
 
         setListing(listingData);
 
-        // Populate form data (include optional area)
-        setFormData({
+        // Populate form data using reset (include optional area)
+        reset({
           name: listingData.name || "",
           description: listingData.description || "",
           address: listingData.address || "",
@@ -148,7 +161,7 @@ const EditListing = () => {
           area:
             typeof listingData.area === "number"
               ? listingData.area
-              : listingData.area || "", // keep '' when absent
+              : listingData.area || "",
         });
 
         // Set existing images
@@ -160,7 +173,7 @@ const EditListing = () => {
               isExisting: true, // Flag to identify existing images
               // attempt to derive Cloudinary publicId from the stored URL
               publicId: extractPublicIdFromUrl(imageUrl),
-            })
+            }),
           );
           setExistingImages(existingImagesData);
           console.log("Existing images loaded:", existingImagesData);
@@ -183,7 +196,7 @@ const EditListing = () => {
     if (id) {
       fetchListing();
     }
-  }, [id]);
+  }, [id, reset]);
 
   // Get total images count (existing + newly uploaded)
   const getTotalImagesCount = () => {
@@ -214,7 +227,7 @@ const EditListing = () => {
         .post(
           "/api/cloudinary/delete",
           { publicId: img.publicId },
-          { withCredentials: true }
+          { withCredentials: true },
         )
         .then((res) => {
           console.log("Deleted remote image:", img.publicId, res.data);
@@ -224,7 +237,7 @@ const EditListing = () => {
           console.warn(
             "Could not delete remote image during unload:",
             img.publicId,
-            errorMsg
+            errorMsg,
           );
         });
     });
@@ -258,34 +271,9 @@ const EditListing = () => {
     };
   }, []);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const target = e.target as HTMLInputElement;
-    const { id, value, type, checked } = target;
-
-    setFormData((prev) => {
-      if (id === "sale" && checked) {
-        return { ...prev, type: "sale" };
-      } else if (id === "rent" && checked) {
-        return { ...prev, type: "rent" };
-      } else if (id === "sale" && !checked) {
-        return { ...prev, type: "rent" };
-      } else if (id === "rent" && !checked) {
-        return { ...prev, type: "sale" };
-      } else if (type === "checkbox") {
-        return { ...prev, [id]: checked };
-      } else if (type === "number") {
-        // area is optional: keep empty string if cleared, otherwise convert to number
-        if (id === "area") {
-          return { ...prev, area: value === "" ? "" : Number(value) };
-        }
-        // other numeric fields: keep numeric (fallback to 0)
-        return { ...prev, [id]: Number(value) || 0 };
-      } else {
-        return { ...prev, [id]: value };
-      }
-    });
+  // Handle checkbox changes for type (sale/rent) with React Hook Form
+  const handleTypeChange = (newType: "sale" | "rent") => {
+    setValue("type", newType, { shouldValidate: true });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -298,7 +286,7 @@ const EditListing = () => {
         `You can only select ${
           6 - totalImages - files.length
         } more images. You currently have ${totalImages} images.`,
-        "error"
+        "error",
       );
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -308,7 +296,7 @@ const EditListing = () => {
 
     // Validate that all files are images
     const validFiles = selectedFiles.filter((file) =>
-      file.type.startsWith("image/")
+      file.type.startsWith("image/"),
     );
 
     if (validFiles.length !== selectedFiles.length) {
@@ -338,7 +326,7 @@ const EditListing = () => {
     if (totalImages + files.length > 6) {
       showToast(
         `You can only have a maximum of 6 images total per listing. You currently have ${totalImages} images.`,
-        "error"
+        "error",
       );
       return;
     }
@@ -363,7 +351,7 @@ const EditListing = () => {
         `${uploadResults.length} image${
           uploadResults.length > 1 ? "s" : ""
         } uploaded successfully!`,
-        "success"
+        "success",
       );
     } catch (error) {
       console.error("Upload failed:", error);
@@ -418,7 +406,7 @@ const EditListing = () => {
       setExistingImages((prev) => prev.filter((_, i) => i !== indexToRemove));
       showToast(
         "Image removed from listing (not a Cloudinary asset)",
-        "success"
+        "success",
       );
       return;
     }
@@ -427,7 +415,7 @@ const EditListing = () => {
       const res = await axios.post<CloudinaryDeleteResponse>(
         "/api/cloudinary/delete",
         { publicId },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       const ok =
@@ -440,7 +428,7 @@ const EditListing = () => {
         setExistingImages((prev) => prev.filter((_, i) => i !== indexToRemove));
         showToast(
           "Image deleted from Cloudinary and removed from listing",
-          "success"
+          "success",
         );
       } else {
         console.error("Cloudinary delete response:", res.data);
@@ -490,13 +478,13 @@ const EditListing = () => {
       const res = await axios.post(
         "/api/cloudinary/delete",
         { publicId: imageToRemove.publicId },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       // backend should return success info
       if (res.status === 200) {
         const updatedImages = uploadedImages.filter(
-          (_, index) => index !== indexToRemove
+          (_, index) => index !== indexToRemove,
         );
         setUploadedImages(updatedImages);
         showToast("Image deleted successfully", "success");
@@ -522,30 +510,7 @@ const EditListing = () => {
     }
   };
 
-  const handleSubmitForm = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-
-    // Validation
-    if (!formData.name || formData.name.length < 6) {
-      showToast("House name must be at least 6 characters", "error");
-      return;
-    }
-
-    if (!formData.description || formData.description.length < 20) {
-      showToast("Description must be at least 20 characters", "error");
-      return;
-    }
-
-    if (!formData.address) {
-      showToast("Please enter an address", "error");
-      return;
-    }
-
-    if (!formData.type) {
-      showToast("Please select either Sale or Rent", "error");
-      return;
-    }
-
+  const handleSubmitForm = async (data: FormData) => {
     // Check if we have at least one image (existing or newly uploaded)
     const totalImages = existingImages.length + uploadedImages.length;
     if (totalImages === 0) {
@@ -553,17 +518,8 @@ const EditListing = () => {
       return;
     }
 
-    if (formData.offer && formData.discountedPrice >= formData.regularPrice) {
+    if (data.offer && data.discountedPrice >= data.regularPrice) {
       showToast("Discounted price must be less than regular price", "error");
-      return;
-    }
-
-    // Optional area validation: if provided ensure it's positive number
-    if (
-      formData.area !== "" &&
-      (isNaN(Number(formData.area)) || Number(formData.area) < 0)
-    ) {
-      showToast("Area must be a positive number or left empty", "error");
       return;
     }
 
@@ -578,15 +534,15 @@ const EditListing = () => {
 
       // Prepare payload (use any type to allow dynamic property deletion)
       const houseData: any = {
-        ...formData,
+        ...data,
         images: allImages,
         // ensure numeric fields are numbers
-        bedrooms: Number(formData.bedrooms) || 0,
-        bathrooms: Number(formData.bathrooms) || 0,
-        regularPrice: Number(formData.regularPrice) || 0,
+        bedrooms: Number(data.bedrooms) || 0,
+        bathrooms: Number(data.bathrooms) || 0,
+        regularPrice: Number(data.regularPrice) || 0,
         discountedPrice:
-          formData.offer && formData.discountedPrice > 0
-            ? Number(formData.discountedPrice) || 0
+          data.offer && data.discountedPrice > 0
+            ? Number(data.discountedPrice) || 0
             : undefined,
       };
 
@@ -621,7 +577,7 @@ const EditListing = () => {
         houseData,
         {
           withCredentials: true,
-        }
+        },
       );
 
       console.log("Server response:", response.data);
@@ -694,107 +650,161 @@ const EditListing = () => {
       <h1 className="text-3xl font-semibold my-7 text-center">
         Edit House Listing
       </h1>
-      <form className="flex flex-col sm:flex-row gap-6">
+      <form
+        className="flex flex-col sm:flex-row gap-6"
+        onSubmit={handleSubmit(handleSubmitForm)}
+      >
         {/* Left side - Form fields */}
         <div className="flex flex-col gap-4 flex-1">
-          <input
-            type="text"
-            placeholder="Name"
-            required
-            maxLength={62}
-            minLength={6}
-            id="name"
-            value={formData.name}
-            className="border bg-white border-gray-300 p-2 rounded-lg"
-            onChange={handleChange}
-          />
-          <textarea
-            placeholder="Description"
-            required
-            maxLength={500}
-            minLength={20}
-            id="description"
-            value={formData.description}
-            className="border bg-white border-gray-300 p-2 rounded-lg"
-            onChange={handleChange}
-          ></textarea>
+          {/* Name field */}
+          <div>
+            <input
+              type="text"
+              placeholder="Name"
+              maxLength={62}
+              {...register("name", {
+                required: "House name is required",
+                minLength: {
+                  value: 6,
+                  message: "Name must be at least 6 characters",
+                },
+              })}
+              className={`border bg-white p-2 rounded-lg w-full ${
+                errors.name
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors.name && (
+              <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+            )}
+          </div>
 
-          <input
-            type="text"
-            required
-            placeholder="Address"
-            id="address"
-            value={formData.address}
-            onChange={handleChange}
-            className="border bg-white border-gray-300 p-2 rounded-lg"
-          />
+          {/* Description field */}
+          <div>
+            <textarea
+              placeholder="Description"
+              maxLength={500}
+              {...register("description", {
+                required: "Description is required",
+                minLength: {
+                  value: 20,
+                  message: "Description must be at least 20 characters",
+                },
+              })}
+              className={`border bg-white p-2 rounded-lg w-full ${
+                errors.description
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-gray-300"
+              }`}
+            ></textarea>
+            {errors.description && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.description.message}
+              </p>
+            )}
+          </div>
 
-          <div className="flex gap-2 flex-wrap">
-            <div className="flex gap-2">
-              <input
-                type="checkbox"
-                id="sale"
-                checked={formData.type === "sale"}
-                className="w-5"
-                onChange={handleChange}
-              />
-              <span>Sell</span>
-            </div>
+          {/* Address field */}
+          <div>
+            <input
+              type="text"
+              placeholder="Address"
+              {...register("address", {
+                required: "Address is required",
+              })}
+              className={`border bg-white p-2 rounded-lg w-full ${
+                errors.address
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors.address && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.address.message}
+              </p>
+            )}
+          </div>
 
-            <div className="flex gap-2">
-              <input
-                type="checkbox"
-                id="rent"
-                checked={formData.type === "rent"}
-                className="w-5"
-                onChange={handleChange}
-              />
-              <span>Rent</span>
-            </div>
+          {/* Type selection with validation */}
+          <div>
+            <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2">
+                <input
+                  type="checkbox"
+                  id="sale"
+                  checked={formData.type === "sale"}
+                  className="w-5"
+                  onChange={() => handleTypeChange("sale")}
+                />
+                <span>Sell</span>
+              </div>
 
-            <div className="flex gap-2">
-              <input
-                type="checkbox"
-                id="parking"
-                checked={formData.parking}
-                className="w-5"
-                onChange={handleChange}
-              />
-              <span>Parking Spot</span>
+              <div className="flex gap-2">
+                <input
+                  type="checkbox"
+                  id="rent"
+                  checked={formData.type === "rent"}
+                  className="w-5"
+                  onChange={() => handleTypeChange("rent")}
+                />
+                <span>Rent</span>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="checkbox"
+                  id="parking"
+                  {...register("parking")}
+                  className="w-5"
+                />
+                <span>Parking Spot</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="checkbox"
+                  id="furnished"
+                  {...register("furnished")}
+                  className="w-5"
+                />
+                <span>Furnished</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="checkbox"
+                  id="offer"
+                  {...register("offer")}
+                  className="w-5"
+                />
+                <span>Offer</span>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <input
-                type="checkbox"
-                id="furnished"
-                checked={formData.furnished}
-                className="w-5"
-                onChange={handleChange}
-              />
-              <span>Furnished</span>
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="checkbox"
-                id="offer"
-                checked={formData.offer}
-                className="w-5"
-                onChange={handleChange}
-              />
-              <span>Offer</span>
-            </div>
+            {/* Hidden input for type validation */}
+            <input
+              type="hidden"
+              {...register("type", {
+                required: "Please select either Sale or Rent",
+              })}
+            />
+            {errors.type && (
+              <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-6">
             <div className="flex gap-2 items-center">
               <input
                 type="number"
-                required
                 min={1}
                 max={10}
-                id="bedrooms"
-                value={formData.bedrooms}
-                onChange={handleChange}
-                className="border bg-white border-gray-300 w-16 p-2 rounded-lg"
+                {...register("bedrooms", {
+                  required: "Bedrooms is required",
+                  min: { value: 1, message: "At least 1 bedroom" },
+                  max: { value: 10, message: "Maximum 10 bedrooms" },
+                })}
+                className={`border bg-white w-16 p-2 rounded-lg ${
+                  errors.bedrooms ? "border-red-500" : "border-gray-300"
+                }`}
               />
               <p>Beds</p>
             </div>
@@ -802,13 +812,16 @@ const EditListing = () => {
             <div className="flex gap-2 items-center">
               <input
                 type="number"
-                required
                 min={1}
                 max={10}
-                id="bathrooms"
-                value={formData.bathrooms}
-                onChange={handleChange}
-                className="border bg-white border-gray-300 w-16 p-2 rounded-lg"
+                {...register("bathrooms", {
+                  required: "Bathrooms is required",
+                  min: { value: 1, message: "At least 1 bathroom" },
+                  max: { value: 10, message: "Maximum 10 bathrooms" },
+                })}
+                className={`border bg-white w-16 p-2 rounded-lg ${
+                  errors.bathrooms ? "border-red-500" : "border-gray-300"
+                }`}
               />
               <p>Baths</p>
             </div>
@@ -816,12 +829,14 @@ const EditListing = () => {
             <div className="flex gap-2 items-center">
               <input
                 type="number"
-                required
                 min={50}
-                id="regularPrice"
-                value={formData.regularPrice}
-                onChange={handleChange}
-                className="border bg-white border-gray-300 w-24 p-2 rounded-lg"
+                {...register("regularPrice", {
+                  required: "Regular price is required",
+                  min: { value: 50, message: "Minimum price is $50" },
+                })}
+                className={`border bg-white w-24 p-2 rounded-lg ${
+                  errors.regularPrice ? "border-red-500" : "border-gray-300"
+                }`}
               />
               <div className="flex flex-col">
                 <p>Regular Price</p>
@@ -833,12 +848,15 @@ const EditListing = () => {
               <div className="flex gap-2 items-center">
                 <input
                   type="number"
-                  required
                   min={0}
-                  id="discountedPrice"
-                  value={formData.discountedPrice}
-                  onChange={handleChange}
-                  className="border bg-white border-gray-300 w-24 p-2 rounded-lg"
+                  {...register("discountedPrice", {
+                    min: { value: 0, message: "Price must be positive" },
+                  })}
+                  className={`border bg-white w-24 p-2 rounded-lg ${
+                    errors.discountedPrice
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  }`}
                 />
                 <div className="flex flex-col">
                   <p>Discounted Price</p>
@@ -852,11 +870,13 @@ const EditListing = () => {
               <input
                 type="number"
                 min={0}
-                id="area"
-                value={formData.area}
-                onChange={handleChange}
+                {...register("area", {
+                  min: { value: 0, message: "Area must be positive" },
+                })}
                 placeholder="Area (m²) - optional"
-                className="border bg-white border-gray-300 w-28 p-2 rounded-lg"
+                className={`border bg-white w-28 p-2 rounded-lg ${
+                  errors.area ? "border-red-500" : "border-gray-300"
+                }`}
               />
               <p>Area (m²)</p>
             </div>
@@ -865,8 +885,8 @@ const EditListing = () => {
           {/* Submit button */}
           <button
             type="submit"
-            className="bg-black text-white p-3 font-semibold rounded-lg hover:opacity-95 uppercase "
-            onClick={handleSubmitForm}
+            disabled={creating}
+            className="bg-black text-white p-3 font-semibold rounded-lg hover:opacity-95 uppercase disabled:opacity-50"
           >
             {creating ? "Updating Listing..." : "Update Listing"}
           </button>
@@ -1014,7 +1034,6 @@ const EditListing = () => {
           )}
         </div>
       </form>
-      <ToastContainer />
     </main>
   );
 };
