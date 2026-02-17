@@ -2,7 +2,6 @@
 import axios from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
 import { showToast } from "../popups/tostHelper";
 
 interface ApiResponse {
@@ -21,7 +20,7 @@ const ForgotPassword = () => {
     try {
       const response = await axios.post<ApiResponse>(
         "/api/auth/forgot-password",
-        { email }
+        { email },
       );
       showToast(response.data.message || "OTP sent to your email.", "success");
 
@@ -90,7 +89,6 @@ const ForgotPassword = () => {
           </form>
         </div>
       </div>
-      <ToastContainer />
     </>
   );
 };
