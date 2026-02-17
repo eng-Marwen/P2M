@@ -25,6 +25,6 @@ export const showToast = (
     console.log("✅ Toast success called");
   } else if (type === "error") {
     toast.error(message, options);
-    console.log(" Toast error called");
+    console.log("❌ Toast error called");
   }
 };
