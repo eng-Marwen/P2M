@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { FaEnvelope, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
-import { ToastContainer } from "react-toastify";
 import { showToast } from "../popups/tostHelper";
 
 //TODO: connect this form to backend (not implemented yet)
@@ -22,7 +21,7 @@ const ContactUs = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => setForm((s) => ({ ...s, [e.target.id]: e.target.value }));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -153,8 +152,6 @@ const ContactUs = () => {
           </form>
         </section>
       </div>
-
-      <ToastContainer />
     </main>
   );
 };
