@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
 import { signOut } from "./app/user/userSlice";
 import Header from "./components/Header";
 import PrivateRoute from "./components/PrivateRoute";
@@ -95,6 +96,18 @@ function App() {
         <Route path="/search" element={<Search />} />
         <Route path="/verify-email" element={<EmailVerification />} />
       </Routes>
+      <ToastContainer
+        position="top-center"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </BrowserRouter>
   );
 }
