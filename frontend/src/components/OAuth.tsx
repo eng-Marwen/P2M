@@ -14,7 +14,7 @@ const OAuth = () => {
 
   // Helper to upload remote image to Cloudinary
   const uploadRemoteImageToCloudinary = async (
-    url: string
+    url: string,
   ): Promise<string | null> => {
     try {
       console.log("Fetching image from:", url);
@@ -43,7 +43,7 @@ const OAuth = () => {
     } catch (err) {
       console.error(
         "Cloudinary upload failed:",
-        err instanceof Error ? err.message : err
+        err instanceof Error ? err.message : err,
       );
       return null;
     }
@@ -68,18 +68,18 @@ const OAuth = () => {
           if (uploaded) {
             console.log(
               "Avatar successfully uploaded to Cloudinary:",
-              uploaded
+              uploaded,
             );
             avatarUrl = uploaded;
           } else {
             console.log(
-              "Cloudinary upload returned null, using original Google photo URL"
+              "Cloudinary upload returned null, using original Google photo URL",
             );
           }
         } catch (uploadError) {
           console.error(
             "Cloudinary upload error, using original Google photo URL:",
-            uploadError
+            uploadError,
           );
           // Keep the original avatarUrl from Google
         }
@@ -95,18 +95,16 @@ const OAuth = () => {
       const response = await axios.post<{ data: any }>(
         "/api/auth/google",
         body,
-        { withCredentials: true }
+        { withCredentials: true },
       );
       console.log(
         "User signed up/sign in with Google successfully:",
-        response.data
+        response.data,
       );
       dispatch(signInSuccess(response.data.data));
 
       showToast("User is signed up!", "success");
-      setTimeout(() => {
-        navigate("/");
-      }, 1500);
+      navigate("/");
     } catch (error) {
       dispatch(signInFailure("Something went wrong with Google OAuth"));
       console.error("OAuth error:", error);
