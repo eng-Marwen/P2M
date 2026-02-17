@@ -75,7 +75,7 @@ const ContactUs = () => {
               <div>
                 <div className="font-semibold text-slate-800">Office</div>
                 <div className="text-sm text-slate-500">
-                  Sup'Com, Technopole Gazella, Avenue Raoued, Ariana, Tunisia
+                  Sup'Com, Technopole Gazella, Avenue Raoued, Ariana, Tunisia 
                 </div>
               </div>
             </div>
