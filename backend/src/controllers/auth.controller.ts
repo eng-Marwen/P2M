@@ -22,12 +22,12 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     let { email, username, password, address = "", phone = "" } = req.body;
 
     if (!email || !password || !username) {
-      throw new Error("EMAIL, USERNAME AND PASSWORD ARE REQUIRED!");
+      throw new Error("Email, username and password are required!");
     }
 
     const isExisted = await User.findOne({ email }).lean();
     if (isExisted && isExisted.isVerified)
-      throw new Error("USER ALREADY EXISTS");
+      throw new Error("User already exists");
     const verificationToken = Math.floor(100000 + Math.random() * 900000); //6 digits code
 
     const verificationTokenExpiresAt = new Date(Date.now() + 3600 * 1000 * 24); // This sets the expiration time to 24 hour(in ms) from now
@@ -122,7 +122,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      throw new Error("missing email or password field");
+      throw new Error("Missing email or password field");
     }
     console.log("Login attempt for email:", email);
     const user = await User.findOne({ email });
@@ -492,7 +492,7 @@ export const getHouseOwner = async (
     if (!house) {
       res.status(404).json({
         status: "fail",
-        message: "HOUSE NOT FOUND",
+        message: "House not found!",
       });
       return;
     }
