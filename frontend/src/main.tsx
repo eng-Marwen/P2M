@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
+import "react-toastify/dist/ReactToastify.css";
 import { PersistGate } from "redux-persist/integration/react";
 import App from "./App";
 import { persistor, store } from "./app/store";
@@ -10,5 +11,5 @@ createRoot(document.getElementById("root")!).render(
     <PersistGate loading={null} persistor={persistor}>
       <App />
     </PersistGate>
-  </Provider>
+  </Provider>,
 );
