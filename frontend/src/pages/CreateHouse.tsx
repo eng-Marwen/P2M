@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
-import { ToastContainer } from "react-toastify";
+import { useForm } from "react-hook-form";
 import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper";
 
@@ -39,21 +39,33 @@ const CreateHouse = () => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
 
-  // Add form state (initial values used elsewhere in this file)
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    description: "",
-    address: "",
-    type: "", // "sale" or "rent"
-    parking: false,
-    furnished: false,
-    offer: false,
-    bedrooms: 1,
-    bathrooms: 1,
-    regularPrice: 50,
-    discountedPrice: 0,
-    area: "", // <-- optional area (m²)
+  // React Hook Form setup
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    reset,
+    setValue,
+  } = useForm<FormData>({
+    defaultValues: {
+      name: "",
+      description: "",
+      address: "",
+      type: "",
+      parking: false,
+      furnished: false,
+      offer: false,
+      bedrooms: 1,
+      bathrooms: 1,
+      regularPrice: 50,
+      discountedPrice: 0,
+      area: "",
+    },
   });
+
+  // Watch form values
+  const formData = watch();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadedImagesRef = useRef<UploadedImage[]>(uploadedImages);
@@ -85,7 +97,7 @@ const CreateHouse = () => {
             await axios.post(
               "/api/cloudinary/delete",
               { publicId: img.publicId },
-              { withCredentials: true }
+              { withCredentials: true },
             );
             console.log("Deleted remote image:", img.publicId);
           } catch (err) {
@@ -93,7 +105,7 @@ const CreateHouse = () => {
             console.warn(
               "Could not delete remote image during unmount:",
               img.publicId,
-              errorMsg
+              errorMsg,
             );
           }
         }
@@ -102,33 +114,9 @@ const CreateHouse = () => {
     // run once on mount, cleanup runs on unmount
   }, []);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const target = e.target as HTMLInputElement;
-    const { id, value, type, checked } = target;
-
-    setFormData((prev) => {
-      if (id === "sale" && checked) {
-        return { ...prev, type: "sale" };
-      } else if (id === "rent" && checked) {
-        return { ...prev, type: "rent" };
-      } else if (id === "sale" && !checked) {
-        return { ...prev, type: "rent" };
-      } else if (id === "rent" && !checked) {
-        return { ...prev, type: "sale" };
-      } else if (type === "checkbox") {
-        return { ...prev, [id]: checked };
-      } else if (type === "number") {
-        // area is optional: keep empty string if cleared, otherwise convert to number
-        if (id === "area") {
-          return { ...prev, area: value === "" ? "" : Number(value) };
-        }
-        return { ...prev, [id]: parseInt(value) || 0 };
-      } else {
-        return { ...prev, [id]: value };
-      }
-    });
+  // Handle checkbox changes for type (sale/rent) with React Hook Form
+  const handleTypeChange = (newType: "sale" | "rent") => {
+    setValue("type", newType, { shouldValidate: true });
   };
 
   const handleUploadImages = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -143,7 +131,7 @@ const CreateHouse = () => {
     if (uploadedImages.length + files.length > 6) {
       showToast(
         `You can only have a maximum of 6 images total per listing. You currently have ${uploadedImages.length} uploaded.`,
-        "error"
+        "error",
       );
 
       return;
@@ -174,7 +162,7 @@ const CreateHouse = () => {
         `${uploadResults.length} image${
           uploadResults.length > 1 ? "s" : ""
         } uploaded successfully!`,
-        "success"
+        "success",
       );
     } catch (error) {
       console.error("Upload failed:", error);
@@ -184,46 +172,15 @@ const CreateHouse = () => {
     }
   };
 
-  const handleSubmitForm = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-
+  const handleSubmitForm = async (data: FormData) => {
     // Add validation before submitting
-    if (!formData.name || formData.name.length < 6) {
-      showToast("House name must be at least 4 characters", "error");
-      return;
-    }
-
-    if (!formData.description || formData.description.length < 20) {
-      showToast("Description must be at least 20 characters", "error");
-      return;
-    }
-
-    if (!formData.address) {
-      showToast("Please enter an address", "error");
-      return;
-    }
-
-    if (!formData.type) {
-      showToast("Please select either Sale or Rent", "error");
-      return;
-    }
-
     if (uploadedImages.length === 0) {
       showToast("Please upload at least one image", "error");
       return;
     }
 
-    if (formData.offer && formData.discountedPrice >= formData.regularPrice) {
+    if (data.offer && data.discountedPrice >= data.regularPrice) {
       showToast("Discounted price must be less than regular price", "error");
-      return;
-    }
-
-    // Optional area validation: if provided ensure it's positive number
-    if (
-      formData.area !== "" &&
-      (isNaN(Number(formData.area)) || Number(formData.area) < 0)
-    ) {
-      showToast("Area must be a positive number or left empty", "error");
       return;
     }
 
@@ -232,7 +189,7 @@ const CreateHouse = () => {
     try {
       // Prepare data to send to backend - match your model exactly
       const houseData = {
-        ...formData,
+        ...data,
         images: uploadedImages.map((img) => img.url),
       };
 
@@ -257,20 +214,7 @@ const CreateHouse = () => {
         showToast("House listing created successfully!", "success");
 
         // Reset form after successful creation
-        setFormData({
-          name: "",
-          description: "",
-          address: "",
-          type: "",
-          parking: false,
-          furnished: false,
-          offer: false,
-          bedrooms: 1,
-          bathrooms: 1,
-          regularPrice: 50,
-          discountedPrice: 0,
-          area: "", // reset optional area
-        });
+        reset();
         setUploadedImages([]);
 
         // Optional: Navigate to the created listing or profile page
@@ -350,7 +294,7 @@ const CreateHouse = () => {
         } more images. You currently have ${
           uploadedImages.length
         } uploaded and ${files.length} selected.`,
-        "error"
+        "error",
       );
       // Reset the file input
       if (fileInputRef.current) {
@@ -361,7 +305,7 @@ const CreateHouse = () => {
 
     // Validate that all files are images
     const validFiles = selectedFiles.filter((file) =>
-      file.type.startsWith("image/")
+      file.type.startsWith("image/"),
     );
 
     if (validFiles.length !== selectedFiles.length) {
@@ -392,20 +336,20 @@ const CreateHouse = () => {
           await axios.post(
             "/api/cloudinary/delete",
             { publicId: imageToRemove.publicId },
-            { withCredentials: true }
+            { withCredentials: true },
           );
           console.log("Deleted Cloudinary image:", imageToRemove.url);
         } catch (err) {
           const errorMsg = err instanceof Error ? err.message : String(err);
           console.warn(
             "Could not delete remote Cloudinary image (backend may be missing):",
-            errorMsg
+            errorMsg,
           );
         }
       }
 
       const updatedImages = uploadedImages.filter(
-        (_, index) => index !== indexToRemove
+        (_, index) => index !== indexToRemove,
       );
       setUploadedImages(updatedImages);
       showToast("Image removed", "success");
@@ -432,107 +376,161 @@ const CreateHouse = () => {
       <h1 className="text-3xl font-semibold my-7 text-center">
         Create New House Listing
       </h1>
-      <form className="flex flex-col sm:flex-row gap-6">
+      <form
+        className="flex flex-col sm:flex-row gap-6"
+        onSubmit={handleSubmit(handleSubmitForm)}
+      >
         {/* Left side - Form fields */}
         <div className="flex flex-col gap-4 flex-1">
-          <input
-            type="text"
-            placeholder="Name"
-            required
-            maxLength={62}
-            minLength={4}
-            id="name"
-            value={formData.name}
-            className="border bg-white border-gray-300 p-2 rounded-lg"
-            onChange={handleChange}
-          />
-          <textarea
-            placeholder="Description"
-            required
-            maxLength={500}
-            minLength={20}
-            id="description"
-            value={formData.description}
-            className="border bg-white border-gray-300 p-2 rounded-lg"
-            onChange={handleChange}
-          ></textarea>
+          {/* Name field */}
+          <div>
+            <input
+              type="text"
+              placeholder="Name"
+              maxLength={62}
+              {...register("name", {
+                required: "House name is required",
+                minLength: {
+                  value: 4,
+                  message: "Name must be at least 4 characters",
+                },
+              })}
+              className={`border bg-white p-2 rounded-lg w-full ${
+                errors.name
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors.name && (
+              <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+            )}
+          </div>
 
-          <input
-            type="text"
-            required
-            placeholder="Address"
-            id="address"
-            value={formData.address}
-            onChange={handleChange}
-            className="border bg-white border-gray-300 p-2 rounded-lg"
-          />
+          {/* Description field */}
+          <div>
+            <textarea
+              placeholder="Description"
+              maxLength={500}
+              {...register("description", {
+                required: "Description is required",
+                minLength: {
+                  value: 20,
+                  message: "Description must be at least 20 characters",
+                },
+              })}
+              className={`border bg-white p-2 rounded-lg w-full ${
+                errors.description
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-gray-300"
+              }`}
+            ></textarea>
+            {errors.description && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.description.message}
+              </p>
+            )}
+          </div>
 
-          <div className="flex gap-2 flex-wrap">
-            <div className="flex gap-2">
-              <input
-                type="checkbox"
-                id="sale"
-                checked={formData.type === "sale"}
-                className="w-5"
-                onChange={handleChange}
-              />
-              <span>Sell</span>
-            </div>
+          {/* Address field */}
+          <div>
+            <input
+              type="text"
+              placeholder="Address"
+              {...register("address", {
+                required: "Address is required",
+              })}
+              className={`border bg-white p-2 rounded-lg w-full ${
+                errors.address
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors.address && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.address.message}
+              </p>
+            )}
+          </div>
 
-            <div className="flex gap-2">
-              <input
-                type="checkbox"
-                id="rent"
-                checked={formData.type === "rent"}
-                className="w-5"
-                onChange={handleChange}
-              />
-              <span>Rent</span>
-            </div>
+          {/* Type selection with validation */}
+          <div>
+            <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2">
+                <input
+                  type="checkbox"
+                  id="sale"
+                  checked={formData.type === "sale"}
+                  className="w-5"
+                  onChange={() => handleTypeChange("sale")}
+                />
+                <span>Sell</span>
+              </div>
 
-            <div className="flex gap-2">
-              <input
-                type="checkbox"
-                id="parking"
-                checked={formData.parking}
-                className="w-5"
-                onChange={handleChange}
-              />
-              <span>Parking Spot</span>
+              <div className="flex gap-2">
+                <input
+                  type="checkbox"
+                  id="rent"
+                  checked={formData.type === "rent"}
+                  className="w-5"
+                  onChange={() => handleTypeChange("rent")}
+                />
+                <span>Rent</span>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="checkbox"
+                  id="parking"
+                  {...register("parking")}
+                  className="w-5"
+                />
+                <span>Parking Spot</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="checkbox"
+                  id="furnished"
+                  {...register("furnished")}
+                  className="w-5"
+                />
+                <span>Furnished</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="checkbox"
+                  id="offer"
+                  {...register("offer")}
+                  className="w-5"
+                />
+                <span>Offer</span>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <input
-                type="checkbox"
-                id="furnished"
-                checked={formData.furnished}
-                className="w-5"
-                onChange={handleChange}
-              />
-              <span>Furnished</span>
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="checkbox"
-                id="offer"
-                checked={formData.offer}
-                className="w-5"
-                onChange={handleChange}
-              />
-              <span>Offer</span>
-            </div>
+            {/* Hidden input for type validation */}
+            <input
+              type="hidden"
+              {...register("type", {
+                required: "Please select either Sale or Rent",
+              })}
+            />
+            {errors.type && (
+              <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-6">
             <div className="flex gap-2 items-center">
               <input
                 type="number"
-                required
                 min={1}
                 max={10}
-                id="bedrooms"
-                value={formData.bedrooms}
-                onChange={handleChange}
-                className="border bg-white border-gray-300 w-16 p-2 rounded-lg"
+                {...register("bedrooms", {
+                  required: "Bedrooms is required",
+                  min: { value: 1, message: "At least 1 bedroom" },
+                  max: { value: 10, message: "Maximum 10 bedrooms" },
+                })}
+                className={`border bg-white w-16 p-2 rounded-lg ${
+                  errors.bedrooms ? "border-red-500" : "border-gray-300"
+                }`}
               />
               <p>Beds</p>
             </div>
@@ -540,13 +538,16 @@ const CreateHouse = () => {
             <div className="flex gap-2 items-center">
               <input
                 type="number"
-                required
                 min={1}
                 max={10}
-                id="bathrooms"
-                value={formData.bathrooms}
-                onChange={handleChange}
-                className="border bg-white border-gray-300 w-16 p-2 rounded-lg"
+                {...register("bathrooms", {
+                  required: "Bathrooms is required",
+                  min: { value: 1, message: "At least 1 bathroom" },
+                  max: { value: 10, message: "Maximum 10 bathrooms" },
+                })}
+                className={`border bg-white w-16 p-2 rounded-lg ${
+                  errors.bathrooms ? "border-red-500" : "border-gray-300"
+                }`}
               />
               <p>Baths</p>
             </div>
@@ -554,12 +555,14 @@ const CreateHouse = () => {
             <div className="flex gap-2 items-center">
               <input
                 type="number"
-                required
                 min={50}
-                id="regularPrice"
-                value={formData.regularPrice}
-                onChange={handleChange}
-                className="border bg-white border-gray-300 w-24 p-2 rounded-lg"
+                {...register("regularPrice", {
+                  required: "Regular price is required",
+                  min: { value: 50, message: "Minimum price is $50" },
+                })}
+                className={`border bg-white w-24 p-2 rounded-lg ${
+                  errors.regularPrice ? "border-red-500" : "border-gray-300"
+                }`}
               />
               <div className="flex flex-col">
                 <p>Regular Price</p>
@@ -570,12 +573,13 @@ const CreateHouse = () => {
             <div className="flex gap-2 items-center">
               <input
                 type="number"
-                required
-                min={50}
-                id="discountedPrice"
-                value={formData.discountedPrice}
-                onChange={handleChange}
-                className="border bg-white border-gray-300 w-24 p-2 rounded-lg"
+                min={0}
+                {...register("discountedPrice", {
+                  min: { value: 0, message: "Price must be positive" },
+                })}
+                className={`border bg-white w-24 p-2 rounded-lg ${
+                  errors.discountedPrice ? "border-red-500" : "border-gray-300"
+                }`}
               />
               <div className="flex flex-col">
                 <p>Discounted Price</p>
@@ -588,11 +592,13 @@ const CreateHouse = () => {
               <input
                 type="number"
                 min={0}
-                id="area"
-                value={formData.area}
-                onChange={handleChange}
+                {...register("area", {
+                  min: { value: 0, message: "Area must be positive" },
+                })}
                 placeholder="Area (m²) - optional"
-                className="border bg-white border-gray-300 w-28 p-2 rounded-lg"
+                className={`border bg-white w-28 p-2 rounded-lg ${
+                  errors.area ? "border-red-500" : "border-gray-300"
+                }`}
               />
               <p>Area (m²)</p>
             </div>
@@ -601,8 +607,8 @@ const CreateHouse = () => {
           {/* Submit button */}
           <button
             type="submit"
-            className="bg-black text-white font-semibold p-3 rounded-lg hover:opacity-95 uppercase "
-            onClick={handleSubmitForm}
+            disabled={creating}
+            className="bg-black text-white font-semibold p-3 rounded-lg hover:opacity-95 uppercase disabled:opacity-50"
           >
             {creating ? "Creating Listing..." : "Create Listing"}
           </button>
@@ -714,7 +720,6 @@ const CreateHouse = () => {
           )}
         </div>
       </form>
-      <ToastContainer />
     </main>
   );
 };
