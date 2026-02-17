@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { AppDispatch } from "../app/store";
@@ -34,35 +35,36 @@ const SignUp = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState<SignUpForm>({
-    email: "",
-    username: "",
-    password: "",
-    address: "",
-    phone: "",
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm<SignUpForm>({
+    defaultValues: {
+      email: "",
+      username: "",
+      password: "",
+      address: "",
+      phone: "",
+    },
   });
 
   const [phonePrefix, setPhonePrefix] = useState<string>("+216");
   const [load, setLoad] = useState<boolean>(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setFormData((s) => ({ ...s, [e.target.id]: e.target.value }));
-
-  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleFormSubmit = async (data: SignUpForm) => {
     setLoad(true);
     try {
       const payload = {
-        ...formData,
-        phone: formData.phone ? `${phonePrefix}${formData.phone}` : "",
+        ...data,
+        phone: data.phone ? `${phonePrefix}${data.phone}` : "",
       };
 
       await axios.post("/api/auth/signup", payload);
       showToast("OTP code sent to your mail address!", "success");
 
-      // dispatch(signInSuccess(response.data.data));
-
-      setTimeout(() => navigate("/verify-email"), 1200);
+      navigate("/verify-email");
     } catch (err: unknown) {
       dispatch(signInFailure("Signup failed"));
       const error = err as any;
@@ -106,36 +108,61 @@ const SignUp = () => {
             Sign up to manage listings and more !
           </p>
 
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
             <label className="block">
               <span className="text-sm text-black">Email</span>
               <input
-                id="email"
                 type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-400 focus:ring-2 focus:ring-rose-100 focus:border-rose-300"
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address",
+                  },
+                })}
+                className={`mt-1 w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-rose-100 ${
+                  errors.email
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-gray-400 focus:border-rose-300"
+                }`}
                 placeholder="you@example.com"
                 aria-label="Email"
               />
-              <div className="text-xs text-amber-600 mt-1 flex items-start gap-1">
-                Please use a non-institutional address
-              </div>
+              {errors.email ? (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.email.message}
+                </p>
+              ) : (
+                <div className="text-xs text-amber-600 mt-1 flex items-start gap-1">
+                  Please use a non-institutional address
+                </div>
+              )}
             </label>
 
             {/* Username (full width) */}
             <label className="block">
               <span className="text-sm text-black">Username</span>
               <input
-                id="username"
                 type="text"
-                required
-                value={formData.username}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-400 focus:ring-2 focus:ring-indigo-50 focus:border-indigo-200"
+                {...register("username", {
+                  required: "Username is required",
+                  minLength: {
+                    value: 3,
+                    message: "Username must be at least 3 characters",
+                  },
+                })}
+                className={`mt-1 w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-50 ${
+                  errors.username
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-gray-400 focus:border-indigo-200"
+                }`}
                 placeholder="Your display name"
               />
+              {errors.username && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.username.message}
+                </p>
+              )}
             </label>
 
             {/* Phone (below username) with prefix + flags */}
@@ -156,40 +183,62 @@ const SignUp = () => {
                 </select>
 
                 <input
-                  id="phone"
                   type="tel"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-400 focus:ring-2 focus:ring-indigo-50 focus:border-indigo-200 w-6"
+                  {...register("phone", {
+                    pattern: {
+                      value: /^[0-9]{8,15}$/,
+                      message: "Phone must be 8-15 digits",
+                    },
+                  })}
+                  className={`flex-1 px-3 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-50 w-6 ${
+                    errors.phone
+                      ? "border-red-500 focus:border-red-500"
+                      : "border-gray-400 focus:border-indigo-200"
+                  }`}
                   placeholder="25 123 456"
                 />
               </div>
-              <div className="text-xs text-gray-400 mt-1">
-                Phone will be saved with selected country code.
-              </div>
+              {errors.phone ? (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.phone.message}
+                </p>
+              ) : (
+                <div className="text-xs text-gray-400 mt-1">
+                  Phone will be saved with selected country code.
+                </div>
+              )}
             </label>
 
             <label className="block">
               <span className="text-sm text-black">Password</span>
               <input
-                id="password"
                 type="password"
-                required
-                minLength={6}
-                value={formData.password}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-400 focus:ring-2 focus:ring-rose-50 focus:border-rose-200"
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 6,
+                    message: "Password must be at least 6 characters",
+                  },
+                })}
+                className={`mt-1 w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-rose-50 ${
+                  errors.password
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-gray-400 focus:border-rose-200"
+                }`}
                 placeholder="Choose a secure password"
               />
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.password.message}
+                </p>
+              )}
             </label>
 
             <label className="block">
               <span className="text-sm text-black">Address (optional)</span>
               <input
-                id="address"
                 type="text"
-                value={formData.address}
-                onChange={handleChange}
+                {...register("address")}
                 className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-400 focus:ring-2 focus:ring-indigo-50 focus:border-indigo-200"
                 placeholder="City, street or region"
               />
