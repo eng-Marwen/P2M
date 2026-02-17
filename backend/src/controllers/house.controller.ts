@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { redisClient } from "../databases/redis.js";
 import House from "../models/house.model.js";
 
 // Extend Request with userId
@@ -8,7 +9,7 @@ interface AuthRequest extends Request {
 
 export const postHouse = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const houseInfo = req.body || {};
   houseInfo.userRef = req.userId;
@@ -51,7 +52,7 @@ export const postHouse = async (
 
 export const updateListingById = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const houseId = req.params.id;
   const updatedData = { ...(req.body || {}) };
@@ -103,7 +104,7 @@ export const updateListingById = async (
 
 export const getUserHousesByUserId = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const userId = req.params.id;
@@ -130,7 +131,7 @@ export const getUserHousesByUserId = async (
 
 export const getHouseById = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const houseId = req.params.id;
@@ -156,7 +157,7 @@ export const getHouseById = async (
 
 export const deleteHouseById = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const houseId = req.params.id;
@@ -190,7 +191,7 @@ export const deleteHouseById = async (
 
 export const getAllHouses = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const limit = parseInt(req.query.limit as string) || 9;
@@ -206,6 +207,22 @@ export const getAllHouses = async (
 
     // parse optional maxPrice query
     const maxPriceRaw = req.query.maxPrice;
+
+    // generate cache key from query parameters
+    const cacheKey = `houses:${limit}:${pages}:${parkingRaw}:${offerRaw}:${furnishedRaw}:${typeRaw}:${search}:${sort}:${orderRaw}:${maxPriceRaw}`;
+
+    // check cache first
+    try {
+      const cachedData = await redisClient.get(cacheKey);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        res.status(200).json(parsed);
+        return;
+      }
+    } catch (redisError) {
+      console.error("Redis get error:", redisError);
+      // continue with database query if cache fails
+    }
 
     // normalize boolean-like query params into Mongo-friendly values
     const parseBoolValue = (v: any) => {
@@ -260,12 +277,23 @@ export const getAllHouses = async (
 
     const total = await House.countDocuments(filter);
 
-    res.status(200).json({
+    const responseData = {
       status: "success",
       results: houses.length,
       totalResults: total,
       data: houses,
-    });
+    };
+
+    // cache the results for 60 minutes (300 seconds)
+    try {
+      await redisClient.setEx(cacheKey, 3600, JSON.stringify(responseData));
+      console.log("Cached data with key:", cacheKey);
+    } catch (redisError) {
+      console.error("Redis set error:", redisError);
+      // continue even if cache fails
+    }
+
+    res.status(200).json(responseData);
   } catch (error) {
     res.status(400).json({
       status: "fail",
