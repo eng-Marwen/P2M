@@ -115,12 +115,39 @@ export const getUserHousesByUserId = async (
       });
       return;
     }
+
+    // Check cache first
+    const cacheKey = `user:${userId}:houses`;
+    try {
+      const cachedData = await redisClient.get(cacheKey);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        res.status(200).json(parsed);
+        return;
+      }
+    } catch (redisError) {
+      console.error("Redis get error:", redisError);
+      // Continue with database query if cache fails
+    }
+
     const userHouses = await House.find({ userRef: userId }).lean();
-    res.status(200).json({
+
+    const responseData = {
       status: "success",
       results: userHouses.length,
       data: userHouses,
-    });
+    };
+
+    // Cache the results for 60 minutes (3600 seconds)
+    try {
+      await redisClient.setEx(cacheKey, 3600, JSON.stringify(responseData));
+      console.log("Cached user houses with key:", cacheKey);
+    } catch (redisError) {
+      console.error("Redis set error:", redisError);
+      // Continue even if cache fails
+    }
+
+    res.status(200).json(responseData);
   } catch (error) {
     res.status(400).json({
       status: "fail",
@@ -135,6 +162,21 @@ export const getHouseById = async (
 ): Promise<void> => {
   try {
     const houseId = req.params.id;
+
+    // Check cache first
+    const cacheKey = `house:${houseId}`;
+    try {
+      const cachedData = await redisClient.get(cacheKey);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        res.status(200).json(parsed);
+        return;
+      }
+    } catch (redisError) {
+      console.error("Redis get error:", redisError);
+      // Continue with database query if cache fails
+    }
+
     const house = await House.findById(houseId);
     if (!house) {
       res.status(404).json({
@@ -143,10 +185,22 @@ export const getHouseById = async (
       });
       return;
     }
-    res.status(200).json({
+
+    const responseData = {
       status: "success",
       data: house,
-    });
+    };
+
+    // Cache the result for 60 minutes (3600 seconds)
+    try {
+      await redisClient.setEx(cacheKey, 3600, JSON.stringify(responseData));
+      console.log("Cached house with key:", cacheKey);
+    } catch (redisError) {
+      console.error("Redis set error:", redisError);
+      // Continue even if cache fails
+    }
+
+    res.status(200).json(responseData);
   } catch (error) {
     res.status(400).json({
       status: "fail",
@@ -177,6 +231,24 @@ export const deleteHouseById = async (
       return;
     }
     await House.findByIdAndDelete(houseId);
+
+    // Invalidate cache after deletion
+    const userCacheKey = `user:${req.userId}:houses`;
+    try {
+      await redisClient.del(userCacheKey);
+      console.log("Invalidated cache for user houses:", userCacheKey);
+
+      // Also invalidate the getAllHouses cache by deleting keys matching the pattern
+      const keys = await redisClient.keys("houses:*");
+      if (keys.length > 0) {
+        await redisClient.del(keys);
+        console.log(`Invalidated ${keys.length} getAllHouses cache entries`);
+      }
+    } catch (redisError) {
+      console.error("Redis delete error:", redisError);
+      // Continue even if cache invalidation fails
+    }
+
     res.status(200).json({
       status: "success",
       message: "House deleted successfully",
