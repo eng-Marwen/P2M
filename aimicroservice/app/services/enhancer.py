@@ -10,7 +10,8 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 def _sync_enhance_description(text: str):
     prompt = f"""
     Improve the following description to make it more detailed, professional and attractive.
-    Write ONLY a continuous 2-3 line paragraph. Do not use bullet points, headers, or formatting.
+    IMPORTANT: Respond in the SAME LANGUAGE as the input (English, French, or any other language).
+    Write ONLY a continuous  one single line and half . Do not use bullet points, headers, or formatting.
     Keep it concise and engaging.
 
     Description:
@@ -21,7 +22,7 @@ def _sync_enhance_description(text: str):
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "You improve descriptions."},
+                {"role": "system", "content": "You are a multilingual property description enhancer. Always respond in the same language as the user's input."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
