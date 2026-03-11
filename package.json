@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "all": "concurrently -n FRONTEND,BACKEND,FASTAPI -c blue,green,magenta \"cd frontend && npm run dev\" \"cd backend && npm run start\" \"cd aimicroservice && uvicorn app.main:app --reload\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
