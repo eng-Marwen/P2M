@@ -8,6 +8,6 @@ router = APIRouter()
 async def enhance(data: DescriptionRequest):
 
     result = await enhance_description(data.description)
-    print(result)
+    print("enhanced res",result)
 
     return {"enhanced_description": result}
