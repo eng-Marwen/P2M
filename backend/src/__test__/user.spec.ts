@@ -32,6 +32,21 @@ jest.mock("../mailing-service/mail.config.js");
 jest.mock("bcryptjs");
 jest.mock("jsonwebtoken");
 
+// Mock Redis
+jest.mock("../databases/redis.js", () => ({
+  redisClient: {
+    connect: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue("OK"),
+    setEx: jest.fn().mockResolvedValue("OK"),
+    del: jest.fn().mockResolvedValue(1),
+    keys: jest.fn().mockResolvedValue([]),
+    on: jest.fn(),
+  },
+  connectRedis: jest.fn().mockResolvedValue(undefined),
+}));
+
 describe("Auth Controller Tests", () => {
   let app: Express;
 
@@ -113,7 +128,9 @@ describe("Auth Controller Tests", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.status).toBe("fail");
-      expect(response.body.message).toContain("REQUIRED");
+      expect(response.body.message).toBe(
+        "Email, username and password are required!",
+      );
     });
 
     it("should return error if user already exists and is verified", async () => {
@@ -132,7 +149,7 @@ describe("Auth Controller Tests", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.status).toBe("fail");
-      expect(response.body.message).toBe("USER ALREADY EXISTS");
+      expect(response.body.message).toBe("User already exists");
     });
 
     it("should update user if exists but not verified", async () => {
@@ -259,9 +276,7 @@ describe("Auth Controller Tests", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.status).toBe("fail");
-      expect(response.body.message).toContain(
-        "missing email or password field",
-      );
+      expect(response.body.message).toBe("Missing email or password field");
     });
 
     it("should return error if user does not exist", async () => {
@@ -570,7 +585,7 @@ describe("Auth Controller Tests", () => {
 
       expect(response.status).toBe(404);
       expect(response.body.status).toBe("fail");
-      expect(response.body.message).toBe("HOUSE NOT FOUND");
+      expect(response.body.message).toBe("House not found!");
     });
   });
 
