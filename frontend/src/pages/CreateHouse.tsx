@@ -32,12 +32,17 @@ interface ApiResponse {
   };
 }
 
+interface AIEnhanceResponse {
+  enhanced_description: string;
+}
+
 const CreateHouse = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<boolean>(false);
   const [creating, setCreating] = useState<boolean>(false);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+  const [enhancing, setEnhancing] = useState<boolean>(false);
 
   // React Hook Form setup
   const {
@@ -371,6 +376,63 @@ const CreateHouse = () => {
     }
   };
 
+  const handleEnhanceDescription = async () => {
+    const currentDescription = formData.description?.trim();
+
+    if (!currentDescription) {
+      showToast("Please enter a description first", "error");
+      return;
+    }
+
+    if (currentDescription.length < 10) {
+      showToast("Description is too short to enhance", "error");
+      return;
+    }
+
+    setEnhancing(true);
+    try {
+      const aiServiceUrl =
+        import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
+
+      const response = await axios.post<AIEnhanceResponse>(
+        `${aiServiceUrl}/api/enhance`,
+        { description: currentDescription },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (response.data?.enhanced_description) {
+        setValue("description", response.data.enhanced_description, {
+          shouldValidate: true,
+        });
+        showToast("Description enhanced successfully!", "success");
+      } else {
+        throw new Error("No enhanced description received");
+      }
+    } catch (error) {
+      console.error("Error enhancing description:", error);
+      let errorMessage = "Failed to enhance description";
+
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { detail?: string }; status: number };
+        };
+        if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        } else if (axiosError.response?.status) {
+          errorMessage = `AI service error: ${axiosError.response.status}`;
+        }
+      }
+
+      showToast(errorMessage, "error");
+    } finally {
+      setEnhancing(false);
+    }
+  };
+
   return (
     <main className="p-3 max-w-4xl mx-auto">
       <h1 className="text-3xl font-semibold my-7 text-center">
@@ -408,8 +470,33 @@ const CreateHouse = () => {
 
           {/* Description field */}
           <div>
+            <div className="flex justify-between items-center mb-3">
+              <label className="text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <button
+                type="button"
+                onClick={handleEnhanceDescription}
+                disabled={enhancing || !formData.description?.trim()}
+                className="bg-linear-to-r from-purple-600 to-blue-600 text-white font-semibold px-2  rounded-lg shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all transform hover:scale-105 flex items-center gap-2 text-xs"
+                title="Enhance description with AI"
+              >
+                {enhancing ? (
+                  <>
+                    <span className="animate-spin text-lg">⚙️</span>
+                    <span>Enhancing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg">✨</span>
+                    <span>Enhance with AI</span>
+                  </>
+                )}
+              </button>
+            </div>
             <textarea
-              placeholder="Description"
+              rows={8}
+              placeholder="Describe your property in detail... (The AI can help enhance your description)"
               maxLength={500}
               {...register("description", {
                 required: "Description is required",
@@ -418,10 +505,10 @@ const CreateHouse = () => {
                   message: "Description must be at least 20 characters",
                 },
               })}
-              className={`border bg-white p-2 rounded-lg w-full ${
+              className={`border bg-white p-3 rounded-lg w-full resize-none ${
                 errors.description
                   ? "border-red-500 focus:ring-red-500"
-                  : "border-gray-300"
+                  : "border-gray-300 focus:border-purple-400 focus:ring-2 focus:ring-purple-200"
               }`}
             ></textarea>
             {errors.description && (
