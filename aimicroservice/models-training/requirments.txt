@@ -8,7 +8,14 @@ Used for deep learning models, training, and inference.
 
 In your FastAPI AI microservice, this is what loads and runs the trained model.
 
+torchvision 
+###################not needed in prod: ######################
+torchvision torch
 torchvision
+numpy
+matplotlib
+jupyter
+##############################################################
 
 A companion library for PyTorch focused on computer vision.
 
