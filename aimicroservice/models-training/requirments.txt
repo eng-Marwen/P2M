@@ -1,0 +1,43 @@
+torch
+
+The main library of PyTorch.
+
+It provides tensors (similar to NumPy arrays) and tools to train and run neural networks.
+
+Used for deep learning models, training, and inference.
+
+In your FastAPI AI microservice, this is what loads and runs the trained model.
+
+torchvision
+
+A companion library for PyTorch focused on computer vision.
+
+Provides:
+
+Pretrained models (ResNet, MobileNet, etc.)
+
+Image datasets
+
+Image transformation utilities (resize, normalize, crop).
+
+In your case, it helps prepare images before sending them to the model.
+
+pillow
+
+The modern version of PIL (Python Imaging Library).
+
+Used to open, manipulate, and process images in Python.
+
+In a FastAPI API, it usually:
+
+Reads uploaded images
+
+Converts them to the format the model expects.
+
+python-multipart
+
+Allows FastAPI to handle file uploads.
+
+When a user uploads an image with multipart/form-data, this package parses the request.
+
+Without it, FastAPI cannot receive uploaded files.
