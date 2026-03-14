@@ -1,1 +1,1 @@
-#for model training : run once or occasionally
+#for model training : run once or occasionally this is training script
