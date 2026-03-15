@@ -1,0 +1,10 @@
+house data : 
+
+https://www.kaggle.com/datasets/robinreni/house-rooms-image-dataset?select=House_Room_Dataset
+https://www.kaggle.com/datasets/mbadal1996/subset-of-house-prices-and-images-socal
+
+not_house data :
+
+https://www.kaggle.com/datasets/snmahsa/animal-image-dataset-cats-dogs-and-foxes
+https://www.kaggle.com/datasets/aditya276/face-mask-dataset-yolo-format
+https://www.kaggle.com/datasets/markminerov/88500-car-images
