@@ -711,11 +711,7 @@ const EditListing = () => {
       if (response.data && (response.data.success || response.status === 200)) {
         setFormSubmitted(true);
         showToast("House listing updated successfully!", "success");
-
-        // Navigate back to profile after a short delay
-        setTimeout(() => {
-          navigate("/profile");
-        }, 2000);
+        navigate("/profile");
       } else {
         throw new Error(response.data?.message || "Failed to update listing");
       }
