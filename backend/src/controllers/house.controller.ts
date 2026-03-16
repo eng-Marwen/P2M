@@ -7,6 +7,32 @@ interface AuthRequest extends Request {
   userId?: string;
 }
 
+const invalidateHouseCaches = async (params: {
+  userId?: string;
+  houseId?: string;
+}) => {
+  const keysToDelete = new Set<string>();
+
+  if (params.userId) {
+    keysToDelete.add(`user:${params.userId}:houses`);
+  }
+
+  if (params.houseId) {
+    keysToDelete.add(`house:${params.houseId}`);
+  }
+
+  // Invalidate cached list queries
+  const listKeys = await redisClient.keys("houses:*");
+  listKeys.forEach((k) => keysToDelete.add(k));
+
+  if (keysToDelete.size > 0) {
+    for (const key of keysToDelete) {
+      await redisClient.del(key);
+    }
+    console.log(`Invalidated ${keysToDelete.size} cache key(s)`);
+  }
+};
+
 export const postHouse = async (
   req: AuthRequest,
   res: Response,
@@ -37,6 +63,17 @@ export const postHouse = async (
       throw new Error("HOUSE INFO IS MISSING");
     }
     const newHouse = await House.create(houseInfo);
+
+    // Invalidate caches affected by creation
+    try {
+      await invalidateHouseCaches({
+        userId: req.userId,
+        houseId: newHouse._id?.toString(),
+      });
+    } catch (redisError) {
+      console.error("Redis invalidate error (postHouse):", redisError);
+    }
+
     res.status(201).json({
       status: "success",
       message: "House added successfully",
@@ -54,7 +91,8 @@ export const updateListingById = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const houseId = req.params.id;
+  const rawHouseId = req.params.id;
+  const houseId = Array.isArray(rawHouseId) ? rawHouseId[0] : rawHouseId;
   const updatedData = { ...(req.body || {}) };
 
   // normalize optional area on updates
@@ -87,6 +125,16 @@ export const updateListingById = async (
         message: "HOUSE NOT FOUND",
       });
       return;
+    }
+
+    // Invalidate caches affected by update
+    try {
+      await invalidateHouseCaches({
+        userId: updatedHouse.userRef?.toString?.(),
+        houseId: houseId,
+      });
+    } catch (redisError) {
+      console.error("Redis invalidate error (updateListingById):", redisError);
     }
 
     res.status(200).json({
@@ -214,7 +262,8 @@ export const deleteHouseById = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const houseId = req.params.id;
+    const rawHouseId = req.params.id;
+    const houseId = Array.isArray(rawHouseId) ? rawHouseId[0] : rawHouseId;
     const houseToDelete = await House.findById(houseId).lean();
     if (!houseToDelete) {
       res.status(404).json({
@@ -232,20 +281,14 @@ export const deleteHouseById = async (
     }
     await House.findByIdAndDelete(houseId);
 
-    // Invalidate cache after deletion
-    const userCacheKey = `user:${req.userId}:houses`;
+    // Invalidate caches after deletion
     try {
-      await redisClient.del(userCacheKey);
-      console.log("Invalidated cache for user houses:", userCacheKey);
-
-      // Also invalidate the getAllHouses cache by deleting keys matching the pattern
-      const keys = await redisClient.keys("houses:*");
-      if (keys.length > 0) {
-        await redisClient.del(keys);
-        console.log(`Invalidated ${keys.length} getAllHouses cache entries`);
-      }
+      await invalidateHouseCaches({
+        userId: req.userId,
+        houseId: houseId,
+      });
     } catch (redisError) {
-      console.error("Redis delete error:", redisError);
+      console.error("Redis invalidate error (deleteHouseById):", redisError);
       // Continue even if cache invalidation fails
     }
 

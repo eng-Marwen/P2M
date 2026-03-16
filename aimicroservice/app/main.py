@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.enhance import router as enhance_router
+from app.routes.house_validation import router as house_validation_router
 import os
 
 app = FastAPI()
@@ -18,3 +19,4 @@ app.add_middleware(
 )
 
 app.include_router(enhance_router, prefix="/api")
+app.include_router(house_validation_router, prefix="/api")
