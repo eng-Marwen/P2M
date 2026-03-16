@@ -774,6 +774,11 @@ const CreateHouse = () => {
                 The first image will be the cover (max: 6)
               </span>
             </p>
+            <div className="mt-2 rounded-lg border border-amber-400 bg-amber-100 px-3 py-2">
+              <p className="text-sm font-semibold text-amber-900">
+                ⚠️ Important: Only real and true house images are accepted.
+              </p>
+            </div>
             <p className="text-sm text-gray-600 mt-1">
               Uploaded: {uploadedImages.length}/6 | Selected: {files.length}
             </p>
