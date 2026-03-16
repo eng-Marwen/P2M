@@ -390,7 +390,7 @@ const EditListing = () => {
 
       if (rejectedFiles.length > 0) {
         showToast(
-          `${rejectedFiles.length} image(s) rejected: ${rejectedFiles.join(
+          `${rejectedFiles.length} image(s) rejected by AI: ${rejectedFiles.join(
             ", ",
           )}`,
           "error",
