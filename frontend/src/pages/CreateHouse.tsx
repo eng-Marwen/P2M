@@ -36,6 +36,25 @@ interface AIEnhanceResponse {
   enhanced_description: string;
 }
 
+interface HouseValidationResponse {
+  label: string;
+  is_house: boolean;
+  confidence: number;
+  probabilities: Record<string, number>;
+}
+
+interface HouseBatchValidationItem extends Partial<HouseValidationResponse> {
+  filename: string;
+  error?: string;
+}
+
+interface HouseBatchValidationResponse {
+  results: HouseBatchValidationItem[];
+  total: number;
+  accepted: number;
+  rejected: number;
+}
+
 const CreateHouse = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<boolean>(false);
@@ -43,6 +62,7 @@ const CreateHouse = () => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
   const [enhancing, setEnhancing] = useState<boolean>(false);
+  const [validatingImages, setValidatingImages] = useState<boolean>(false);
 
   // React Hook Form setup
   const {
@@ -143,10 +163,53 @@ const CreateHouse = () => {
     }
 
     setUploading(true);
+    setValidatingImages(true);
     try {
+      const aiServiceUrl =
+        import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
+
+      const payload = new FormData();
+      files.forEach((file) => payload.append("files", file));
+
+      const validation = await axios.post<HouseBatchValidationResponse>(
+        `${aiServiceUrl}/api/house/validate/batch`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+
+      const approvedByName = new Set(
+        validation.data.results
+          .filter((item) => item.is_house)
+          .map((item) => item.filename),
+      );
+
+      const approvedFiles = files.filter((file) =>
+        approvedByName.has(file.name),
+      );
+      const rejectedFiles = validation.data.results
+        .filter((item) => !item.is_house)
+        .map((item) => item.filename);
+
+      if (rejectedFiles.length > 0) {
+        showToast(
+          `${rejectedFiles.length} image(s) rejected: ${rejectedFiles.join(
+            ", ",
+          )}`,
+          "error",
+        );
+      }
+
+      if (approvedFiles.length === 0) {
+        return;
+      }
+
       const promises = [];
-      for (let i = 0; i < files.length; i++) {
-        promises.push(uploadImage(files[i]));
+      for (let i = 0; i < approvedFiles.length; i++) {
+        promises.push(uploadImage(approvedFiles[i]));
       }
 
       const uploadResults = await Promise.all(promises);
@@ -164,7 +227,7 @@ const CreateHouse = () => {
       }
 
       showToast(
-        `${uploadResults.length} image${
+        `${uploadResults.length} valid house image${
           uploadResults.length > 1 ? "s" : ""
         } uploaded successfully!`,
         "success",
@@ -173,6 +236,7 @@ const CreateHouse = () => {
       console.error("Upload failed:", error);
       showToast("Some images failed to upload", "error");
     } finally {
+      setValidatingImages(false);
       setUploading(false);
     }
   };
@@ -731,7 +795,11 @@ const CreateHouse = () => {
               disabled={uploading || files.length === 0}
               className="text-green-600 border border-green-600 px-4 py-2 rounded-lg hover:bg-green-50 disabled:opacity-50 whitespace-nowrap"
             >
-              {uploading ? "Uploading..." : "Upload Images"}
+              {uploading
+                ? validatingImages
+                  ? "Validating..."
+                  : "Uploading..."
+                : "Upload Images"}
             </button>
           </div>
 
@@ -760,7 +828,7 @@ const CreateHouse = () => {
                     <button
                       type="button"
                       onClick={() => removeSelectedFile(index)}
-                      className="text-red-500 hover:text-red-700 ml-2 shrink-0"
+                      className="ml-2 shrink-0 text-red-600 rounded-full w-5 h-5 flex items-center justify-center transition-colors hover:bg-red-600 hover:text-white"
                     >
                       ×
                     </button>
