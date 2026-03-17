@@ -12,6 +12,8 @@ from torchvision import models, transforms
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+
 TEST_TRANSFORM = transforms.Compose([
 	transforms.Resize((224, 224)),
 	transforms.ToTensor(),
@@ -20,8 +22,10 @@ TEST_TRANSFORM = transforms.Compose([
 
 
 def _default_model_path() -> Path:
-	# app/services/house_classifier.py -> aimicroservice/models-training/house_model_snd.pth
-	return Path(__file__).resolve().parents[2] / "models-training" / "house_model_snd.pth"
+	# Prefer current location under CNN_training, keep legacy fallback for compatibility.
+	cnn_training_model = ROOT_DIR / "models-training" / "CNN_training" / "house_model_snd.pth"
+	legacy_model = ROOT_DIR / "models-training" / "house_model_snd.pth"
+	return cnn_training_model if cnn_training_model.exists() else legacy_model
 
 
 def _class_names() -> list[str]:
