@@ -3,7 +3,8 @@ import cors from "cors";
 import express, { Express } from "express";
 import morgan from "morgan";
 import { connectMongoDB } from "./databases/mongoDB.js";
-import {connectRedis} from "./databases/redis.js";
+import { connectRedis } from "./databases/redis.js";
+import { connectRabbitMQ } from "./queue/rabbitmq.js";
 import authRoutes from "./routes/auth.route.js";
 import cloudinaryRoutes from "./routes/cloudinary.route.js";
 import houseRoutes from "./routes/house.route.js";
@@ -13,7 +14,7 @@ app.use(
   cors({
     origin: process.env.CLIENT_URL,
     credentials: true, // allow cookies/auth headers
-  })
+  }),
 );
 
 app.use(morgan("dev")); //HTTP request logger
@@ -31,5 +32,6 @@ app.use("/api/cloudinary", cloudinaryRoutes);
 app.listen(port, () => {
   connectMongoDB();
   connectRedis();
+  connectRabbitMQ();
   console.log("Server starting on port", port);
 });
