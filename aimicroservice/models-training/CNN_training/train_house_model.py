@@ -9,6 +9,10 @@ from torchvision import datasets, models, transforms
 from torch.utils.data import DataLoader
 # Progress bar for loops
 from tqdm import tqdm
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
 
 # ImageNet channel statistics used by pretrained ResNet models
 imagenet_mean = [0.485, 0.456, 0.406]
@@ -30,9 +34,9 @@ test_transform = transforms.Compose([
 ])
 
 # Create training dataset with training transform (includes augmentation)
-train_dataset = datasets.ImageFolder("data/train", transform=train_transform)
+train_dataset = datasets.ImageFolder(DATA_DIR / "train", transform=train_transform)
 # Create test dataset with deterministic transform (no random flip)
-test_dataset = datasets.ImageFolder("data/test", transform=test_transform)
+test_dataset = datasets.ImageFolder(DATA_DIR / "test", transform=test_transform)
 
 # DataLoader wraps dataset to provide mini-batches and optional shuffling
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)   # Shuffle training data every epoch
@@ -149,15 +153,14 @@ print(f"Precision (Macro): {precision_macro:.4f}")
 print(f"Recall (Macro): {recall_macro:.4f}")
 
 # Debug helper: run inference on multiple custom images and print probabilities
-from pathlib import Path
 from PIL import Image
 
 # Put your two room images in this folder or change paths below
 custom_images = [
-    Path("picture-lake.jpg"),
-    Path("im10.jpeg"),
-    Path("im11.jpeg"),
-    Path("images.jpeg"),
+    BASE_DIR / "picture-lake.jpg",
+    BASE_DIR / "im10.jpeg",
+    BASE_DIR / "im11.jpeg",
+    BASE_DIR / "images.jpeg",
 ]
 
 model.eval()
@@ -185,4 +188,4 @@ for p in custom_images:
         print(f"  {n}: {probs[i].item():.4f}")
 
 # Save only learned parameters (state_dict) to disk for later reuse
-torch.save(model.state_dict(), "house_model_snd.pth")
+torch.save(model.state_dict(), BASE_DIR / "house_model_snd.pth")
