@@ -18,3 +18,9 @@ def get_connection():
         params
     )
     return connection
+
+
+def check_rabbitmq_connection() -> None:
+    connection = get_connection()
+    connection.close()
+    print("[Startup] RabbitMQ connectivity check passed")
