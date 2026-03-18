@@ -1,12 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.routes.enhance import router as enhance_router
 from app.routes.house_validation import router as house_validation_router
 from app.queue.consumer import start_consumer
 import threading
 import os
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    thread = threading.Thread(target=start_consumer, daemon=True)
+    thread.start()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 # Configure CORS
 app.add_middleware(
@@ -19,10 +28,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],  # HTTP methods
     allow_headers=["*"],  # Allow all headers
 )
-@app.on_event("startup")
-def startup():
-    thread = threading.Thread(target=start_consumer, daemon=True)
-    thread.start()
 
 app.include_router(enhance_router, prefix="/api")
 app.include_router(house_validation_router, prefix="/api")
