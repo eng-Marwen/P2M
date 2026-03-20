@@ -1,8 +1,7 @@
 import asyncio
 import json
 import os
-import threading
-import time
+import re
 import uuid
 from functools import lru_cache
 from urllib.parse import urlparse
@@ -10,6 +9,7 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 from groq import Groq
 from qdrant_client import QdrantClient
+from redis.asyncio import Redis
 
 from app.services.emebdding_service import generate_embedding
 
@@ -25,74 +25,69 @@ QDRANT_ALLOW_INSECURE_API_KEY = (
 
 RAG_LLM_MODEL = os.getenv("RAG_LLM_MODEL", "llama-3.3-70b-versatile")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+REDIS_URL = os.getenv("REDIS_URL")
+RAG_MEMORY_KEY_PREFIX = os.getenv("RAG_MEMORY_KEY_PREFIX", "rag:session")
 RAG_MEMORY_MAX_TURNS = int(os.getenv("RAG_MEMORY_MAX_TURNS", "8"))
 RAG_MEMORY_SESSION_TTL_SECONDS = int(os.getenv("RAG_MEMORY_SESSION_TTL_SECONDS", "7200"))
-RAG_MEMORY_MAX_SESSIONS = int(os.getenv("RAG_MEMORY_MAX_SESSIONS", "1000"))
 
 
-_session_memory: dict[str, dict] = {}
-_session_memory_lock = threading.Lock()
+def _session_key(session_id: str) -> str:
+    return f"{RAG_MEMORY_KEY_PREFIX}:{session_id}:messages"
 
 
-def _prune_sessions_locked(now: float) -> None:
-    expired_ids = [
-        sid
-        for sid, data in _session_memory.items()
-        if now - float(data.get("updated_at", 0.0)) > RAG_MEMORY_SESSION_TTL_SECONDS
-    ]
-    for sid in expired_ids:
-        _session_memory.pop(sid, None)
-
-    if len(_session_memory) > RAG_MEMORY_MAX_SESSIONS:
-        oldest_ids = sorted(
-            _session_memory.keys(),
-            key=lambda sid: float(_session_memory[sid].get("updated_at", 0.0)),
-        )
-        overflow = len(_session_memory) - RAG_MEMORY_MAX_SESSIONS
-        for sid in oldest_ids[:overflow]:
-            _session_memory.pop(sid, None)
+@lru_cache(maxsize=1)
+def _get_redis_client() -> Redis:
+    if not REDIS_URL:
+        raise ValueError("REDIS_URL is missing")
+    return Redis.from_url(REDIS_URL, decode_responses=True)
 
 
-def _ensure_session(session_id: str | None) -> str:
-    now = time.time()
-    with _session_memory_lock:
-        _prune_sessions_locked(now)
+async def _ensure_session(session_id: str | None) -> str:
+    sid = (session_id or "").strip() or str(uuid.uuid4())
+    key = _session_key(sid)
+    redis = _get_redis_client()
 
-        sid = (session_id or "").strip()
-        if not sid:
-            sid = str(uuid.uuid4())
-
-        session = _session_memory.get(sid)
-        if not session:
-            _session_memory[sid] = {"updated_at": now, "messages": []}
-        else:
-            session["updated_at"] = now
-
+    await redis.expire(key, RAG_MEMORY_SESSION_TTL_SECONDS)
     return sid
 
 
-def _get_session_messages(session_id: str) -> list[dict[str, str]]:
-    with _session_memory_lock:
-        session = _session_memory.get(session_id)
-        if not session:
-            return []
-        return list(session.get("messages", []))
+async def _get_session_messages(session_id: str) -> list[dict[str, str]]:
+    redis = _get_redis_client()
+    key = _session_key(session_id)
+
+    raw_items = await redis.lrange(key, 0, -1)
+    messages: list[dict[str, str]] = []
+
+    for raw in raw_items:
+        try:
+            item = json.loads(raw)
+            role = item.get("role")
+            content = item.get("content")
+            if role in {"user", "assistant"} and isinstance(content, str):
+                messages.append({"role": role, "content": content})
+        except (TypeError, json.JSONDecodeError):
+            continue
+
+    await redis.expire(key, RAG_MEMORY_SESSION_TTL_SECONDS)
+    return messages
 
 
-def _append_session_messages(session_id: str, user_query: str, assistant_answer: str) -> None:
-    now = time.time()
-    with _session_memory_lock:
-        session = _session_memory.setdefault(session_id, {"updated_at": now, "messages": []})
-        messages = session.setdefault("messages", [])
+async def _append_session_messages(session_id: str, user_query: str, assistant_answer: str) -> None:
+    redis = _get_redis_client()
+    key = _session_key(session_id)
 
-        messages.append({"role": "user", "content": user_query})
-        messages.append({"role": "assistant", "content": assistant_answer})
+    entries = [
+        json.dumps({"role": "user", "content": user_query}, ensure_ascii=False),
+        json.dumps({"role": "assistant", "content": assistant_answer}, ensure_ascii=False),
+    ]
 
-        max_items = max(RAG_MEMORY_MAX_TURNS * 2, 2)
-        if len(messages) > max_items:
-            del messages[:-max_items]
+    max_items = max(RAG_MEMORY_MAX_TURNS * 2, 2)
 
-        session["updated_at"] = now
+    pipeline = redis.pipeline(transaction=True)
+    pipeline.rpush(key, *entries)
+    pipeline.ltrim(key, -max_items, -1)
+    pipeline.expire(key, RAG_MEMORY_SESSION_TTL_SECONDS)
+    await pipeline.execute()
 
 
 def _history_to_text(history: list[dict[str, str]]) -> str:
@@ -102,12 +97,26 @@ def _history_to_text(history: list[dict[str, str]]) -> str:
     lines = []
     for item in history[-(RAG_MEMORY_MAX_TURNS * 2):]:
         role = item.get("role", "user")
-        content = (item.get("content") or "").strip()
+        content = _sanitize_text_for_llm((item.get("content") or "").strip())
         if not content:
             continue
         speaker = "User" if role == "user" else "Assistant"
         lines.append(f"{speaker}: {content}")
     return "\n".join(lines) if lines else "(empty)"
+
+
+def _sanitize_text_for_llm(text: str) -> str:
+    if not text:
+        return text
+
+    # Remove explicit "ID: <mongodb-objectid>" mentions
+    text = re.sub(r"\(\s*ID\s*:\s*[a-f0-9]{24}\s*\)", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bID\s*:\s*[a-f0-9]{24}\b", "ID: [hidden]", text, flags=re.IGNORECASE)
+
+    # Remove standalone MongoDB ObjectId-like values
+    text = re.sub(r"\b[a-f0-9]{24}\b", "[hidden-id]", text, flags=re.IGNORECASE)
+
+    return text
 
 
 def _build_retrieval_query(query: str, history: list[dict[str, str]]) -> str:
@@ -203,14 +212,28 @@ def _generate_answer_sync(query: str, hits: list[dict], history: list[dict[str, 
     if not hits:
         return "I could not find relevant listings in the knowledge base for your query."
 
-    context_json = json.dumps(hits, ensure_ascii=False, indent=2)
+    context_hits = [
+        {
+            "score": h.get("score"),
+            "name": h.get("name"),
+            "address": h.get("address"),
+            "type": h.get("type"),
+            "regularPrice": h.get("regularPrice"),
+            "discountedPrice": h.get("discountedPrice"),
+            "description": h.get("description"),
+        }
+        for h in hits
+    ]
+    context_json = json.dumps(context_hits, ensure_ascii=False, indent=2)
     history_text = _history_to_text(history)
+
+    safe_query = _sanitize_text_for_llm(query)
 
     prompt = (
         "You are a real-estate assistant. Use the retrieved listing context to answer the user query. "
         "If context is insufficient, say what is missing. Be concise and practical.\n\n"
         f"Conversation history:\n{history_text}\n\n"
-        f"User query:\n{query}\n\n"
+        f"User query:\n{safe_query}\n\n"
         f"Retrieved context:\n{context_json}"
     )
 
@@ -221,7 +244,8 @@ def _generate_answer_sync(query: str, hits: list[dict], history: list[dict[str, 
                 "role": "system",
                 "content": (
                     "Answer only using the provided retrieval context. "
-                    "Do not invent unavailable listing details."
+                    "Do not invent unavailable listing details. "
+                    "Never reveal or mention internal IDs (house IDs, database IDs, object IDs)."
                 ),
             },
             {"role": "user", "content": prompt},
@@ -234,13 +258,13 @@ def _generate_answer_sync(query: str, hits: list[dict], history: list[dict[str, 
 
 
 async def run_rag_query(query: str, top_k: int, session_id: str | None = None) -> dict:
-    session_id = _ensure_session(session_id)
-    history = _get_session_messages(session_id)
+    session_id = await _ensure_session(session_id)
+    history = await _get_session_messages(session_id)
     retrieval_query = _build_retrieval_query(query, history)
 
     hits = await asyncio.to_thread(_search_houses, retrieval_query, top_k)
     answer = await asyncio.to_thread(_generate_answer_sync, query, hits, history)
-    _append_session_messages(session_id, query, answer)
+    await _append_session_messages(session_id, query, answer)
 
     return {
         "session_id": session_id,
@@ -249,8 +273,8 @@ async def run_rag_query(query: str, top_k: int, session_id: str | None = None) -
         "total_hits": len(hits),
         "hits": [
             {
-                "house_id": h["house_id"],
                 "score": h["score"],
+                "listing_url": f"/listing/{h['house_id']}" if h.get("house_id") else None,
                 "name": h.get("name"),
                 "address": h.get("address"),
                 "type": h.get("type"),
