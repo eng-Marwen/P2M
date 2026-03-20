@@ -17,6 +17,7 @@ async def lifespan(app: FastAPI):
     try:
         check_rabbitmq_connection()
         check_qdrant_connection()
+        print("[Startup] Qdrant connected successfully")
         print("[Startup] All connectivity checks passed")
     except Exception as exc:
         print(f"[Startup] Connectivity check failed: {exc}")
