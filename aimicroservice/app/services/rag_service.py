@@ -1,6 +1,9 @@
 import asyncio
 import json
 import os
+import threading
+import time
+import uuid
 from functools import lru_cache
 from urllib.parse import urlparse
 
@@ -22,6 +25,107 @@ QDRANT_ALLOW_INSECURE_API_KEY = (
 
 RAG_LLM_MODEL = os.getenv("RAG_LLM_MODEL", "llama-3.3-70b-versatile")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+RAG_MEMORY_MAX_TURNS = int(os.getenv("RAG_MEMORY_MAX_TURNS", "8"))
+RAG_MEMORY_SESSION_TTL_SECONDS = int(os.getenv("RAG_MEMORY_SESSION_TTL_SECONDS", "7200"))
+RAG_MEMORY_MAX_SESSIONS = int(os.getenv("RAG_MEMORY_MAX_SESSIONS", "1000"))
+
+
+_session_memory: dict[str, dict] = {}
+_session_memory_lock = threading.Lock()
+
+
+def _prune_sessions_locked(now: float) -> None:
+    expired_ids = [
+        sid
+        for sid, data in _session_memory.items()
+        if now - float(data.get("updated_at", 0.0)) > RAG_MEMORY_SESSION_TTL_SECONDS
+    ]
+    for sid in expired_ids:
+        _session_memory.pop(sid, None)
+
+    if len(_session_memory) > RAG_MEMORY_MAX_SESSIONS:
+        oldest_ids = sorted(
+            _session_memory.keys(),
+            key=lambda sid: float(_session_memory[sid].get("updated_at", 0.0)),
+        )
+        overflow = len(_session_memory) - RAG_MEMORY_MAX_SESSIONS
+        for sid in oldest_ids[:overflow]:
+            _session_memory.pop(sid, None)
+
+
+def _ensure_session(session_id: str | None) -> str:
+    now = time.time()
+    with _session_memory_lock:
+        _prune_sessions_locked(now)
+
+        sid = (session_id or "").strip()
+        if not sid:
+            sid = str(uuid.uuid4())
+
+        session = _session_memory.get(sid)
+        if not session:
+            _session_memory[sid] = {"updated_at": now, "messages": []}
+        else:
+            session["updated_at"] = now
+
+    return sid
+
+
+def _get_session_messages(session_id: str) -> list[dict[str, str]]:
+    with _session_memory_lock:
+        session = _session_memory.get(session_id)
+        if not session:
+            return []
+        return list(session.get("messages", []))
+
+
+def _append_session_messages(session_id: str, user_query: str, assistant_answer: str) -> None:
+    now = time.time()
+    with _session_memory_lock:
+        session = _session_memory.setdefault(session_id, {"updated_at": now, "messages": []})
+        messages = session.setdefault("messages", [])
+
+        messages.append({"role": "user", "content": user_query})
+        messages.append({"role": "assistant", "content": assistant_answer})
+
+        max_items = max(RAG_MEMORY_MAX_TURNS * 2, 2)
+        if len(messages) > max_items:
+            del messages[:-max_items]
+
+        session["updated_at"] = now
+
+
+def _history_to_text(history: list[dict[str, str]]) -> str:
+    if not history:
+        return "(empty)"
+
+    lines = []
+    for item in history[-(RAG_MEMORY_MAX_TURNS * 2):]:
+        role = item.get("role", "user")
+        content = (item.get("content") or "").strip()
+        if not content:
+            continue
+        speaker = "User" if role == "user" else "Assistant"
+        lines.append(f"{speaker}: {content}")
+    return "\n".join(lines) if lines else "(empty)"
+
+
+def _build_retrieval_query(query: str, history: list[dict[str, str]]) -> str:
+    short_query = len(query.split()) <= 4
+    if not short_query:
+        return query
+
+    latest_user_message = ""
+    for item in reversed(history):
+        if item.get("role") == "user":
+            latest_user_message = (item.get("content") or "").strip()
+            if latest_user_message:
+                break
+
+    if not latest_user_message:
+        return query
+
+    return f"Previous user intent: {latest_user_message}\nCurrent follow-up: {query}"
 
 
 @lru_cache(maxsize=1)
@@ -93,17 +197,19 @@ def _search_houses(query: str, top_k: int) -> list[dict]:
     return hits
 
 
-def _generate_answer_sync(query: str, hits: list[dict]) -> str:
+def _generate_answer_sync(query: str, hits: list[dict], history: list[dict[str, str]]) -> str:
     client = _get_groq_client()
 
     if not hits:
         return "I could not find relevant listings in the knowledge base for your query."
 
     context_json = json.dumps(hits, ensure_ascii=False, indent=2)
+    history_text = _history_to_text(history)
 
     prompt = (
         "You are a real-estate assistant. Use the retrieved listing context to answer the user query. "
         "If context is insufficient, say what is missing. Be concise and practical.\n\n"
+        f"Conversation history:\n{history_text}\n\n"
         f"User query:\n{query}\n\n"
         f"Retrieved context:\n{context_json}"
     )
@@ -127,11 +233,17 @@ def _generate_answer_sync(query: str, hits: list[dict]) -> str:
     return (response.choices[0].message.content or "").strip()
 
 
-async def run_rag_query(query: str, top_k: int) -> dict:
-    hits = await asyncio.to_thread(_search_houses, query, top_k)
-    answer = await asyncio.to_thread(_generate_answer_sync, query, hits)
+async def run_rag_query(query: str, top_k: int, session_id: str | None = None) -> dict:
+    session_id = _ensure_session(session_id)
+    history = _get_session_messages(session_id)
+    retrieval_query = _build_retrieval_query(query, history)
+
+    hits = await asyncio.to_thread(_search_houses, retrieval_query, top_k)
+    answer = await asyncio.to_thread(_generate_answer_sync, query, hits, history)
+    _append_session_messages(session_id, query, answer)
 
     return {
+        "session_id": session_id,
         "query": query,
         "answer": answer,
         "total_hits": len(hits),
