@@ -33,6 +33,7 @@ class HouseBatchPredictionResponse(BaseModel):
 class RagQueryRequest(BaseModel):
     query: str
     top_k: int = Field(default=5, ge=1, le=20)
+    session_id: str | None = Field(default=None, max_length=128)
 
 
 class RagSearchHit(BaseModel):
@@ -47,6 +48,7 @@ class RagSearchHit(BaseModel):
 
 
 class RagQueryResponse(BaseModel):
+    session_id: str
     query: str
     answer: str
     total_hits: int
