@@ -37,8 +37,8 @@ class RagQueryRequest(BaseModel):
 
 
 class RagSearchHit(BaseModel):
-    house_id: str
     score: float
+    listing_url: str | None = None
     name: str | None = None
     address: str | None = None
     type: str | None = None
