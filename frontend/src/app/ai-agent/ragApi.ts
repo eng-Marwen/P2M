@@ -2,8 +2,8 @@ import axios from "axios";
 import { ENV } from "../../config/env";
 
 export interface RagHit {
-  house_id: string;
   score: number;
+  listing_url?: string | null;
   name?: string | null;
   address?: string | null;
   type?: string | null;
