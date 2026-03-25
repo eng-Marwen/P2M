@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
+import AIAgentChatPage from "./app/ai-agent/AIAgentChatPage";
+import AIAgentLauncher from "./app/ai-agent/AIAgentLauncher";
 import { signOut } from "./app/user/userSlice";
 import Header from "./components/Header";
 import PrivateRoute from "./components/PrivateRoute";
@@ -95,7 +97,9 @@ function App() {
         </Route>
         <Route path="/search" element={<Search />} />
         <Route path="/verify-email" element={<EmailVerification />} />
+        <Route path="/ai-agent" element={<AIAgentChatPage />} />
       </Routes>
+      <AIAgentLauncher />
       <ToastContainer
         position="top-center"
         autoClose={2000}

@@ -3,6 +3,7 @@
 # Print environment variables for debugging
 echo "=== Environment Variables ==="
 echo "API_URL: ${API_URL}"
+echo "AI_API_URL: ${AI_API_URL}"
 echo "FIREBASE_API_KEY: ${FIREBASE_API_KEY}"
 echo "============================="
 
