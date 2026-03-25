@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { redisClient } from "../databases/redis.js";
 import House from "../models/house.model.js";
+import { publishHouseEvent } from "../queue/publisher.js";
 
 // Extend Request with userId
 interface AuthRequest extends Request {
@@ -74,6 +75,12 @@ export const postHouse = async (
       console.error("Redis invalidate error (postHouse):", redisError);
     }
 
+    try {
+      await publishHouseEvent("house.create", newHouse);
+    } catch (rabbitError) {
+      console.error("RabbitMQ publish error (house.create):", rabbitError);
+    }
+
     res.status(201).json({
       status: "success",
       message: "House added successfully",
@@ -135,6 +142,12 @@ export const updateListingById = async (
       });
     } catch (redisError) {
       console.error("Redis invalidate error (updateListingById):", redisError);
+    }
+
+    try {
+      await publishHouseEvent("house.update", updatedHouse);
+    } catch (rabbitError) {
+      console.error("RabbitMQ publish error (house.update):", rabbitError);
     }
 
     res.status(200).json({
@@ -290,6 +303,12 @@ export const deleteHouseById = async (
     } catch (redisError) {
       console.error("Redis invalidate error (deleteHouseById):", redisError);
       // Continue even if cache invalidation fails
+    }
+
+    try {
+      await publishHouseEvent("house.delete", { id: houseId });
+    } catch (rabbitError) {
+      console.error("RabbitMQ publish error (house.delete):", rabbitError);
     }
 
     res.status(200).json({

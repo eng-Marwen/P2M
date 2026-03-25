@@ -28,3 +28,28 @@ class HouseBatchPredictionResponse(BaseModel):
     total: int
     accepted: int
     rejected: int
+
+
+class RagQueryRequest(BaseModel):
+    query: str
+    top_k: int = Field(default=5, ge=1, le=20)
+    session_id: str | None = Field(default=None, max_length=128)
+
+
+class RagSearchHit(BaseModel):
+    score: float
+    listing_url: str | None = None
+    name: str | None = None
+    address: str | None = None
+    type: str | None = None
+    regularPrice: float | int | None = None
+    discountedPrice: float | int | None = None
+    description: str | None = None
+
+
+class RagQueryResponse(BaseModel):
+    session_id: str
+    query: str
+    answer: str
+    total_hits: int
+    hits: list[RagSearchHit]

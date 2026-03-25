@@ -1,10 +1,42 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.routes.enhance import router as enhance_router
 from app.routes.house_validation import router as house_validation_router
+from app.routes.rag import router as rag_router
+from app.queue.consumer import start_consumer
+from app.queue.rabbitmq import check_rabbitmq_connection
+from app.services.vector_service import check_qdrant_connection
+from redis.asyncio import Redis
+import threading
 import os
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("[Startup] Running external services connectivity checks...")
+    try:
+        check_rabbitmq_connection()
+        check_qdrant_connection()
+        redis_url = os.getenv("REDIS_URL")
+        if redis_url:
+            redis = Redis.from_url(redis_url, decode_responses=True)
+            await redis.ping()
+            await redis.aclose()
+            print("[Startup] Redis connected successfully")
+        print("[Startup] Qdrant connected successfully")
+        print("[Startup] All connectivity checks passed")
+    except Exception as exc:
+        print(f"[Startup] Connectivity check failed: {exc}")
+        raise
+
+    thread = threading.Thread(target=start_consumer, daemon=True)
+    thread.start()
+    print("[Startup] RabbitMQ consumer thread started")
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 # Configure CORS
 app.add_middleware(
@@ -20,3 +52,5 @@ app.add_middleware(
 
 app.include_router(enhance_router, prefix="/api")
 app.include_router(house_validation_router, prefix="/api")
+app.include_router(rag_router, prefix="/api")
+
