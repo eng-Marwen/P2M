@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.routes.enhance import router as enhance_router
 from app.routes.house_validation import router as house_validation_router
+from app.routes.house_price import router as house_price_router
 from app.routes.rag import router as rag_router
 from app.queue.consumer import start_consumer
 from app.queue.rabbitmq import check_rabbitmq_connection
@@ -52,5 +53,5 @@ app.add_middleware(
 
 app.include_router(enhance_router, prefix="/api")
 app.include_router(house_validation_router, prefix="/api")
+app.include_router(house_price_router, prefix="/api")
 app.include_router(rag_router, prefix="/api")
-
