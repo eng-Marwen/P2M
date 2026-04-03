@@ -84,6 +84,29 @@ interface HouseBatchValidationResponse {
   rejected: number;
 }
 
+interface HousePricePredictionResponse {
+  predicted_price_tnd: number;
+  used_features: Record<string, string | number | boolean>;
+  ignored_features: string[];
+}
+
+interface ListingPricePredictPayload {
+  name: string;
+  description: string;
+  address: string;
+  regularPrice: number;
+  discountedPrice?: number;
+  images: string[];
+  bedrooms: number;
+  bathrooms: number;
+  furnished: boolean;
+  parking: boolean;
+  type: "rent" | "sale";
+  offer: boolean;
+  userRef: string;
+  area?: number;
+}
+
 const EditListing = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -127,6 +150,8 @@ const EditListing = () => {
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
   const [validatingImages, setValidatingImages] = useState<boolean>(false);
   const [enhancing, setEnhancing] = useState<boolean>(false);
+  const [predictingPrice, setPredictingPrice] = useState<boolean>(false);
+  const [predictedPrice, setPredictedPrice] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper: extract Cloudinary public_id from a secure_url
@@ -636,6 +661,93 @@ const EditListing = () => {
     }
   };
 
+  const handlePredictPrice = async () => {
+    if (
+      !formData.name?.trim() ||
+      !formData.description?.trim() ||
+      !formData.address?.trim()
+    ) {
+      showToast("Please fill name, description and address first", "error");
+      return;
+    }
+
+    if (!formData.type) {
+      showToast("Please select Sale or Rent", "error");
+      return;
+    }
+
+    if (!formData.bedrooms || !formData.bathrooms) {
+      showToast("Bedrooms and bathrooms are required", "error");
+      return;
+    }
+
+    setPredictingPrice(true);
+    try {
+      const aiServiceUrl =
+        import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
+
+      const areaValue =
+        formData.area === "" || formData.area === undefined
+          ? undefined
+          : Number(formData.area);
+
+      const allImages = [
+        ...existingImages.map((img) => img.url),
+        ...uploadedImages.map((img) => img.url),
+      ];
+
+      const payload: ListingPricePredictPayload = {
+        name: formData.name,
+        description: formData.description,
+        address: formData.address,
+        regularPrice: Number(formData.regularPrice || 0),
+        discountedPrice: formData.offer
+          ? Number(formData.discountedPrice || 0)
+          : undefined,
+        images: allImages,
+        bedrooms: Number(formData.bedrooms),
+        bathrooms: Number(formData.bathrooms),
+        furnished: Boolean(formData.furnished),
+        parking: Boolean(formData.parking),
+        type: formData.type,
+        offer: Boolean(formData.offer),
+        userRef: "frontend-preview",
+        area: Number.isFinite(areaValue) ? areaValue : undefined,
+      };
+
+      const response = await axios.post<HousePricePredictionResponse>(
+        `${aiServiceUrl}/api/house/price/${formData.type}/predict/listing`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const predicted = Math.round(response.data.predicted_price_tnd);
+      setPredictedPrice(predicted);
+      const priceSuffix = formData.type === "rent" ? " TND / month" : " TND";
+      showToast(`AI estimated price: ${predicted}${priceSuffix}`, "success");
+    } catch (error) {
+      console.error("Error predicting price:", error);
+      let errorMessage = "Failed to predict house price";
+
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { detail?: string }; status?: number };
+        };
+        if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        }
+      }
+
+      showToast(errorMessage, "error");
+    } finally {
+      setPredictingPrice(false);
+    }
+  };
+
   const handleSubmitForm = async (data: FormData) => {
     // Check if we have at least one image (existing or newly uploaded)
     const totalImages = existingImages.length + uploadedImages.length;
@@ -1027,6 +1139,55 @@ const EditListing = () => {
               />
               <p>Area (m²)</p>
             </div>
+          </div>
+
+          {/* AI price prediction */}
+          <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold text-purple-900">
+                  AI Price Prediction
+                </p>
+                <p className="text-xs text-purple-700">
+                  Estimate listing price from your house details
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handlePredictPrice}
+                disabled={predictingPrice}
+                className="rounded-lg border border-purple-600 px-3 py-2 text-sm font-semibold text-purple-700 hover:bg-purple-100 disabled:opacity-50"
+              >
+                {predictingPrice ? "Predicting..." : "Predict Price"}
+              </button>
+            </div>
+
+            {predictedPrice !== null && (
+              <div className="mt-3 flex items-center justify-between rounded-lg border border-purple-300 bg-white px-3 py-2">
+                <p className="text-sm text-gray-700">
+                  Estimated price:{" "}
+                  <span className="font-bold">
+                    {predictedPrice}
+                    {formData.type === "rent" ? " TND / month" : " TND"}
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValue("regularPrice", predictedPrice, {
+                      shouldValidate: true,
+                    });
+                    showToast(
+                      "Predicted price applied to regular price",
+                      "success",
+                    );
+                  }}
+                  className="rounded-md bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700"
+                >
+                  Use as Regular Price
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Submit button */}
