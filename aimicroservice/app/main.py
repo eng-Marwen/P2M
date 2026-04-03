@@ -8,6 +8,7 @@ from app.routes.rag import router as rag_router
 from app.queue.consumer import start_consumer
 from app.queue.rabbitmq import check_rabbitmq_connection
 from app.services.vector_service import check_qdrant_connection
+from app.services.model_bootstrap import ensure_price_models_available
 from redis.asyncio import Redis
 import threading
 import os
@@ -17,6 +18,7 @@ import os
 async def lifespan(app: FastAPI):
     print("[Startup] Running external services connectivity checks...")
     try:
+        ensure_price_models_available()
         check_rabbitmq_connection()
         check_qdrant_connection()
         redis_url = os.getenv("REDIS_URL")
