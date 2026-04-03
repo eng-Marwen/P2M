@@ -572,7 +572,7 @@ const CreateHouse = () => {
       };
 
       const response = await axios.post<HousePricePredictionResponse>(
-        `${aiServiceUrl}/api/house/price/predict/listing`,
+        `${aiServiceUrl}/api/house/price/${formData.type}/predict/listing`,
         payload,
         {
           headers: {
@@ -583,7 +583,8 @@ const CreateHouse = () => {
 
       const predicted = Math.round(response.data.predicted_price_tnd);
       setPredictedPrice(predicted);
-      showToast(`AI estimated price: ${predicted} TND`, "success");
+      const priceSuffix = formData.type === "rent" ? " TND / month" : " TND";
+      showToast(`AI estimated price: ${predicted}${priceSuffix}`, "success");
     } catch (error) {
       console.error("Error predicting price:", error);
       let errorMessage = "Failed to predict house price";
@@ -692,7 +693,7 @@ const CreateHouse = () => {
           <div>
             <input
               type="text"
-              placeholder="Address"
+              placeholder="city/region"
               {...register("address", {
                 required: "Address is required",
               })}
@@ -843,7 +844,7 @@ const CreateHouse = () => {
               <div className="flex flex-col">
                 <p>Discounted Price</p>
                 {formData.type === "rent" && (
-                  <span className="text-xs opacity-80">($ / Month)</span>
+                  <span className="text-xs opacity-80">($TND/ Month)</span>
                 )}
               </div>
             </div>
@@ -890,7 +891,10 @@ const CreateHouse = () => {
               <div className="mt-3 flex items-center justify-between rounded-lg border border-purple-300 bg-white px-3 py-2">
                 <p className="text-sm text-gray-700">
                   Estimated price:{" "}
-                  <span className="font-bold">{predictedPrice} TND</span>
+                  <span className="font-bold">
+                    {predictedPrice}
+                    {formData.type === "rent" ? " TND / month" : " TND"}
+                  </span>
                 </p>
                 <button
                   type="button"
