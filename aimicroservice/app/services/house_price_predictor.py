@@ -28,6 +28,10 @@ def _price_model_path(model_type: PriceModelType) -> Path:
     )
 
 
+def get_price_model_path(model_type: str | None = "sale") -> Path:
+    return _price_model_path(_normalize_model_type(model_type))
+
+
 def _normalize_model_type(model_type: str | None) -> PriceModelType:
     normalized = _text(model_type or "sale")
     return "rent" if normalized == "rent" else "sale"
