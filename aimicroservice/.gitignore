@@ -47,3 +47,4 @@ htmlcov/
 *.png
 *.svg
 *.csv
+*.joblib
