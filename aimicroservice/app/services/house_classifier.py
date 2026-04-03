@@ -33,17 +33,6 @@ def _class_names() -> list[str]:
 	return [name.strip() for name in raw.split(",") if name.strip()]
 
 
-def _house_threshold() -> float:
-	raw = os.getenv("HOUSE_THRESHOLD", "0.7")
-	try:
-		threshold = float(raw)
-	except ValueError:
-		threshold = 0.7
-
-	# Keep threshold in [0, 1] even if env var is misconfigured.
-	return min(max(threshold, 0.0), 1.0)
-
-
 def _build_model(num_classes: int) -> nn.Module:
 	model = models.resnet18(weights=None)
 	num_features = model.fc.in_features
@@ -77,22 +66,10 @@ def predict_house_image(image_bytes: bytes) -> dict:
 	x = TEST_TRANSFORM(image).unsqueeze(0)
 	model = _load_model()
 	class_names = _class_names()
-	house_threshold = _house_threshold()
 
 	with torch.no_grad():
 		logits = model(x)
 		probs = torch.softmax(logits, dim=1).squeeze(0)
-
-	house_idx = next((i for i, name in enumerate(class_names) if name.lower() == "house"), None)
-	not_house_idx = next((i for i, name in enumerate(class_names) if name.lower() == "not_house"), None)
-
-	# Conservative rule aligned with notebook behavior:
-	# only return "house" when P(house) is above threshold,
-	# otherwise return "not_house".
-	if house_idx is not None and not_house_idx is not None:
-		house_prob = float(probs[house_idx].item())
-		pred_idx = house_idx if house_prob >= house_threshold else not_house_idx
-	else:
 		pred_idx = int(torch.argmax(probs).item())
 
 	label = class_names[pred_idx]

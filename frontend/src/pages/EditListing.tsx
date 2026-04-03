@@ -84,29 +84,6 @@ interface HouseBatchValidationResponse {
   rejected: number;
 }
 
-interface HousePricePredictionResponse {
-  predicted_price_tnd: number;
-  used_features: Record<string, string | number | boolean>;
-  ignored_features: string[];
-}
-
-interface ListingPricePredictPayload {
-  name: string;
-  description: string;
-  address: string;
-  regularPrice: number;
-  discountedPrice?: number;
-  images: string[];
-  bedrooms: number;
-  bathrooms: number;
-  furnished: boolean;
-  parking: boolean;
-  type: "rent" | "sale";
-  offer: boolean;
-  userRef: string;
-  area?: number;
-}
-
 const EditListing = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -150,8 +127,6 @@ const EditListing = () => {
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
   const [validatingImages, setValidatingImages] = useState<boolean>(false);
   const [enhancing, setEnhancing] = useState<boolean>(false);
-  const [predictingPrice, setPredictingPrice] = useState<boolean>(false);
-  const [predictedPrice, setPredictedPrice] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper: extract Cloudinary public_id from a secure_url
@@ -661,93 +636,6 @@ const EditListing = () => {
     }
   };
 
-  const handlePredictPrice = async () => {
-    if (
-      !formData.name?.trim() ||
-      !formData.description?.trim() ||
-      !formData.address?.trim()
-    ) {
-      showToast("Please fill name, description and address first", "error");
-      return;
-    }
-
-    if (!formData.type) {
-      showToast("Please select Sale or Rent", "error");
-      return;
-    }
-
-    if (!formData.bedrooms || !formData.bathrooms) {
-      showToast("Bedrooms and bathrooms are required", "error");
-      return;
-    }
-
-    setPredictingPrice(true);
-    try {
-      const aiServiceUrl =
-        import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
-
-      const areaValue =
-        formData.area === "" || formData.area === undefined
-          ? undefined
-          : Number(formData.area);
-
-      const allImages = [
-        ...existingImages.map((img) => img.url),
-        ...uploadedImages.map((img) => img.url),
-      ];
-
-      const payload: ListingPricePredictPayload = {
-        name: formData.name,
-        description: formData.description,
-        address: formData.address,
-        regularPrice: Number(formData.regularPrice || 0),
-        discountedPrice: formData.offer
-          ? Number(formData.discountedPrice || 0)
-          : undefined,
-        images: allImages,
-        bedrooms: Number(formData.bedrooms),
-        bathrooms: Number(formData.bathrooms),
-        furnished: Boolean(formData.furnished),
-        parking: Boolean(formData.parking),
-        type: formData.type,
-        offer: Boolean(formData.offer),
-        userRef: "frontend-preview",
-        area: Number.isFinite(areaValue) ? areaValue : undefined,
-      };
-
-      const response = await axios.post<HousePricePredictionResponse>(
-        `${aiServiceUrl}/api/house/price/${formData.type}/predict/listing`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      const predicted = Math.round(response.data.predicted_price_tnd);
-      setPredictedPrice(predicted);
-      const priceSuffix = formData.type === "rent" ? " TND / month" : " TND";
-      showToast(`AI estimated price: ${predicted}${priceSuffix}`, "success");
-    } catch (error) {
-      console.error("Error predicting price:", error);
-      let errorMessage = "Failed to predict house price";
-
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as {
-          response?: { data?: { detail?: string }; status?: number };
-        };
-        if (axiosError.response?.data?.detail) {
-          errorMessage = axiosError.response.data.detail;
-        }
-      }
-
-      showToast(errorMessage, "error");
-    } finally {
-      setPredictingPrice(false);
-    }
-  };
-
   const handleSubmitForm = async (data: FormData) => {
     // Check if we have at least one image (existing or newly uploaded)
     const totalImages = existingImages.length + uploadedImages.length;
@@ -858,13 +746,6 @@ const EditListing = () => {
       setCreating(false);
     }
   };
-
-  const formattedPredictedPrice =
-    predictedPrice !== null
-      ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(
-          predictedPrice,
-        )
-      : null;
 
   if (loading) {
     return (
@@ -1098,7 +979,7 @@ const EditListing = () => {
                 min={50}
                 {...register("regularPrice", {
                   required: "Regular price is required",
-                  min: { value: 50, message: "Minimum price is 50 TND" },
+                  min: { value: 50, message: "Minimum price is $50" },
                 })}
                 className={`border bg-white w-24 p-2 rounded-lg ${
                   errors.regularPrice ? "border-red-500" : "border-gray-300"
@@ -1106,7 +987,7 @@ const EditListing = () => {
               />
               <div className="flex flex-col">
                 <p>Regular Price</p>
-                <span className="text-xs opacity-80">(TND / Month)</span>
+                <span className="text-xs opacity-80">($ / Month)</span>
               </div>
             </div>
 
@@ -1126,7 +1007,7 @@ const EditListing = () => {
                 />
                 <div className="flex flex-col">
                   <p>Discounted Price</p>
-                  <span className="text-xs opacity-80">(TND / Month)</span>
+                  <span className="text-xs opacity-80">($ / Month)</span>
                 </div>
               </div>
             )}
@@ -1307,78 +1188,6 @@ const EditListing = () => {
               <p className="text-sm text-gray-500">Upload at least one image</p>
             </div>
           )}
-
-          {/* AI price prediction */}
-          <div className="relative overflow-hidden rounded-xl border border-indigo-200 bg-linear-to-br from-indigo-50 via-purple-50 to-cyan-50 p-3 shadow-sm">
-            <div className="pointer-events-none absolute -top-6 -right-6 h-20 w-20 rounded-full bg-indigo-300/20 blur-xl" />
-
-            <div className="relative flex items-center justify-between gap-2">
-              <div>
-                <p className="text-[11px] font-bold tracking-wide text-indigo-700">
-                  ✨ AI PRICE ASSISTANT
-                </p>
-                <p className="text-sm font-semibold text-indigo-950">
-                  Smart Price Prediction
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handlePredictPrice}
-                disabled={predictingPrice}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-linear-to-r from-indigo-600 to-purple-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:from-indigo-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {predictingPrice ? (
-                  <>
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Predicting...
-                  </>
-                ) : (
-                  <>⚡ Predict</>
-                )}
-              </button>
-            </div>
-
-            <div className="relative mt-2 grid grid-cols-3 gap-1.5 text-[10px] text-indigo-900/80">
-              <div className="rounded-md border border-indigo-200 bg-white/70 px-2 py-1">
-                {formData.type || "N/A"}
-              </div>
-              <div className="rounded-md border border-indigo-200 bg-white/70 px-2 py-1">
-                Beds: {formData.bedrooms || 0}
-              </div>
-              <div className="rounded-md border border-indigo-200 bg-white/70 px-2 py-1">
-                Baths: {formData.bathrooms || 0}
-              </div>
-            </div>
-
-            {predictedPrice !== null && (
-              <div className="relative mt-2.5 rounded-lg border border-indigo-300 bg-white/90 p-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
-                  Estimated market price
-                </p>
-                <p className="text-lg font-extrabold text-indigo-950 leading-tight">
-                  {formattedPredictedPrice}
-                  <span className="ml-1 text-xs font-semibold text-indigo-700">
-                    {formData.type === "rent" ? "TND / month" : "TND"}
-                  </span>
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setValue("regularPrice", predictedPrice, {
-                      shouldValidate: true,
-                    });
-                    showToast(
-                      "Predicted price applied to regular price",
-                      "success",
-                    );
-                  }}
-                  className="mt-2 rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-indigo-700"
-                >
-                  Use as Regular Price
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </form>
     </main>

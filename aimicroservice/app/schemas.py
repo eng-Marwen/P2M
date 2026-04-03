@@ -30,56 +30,6 @@ class HouseBatchPredictionResponse(BaseModel):
     rejected: int
 
 
-class HousePricePredictRequest(BaseModel):
-    features: dict[str, int | float | str | bool]
-
-
-class HousePricePredictResponse(BaseModel):
-    predicted_price_tnd: float
-    used_features: dict[str, int | float | str | bool]
-    ignored_features: list[str] = []
-
-
-class HousePriceBatchItem(BaseModel):
-    index: int
-    predicted_price_tnd: float | None = None
-    ignored_features: list[str] = []
-    error: str | None = None
-
-
-class HousePriceBatchPredictRequest(BaseModel):
-    items: list[dict[str, int | float | str | bool]]
-
-
-class HousePriceBatchPredictResponse(BaseModel):
-    results: list[HousePriceBatchItem]
-    total: int
-    succeeded: int
-    failed: int
-
-
-class HousePriceFeaturesResponse(BaseModel):
-    feature_columns: list[str]
-    total: int
-
-
-class HousePriceListingPredictRequest(BaseModel):
-    name: str
-    description: str
-    address: str
-    regularPrice: float
-    discountedPrice: float | None = None
-    images: list[str] = []
-    bedrooms: int
-    bathrooms: int
-    furnished: bool
-    parking: bool
-    type: str
-    offer: bool
-    userRef: str
-    area: float | None = None
-
-
 class RagQueryRequest(BaseModel):
     query: str
     top_k: int = Field(default=5, ge=1, le=20)

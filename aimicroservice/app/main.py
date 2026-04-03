@@ -3,12 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.routes.enhance import router as enhance_router
 from app.routes.house_validation import router as house_validation_router
-from app.routes.house_price import router as house_price_router
 from app.routes.rag import router as rag_router
 from app.queue.consumer import start_consumer
 from app.queue.rabbitmq import check_rabbitmq_connection
 from app.services.vector_service import check_qdrant_connection
-from app.services.model_bootstrap import ensure_price_models_available
 from redis.asyncio import Redis
 import threading
 import os
@@ -18,7 +16,6 @@ import os
 async def lifespan(app: FastAPI):
     print("[Startup] Running external services connectivity checks...")
     try:
-        ensure_price_models_available()
         check_rabbitmq_connection()
         check_qdrant_connection()
         redis_url = os.getenv("REDIS_URL")
@@ -55,5 +52,5 @@ app.add_middleware(
 
 app.include_router(enhance_router, prefix="/api")
 app.include_router(house_validation_router, prefix="/api")
-app.include_router(house_price_router, prefix="/api")
 app.include_router(rag_router, prefix="/api")
+

@@ -133,15 +133,6 @@ const AIAgentChatPage = () => {
     }
   };
 
-  const handleStartNewChat = () => {
-    setInput("");
-    setLoading(false);
-    setMessages([DEFAULT_WELCOME_MESSAGE]);
-    setProposedHouses([]);
-    localStorage.removeItem(CHAT_STORAGE_KEY);
-    localStorage.removeItem(PROPOSED_HOUSES_STORAGE_KEY);
-  };
-
   return (
     <main className="min-h-screen bg-linear-to-b from-indigo-50 via-slate-50 to-white px-4 py-8">
       <div className="mx-auto grid w-full max-w-7xl gap-5 lg:grid-cols-[2fr_1fr]">
@@ -154,26 +145,13 @@ const AIAgentChatPage = () => {
               <FiZap className="h-4 w-4" />
               SMART AI
             </div>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                  AI Agent Chat
-                </h1>
-                <p className="mt-1 text-sm text-slate-500">
-                  Ask naturally. Get tailored listings, prices, and location
-                  insights.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleStartNewChat}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700"
-                title="Delete all chat history and start a new chat"
-              >
-                New chat
-              </button>
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              AI Agent Chat
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Ask naturally. Get tailored listings, prices, and location
+              insights.
+            </p>
           </div>
 
           <section className="relative flex-1 space-y-3 overflow-y-auto p-5">
