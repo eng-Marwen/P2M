@@ -823,7 +823,7 @@ const CreateHouse = () => {
                 min={50}
                 {...register("regularPrice", {
                   required: "Regular price is required",
-                  min: { value: 50, message: "Minimum price is $50" },
+                  min: { value: 50, message: "Minimum price is 50 TND" },
                 })}
                 className={`border bg-white w-24 p-2 rounded-lg ${
                   errors.regularPrice ? "border-red-500" : "border-gray-300"
@@ -832,7 +832,7 @@ const CreateHouse = () => {
               <div className="flex flex-col">
                 <p>Regular Price</p>
                 {formData.type === "rent" && (
-                  <span className="text-xs opacity-80">($ / Month)</span>
+                  <span className="text-xs opacity-80">(TND / Month)</span>
                 )}
               </div>
             </div>
@@ -851,7 +851,7 @@ const CreateHouse = () => {
               <div className="flex flex-col">
                 <p>Discounted Price</p>
                 {formData.type === "rent" && (
-                  <span className="text-xs opacity-80">($TND/ Month)</span>
+                  <span className="text-xs opacity-80">(TND / Month)</span>
                 )}
               </div>
             </div>
