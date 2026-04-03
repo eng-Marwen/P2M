@@ -31,12 +31,12 @@ class HouseBatchPredictionResponse(BaseModel):
 
 
 class HousePricePredictRequest(BaseModel):
-    features: dict[str, int | float]
+    features: dict[str, int | float | str | bool]
 
 
 class HousePricePredictResponse(BaseModel):
     predicted_price_tnd: float
-    used_features: dict[str, int | float]
+    used_features: dict[str, int | float | str | bool]
     ignored_features: list[str] = []
 
 
@@ -48,7 +48,7 @@ class HousePriceBatchItem(BaseModel):
 
 
 class HousePriceBatchPredictRequest(BaseModel):
-    items: list[dict[str, int | float]]
+    items: list[dict[str, int | float | str | bool]]
 
 
 class HousePriceBatchPredictResponse(BaseModel):
