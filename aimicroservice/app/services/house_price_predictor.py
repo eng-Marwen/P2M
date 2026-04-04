@@ -19,13 +19,7 @@ def _train_data_path() -> Path:
 
 
 def _price_model_path(model_type: PriceModelType) -> Path:
-    return (
-        ROOT_DIR
-        / "models-training"
-        / "price_prediction_model"
-        / "models"
-        / f"{model_type}_model.joblib"
-    )
+    return ROOT_DIR / "ai_models" / f"{model_type}_model.joblib"
 
 
 def get_price_model_path(model_type: str | None = "sale") -> Path:
