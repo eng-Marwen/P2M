@@ -22,10 +22,19 @@ TEST_TRANSFORM = transforms.Compose([
 
 
 def _default_model_path() -> Path:
-	# Prefer current location under CNN_training, keep legacy fallback for compatibility.
-	cnn_training_model = ROOT_DIR / "models-training" / "CNN_training" / "house_model_snd.pth"
-	legacy_model = ROOT_DIR / "models-training" / "house_model_snd.pth"
-	return cnn_training_model if cnn_training_model.exists() else legacy_model
+	return ROOT_DIR / "ai_models" / "house_model_snd.pth"
+
+
+def get_house_model_path() -> Path:
+	raw_path = (os.getenv("HOUSE_MODEL_PATH", "") or "").strip()
+	if not raw_path:
+		return _default_model_path()
+
+	path = Path(raw_path)
+	if path.is_absolute():
+		return path.resolve()
+
+	return (ROOT_DIR / path).resolve()
 
 
 def _class_names() -> list[str]:
@@ -42,7 +51,7 @@ def _build_model(num_classes: int) -> nn.Module:
 
 @lru_cache(maxsize=1)
 def _load_model() -> nn.Module:
-	model_path = Path(os.getenv("HOUSE_MODEL_PATH", str(_default_model_path()))).resolve()
+	model_path = get_house_model_path()
 	if not model_path.exists():
 		raise FileNotFoundError(f"Model file not found at: {model_path}")
 
