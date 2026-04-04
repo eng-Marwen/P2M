@@ -47,4 +47,5 @@ htmlcov/
 *.png
 *.svg
 *.csv
+*.joblib
 ai_models/
