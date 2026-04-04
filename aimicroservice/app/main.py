@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     try:
         check_rabbitmq_connection()
         check_qdrant_connection()
-        redis_url = os.getenv("REDIS_URL")
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         if redis_url:
             redis = Redis.from_url(redis_url, decode_responses=True)
             await redis.ping()
