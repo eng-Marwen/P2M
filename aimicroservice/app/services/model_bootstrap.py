@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urljoin, urlparse
 
 import requests
 
+from app.services.house_classifier import get_house_model_path
 from app.services.house_price_predictor import get_price_model_path
 
 
@@ -151,34 +152,33 @@ def _download_file(url: str, destination: Path) -> None:
         _stream_to_file(response, destination)
 
 
-def _ensure_single_model(model_type: str, url_env: str, sha_env: str) -> None:
-    model_path = get_price_model_path(model_type)
+def _ensure_single_model(model_name: str, model_path: Path, url_env: str, sha_env: str) -> None:
     if model_path.exists():
         if _is_html_file(model_path):
             model_path.unlink(missing_ok=True)
             print(
-                f"[Startup] Existing {model_type} model at {model_path} is invalid HTML. Re-downloading..."
+                f"[Startup] Existing {model_name} model at {model_path} is invalid HTML. Re-downloading..."
             )
         else:
-            print(f"[Startup] {model_type} model found: {model_path}")
+            print(f"[Startup] {model_name} model found: {model_path}")
             return
 
     model_url = os.getenv(url_env, "").strip()
     if not model_url:
         raise RuntimeError(
-            f"{model_type} model is missing at {model_path} and {url_env} is not set"
+            f"{model_name} model is missing at {model_path} and {url_env} is not set"
         )
 
-    print(f"[Startup] Downloading missing {model_type} model...")
+    print(f"[Startup] Downloading missing {model_name} model...")
     _download_file(model_url, model_path)
 
     if not model_path.exists() or model_path.stat().st_size == 0:
-        raise RuntimeError(f"Downloaded {model_type} model is empty or missing: {model_path}")
+        raise RuntimeError(f"Downloaded {model_name} model is empty or missing: {model_path}")
 
     if _is_html_file(model_path):
         model_path.unlink(missing_ok=True)
         raise RuntimeError(
-            f"Downloaded {model_type} model from {url_env} is HTML instead of a .joblib file. "
+            f"Downloaded {model_name} model from {url_env} is HTML instead of a model file. "
             "Google Drive link is likely private, quota-limited, or requires confirmation."
         )
 
@@ -188,13 +188,33 @@ def _ensure_single_model(model_type: str, url_env: str, sha_env: str) -> None:
         if actual_sha != expected_sha:
             model_path.unlink(missing_ok=True)
             raise RuntimeError(
-                f"SHA256 mismatch for {model_type} model. expected={expected_sha} actual={actual_sha}"
+                f"SHA256 mismatch for {model_name} model. expected={expected_sha} actual={actual_sha}"
             )
 
     size_mb = model_path.stat().st_size / (1024 * 1024)
-    print(f"[Startup] {model_type} model ready ({size_mb:.2f} MB): {model_path}")
+    print(f"[Startup] {model_name} model ready ({size_mb:.2f} MB): {model_path}")
+
+
+def ensure_all_models_available() -> None:
+    _ensure_single_model(
+        model_name="sale",
+        model_path=get_price_model_path("sale"),
+        url_env="SALE_MODEL_URL",
+        sha_env="SALE_MODEL_SHA256",
+    )
+    _ensure_single_model(
+        model_name="rent",
+        model_path=get_price_model_path("rent"),
+        url_env="RENT_MODEL_URL",
+        sha_env="RENT_MODEL_SHA256",
+    )
+    _ensure_single_model(
+        model_name="validation",
+        model_path=get_house_model_path(),
+        url_env="VALIDATION_MODEL_URL",
+        sha_env="VALIDATION_MODEL_SHA256",
+    )
 
 
 def ensure_price_models_available() -> None:
-    _ensure_single_model("sale", "SALE_MODEL_URL", "SALE_MODEL_SHA256")
-    _ensure_single_model("rent", "RENT_MODEL_URL", "RENT_MODEL_SHA256")
+    ensure_all_models_available()
