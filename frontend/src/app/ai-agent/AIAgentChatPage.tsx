@@ -3,11 +3,12 @@ import {
   FiHome,
   FiMapPin,
   FiMessageSquare,
+  FiTrash2,
   FiTrendingUp,
   FiZap,
 } from "react-icons/fi";
 import { Link } from "react-router-dom";
-import { queryRag, type RagHit } from "./ragApi";
+import { clearRagHistory, queryRag, type RagHit } from "./ragApi";
 
 type Message = {
   role: "user" | "assistant";
@@ -16,6 +17,7 @@ type Message = {
 
 const CHAT_STORAGE_KEY = "ai-agent-chat-history";
 const PROPOSED_HOUSES_STORAGE_KEY = "ai-agent-proposed-houses";
+const RAG_SESSION_ID_STORAGE_KEY = "ai-agent-rag-session-id";
 
 const DEFAULT_WELCOME_MESSAGE: Message = {
   role: "assistant",
@@ -52,6 +54,7 @@ const AIAgentChatPage = () => {
   const [messages, setMessages] = useState<Message[]>([
     DEFAULT_WELCOME_MESSAGE,
   ]);
+  const [ragSessionId, setRagSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem(CHAT_STORAGE_KEY);
@@ -82,6 +85,13 @@ const AIAgentChatPage = () => {
   }, []);
 
   useEffect(() => {
+    const storedSessionId = localStorage.getItem(RAG_SESSION_ID_STORAGE_KEY);
+    if (storedSessionId) {
+      setRagSessionId(storedSessionId);
+    }
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
   }, [messages]);
 
@@ -91,6 +101,29 @@ const AIAgentChatPage = () => {
       JSON.stringify(proposedHouses),
     );
   }, [proposedHouses]);
+
+  useEffect(() => {
+    if (!ragSessionId) {
+      localStorage.removeItem(RAG_SESSION_ID_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(RAG_SESSION_ID_STORAGE_KEY, ragSessionId);
+  }, [ragSessionId]);
+
+  const handleClearChatHistory = async () => {
+    try {
+      await clearRagHistory(ragSessionId ?? undefined);
+    } catch {
+      // ignore backend clear errors and still clear local state
+    }
+
+    setMessages([DEFAULT_WELCOME_MESSAGE]);
+    setProposedHouses([]);
+    setRagSessionId(null);
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+    localStorage.removeItem(PROPOSED_HOUSES_STORAGE_KEY);
+    localStorage.removeItem(RAG_SESSION_ID_STORAGE_KEY);
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -108,7 +141,14 @@ const AIAgentChatPage = () => {
     setLoading(true);
 
     try {
-      const result = await queryRag(contextualPrompt, 5);
+      const result = await queryRag(
+        contextualPrompt,
+        5,
+        ragSessionId ?? undefined,
+      );
+      if (result.session_id) {
+        setRagSessionId(result.session_id);
+      }
       setProposedHouses(result.hits || []);
       const suffix =
         result.total_hits > 0
@@ -152,6 +192,14 @@ const AIAgentChatPage = () => {
               Ask naturally. Get tailored listings, prices, and location
               insights.
             </p>
+            <button
+              type="button"
+              onClick={handleClearChatHistory}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+            >
+              <FiTrash2 className="h-3.5 w-3.5" />
+              Delete chat history
+            </button>
           </div>
 
           <section className="relative flex-1 space-y-3 overflow-y-auto p-5">
