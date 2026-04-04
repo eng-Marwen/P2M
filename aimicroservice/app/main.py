@@ -6,6 +6,7 @@ from app.routes.house_validation import router as house_validation_router
 from app.routes.rag import router as rag_router
 from app.queue.consumer import start_consumer
 from app.queue.rabbitmq import check_rabbitmq_connection
+from app.services.model_bootstrap import ensure_all_models_available
 from app.services.vector_service import check_qdrant_connection
 from redis.asyncio import Redis
 import threading
@@ -14,8 +15,11 @@ import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("[Startup] Running external services connectivity checks...")
+    print("[Startup] Ensuring AI models are available...")
     try:
+        ensure_all_models_available()
+        print("[Startup] Model availability check passed")
+        print("[Startup] Running external services connectivity checks...")
         check_rabbitmq_connection()
         check_qdrant_connection()
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
