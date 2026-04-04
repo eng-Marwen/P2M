@@ -13,6 +13,7 @@ export interface RagHit {
 }
 
 export interface RagResponse {
+  session_id: string;
   query: string;
   answer: string;
   total_hits: number;
@@ -37,6 +38,7 @@ const normalizeAiBaseUrl = (rawUrl?: string): string => {
 export const queryRag = async (
   query: string,
   topK = 3,
+  sessionId?: string,
 ): Promise<RagResponse> => {
   const baseUrl = normalizeAiBaseUrl(ENV.AI_API_URL);
   const endpoint = `${baseUrl}/api/rag/query`;
@@ -44,7 +46,23 @@ export const queryRag = async (
   const response = await axios.post<RagResponse>(endpoint, {
     query,
     top_k: topK,
+    session_id: sessionId,
   });
 
   return response.data;
+};
+
+export const clearRagHistory = async (sessionId?: string): Promise<void> => {
+  const baseUrl = normalizeAiBaseUrl(ENV.AI_API_URL);
+  const endpoint = `${baseUrl}/api/rag/history/clear`;
+
+  await axios.post(
+    endpoint,
+    { session_id: sessionId },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  );
 };
