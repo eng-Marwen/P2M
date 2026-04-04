@@ -53,3 +53,62 @@ class RagQueryResponse(BaseModel):
     answer: str
     total_hits: int
     hits: list[RagSearchHit]
+
+
+class RagClearHistoryRequest(BaseModel):
+    session_id: str | None = Field(default=None, max_length=128)
+
+
+class RagClearHistoryResponse(BaseModel):
+    session_id: str | None = None
+    cleared: bool
+
+
+class HousePriceFeaturesResponse(BaseModel):
+    feature_columns: list[str]
+    total: int
+
+
+class HousePricePredictRequest(BaseModel):
+    features: dict[str, int | float | str | bool]
+
+
+class HousePricePredictResponse(BaseModel):
+    predicted_price_tnd: float
+    used_features: dict[str, int | float | str | bool]
+    ignored_features: list[str]
+
+
+class HousePriceListingPredictRequest(BaseModel):
+    name: str = ""
+    description: str = ""
+    address: str = ""
+    regularPrice: float | int = 0
+    discountedPrice: float | int | None = None
+    images: list[str] = Field(default_factory=list)
+    bedrooms: int = 0
+    bathrooms: int = 0
+    furnished: bool = False
+    parking: bool = False
+    type: str = "sale"
+    offer: bool = False
+    userRef: str = ""
+    area: float | int | None = None
+
+
+class HousePriceBatchPredictRequest(BaseModel):
+    items: list[dict[str, int | float | str | bool]]
+
+
+class HousePriceBatchItem(BaseModel):
+    index: int
+    predicted_price_tnd: float | None = None
+    ignored_features: list[str] = Field(default_factory=list)
+    error: str | None = None
+
+
+class HousePriceBatchPredictResponse(BaseModel):
+    results: list[HousePriceBatchItem]
+    total: int
+    succeeded: int
+    failed: int
