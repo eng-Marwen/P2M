@@ -90,6 +90,17 @@ async def _append_session_messages(session_id: str, user_query: str, assistant_a
     await pipeline.execute()
 
 
+async def clear_rag_session_history(session_id: str | None) -> bool:
+    sid = (session_id or "").strip()
+    if not sid:
+        return False
+
+    redis = _get_redis_client()
+    key = _session_key(sid)
+    deleted = await redis.delete(key)
+    return bool(deleted)
+
+
 def _history_to_text(history: list[dict[str, str]]) -> str:
     if not history:
         return "(empty)"
