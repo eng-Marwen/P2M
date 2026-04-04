@@ -25,7 +25,7 @@ QDRANT_ALLOW_INSECURE_API_KEY = (
 
 RAG_LLM_MODEL = os.getenv("RAG_LLM_MODEL", "llama-3.3-70b-versatile")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-REDIS_URL = os.getenv("REDIS_URL")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 RAG_MEMORY_KEY_PREFIX = os.getenv("RAG_MEMORY_KEY_PREFIX", "rag:session")
 RAG_MEMORY_MAX_TURNS = int(os.getenv("RAG_MEMORY_MAX_TURNS", "8"))
 RAG_MEMORY_SESSION_TTL_SECONDS = int(os.getenv("RAG_MEMORY_SESSION_TTL_SECONDS", "7200"))
