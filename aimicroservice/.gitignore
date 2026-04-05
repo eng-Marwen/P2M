@@ -48,4 +48,5 @@ htmlcov/
 *.svg
 *.csv
 *.joblib
-ai_models/
+ai_models/*.joblib
+ai_models/*.pth
