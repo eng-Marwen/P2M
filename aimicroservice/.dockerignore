@@ -1,23 +1,44 @@
-*.ipynb
-.gitignore
-*.jpg
-*.jpeg
-*.png
-*.svg
-*.csv
-*.joblib
-*.pth
-models-training/
-models/
-.git
-.gitignore
-*.md
-README.md
+# Ignore everything by default to keep build context small
+**
+
+# Explicitly ignore non-runtime artifacts (redundant with **, kept for clarity)
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Local Python environments
 aivenv/
 venv/
 env/
 ENV/
-.venv
+.venv/
+
+# Dev / VCS / editor
+.git/
+.github/
+.vscode/
+.idea/
+*.swp
+
+# Local env/secrets
 .env
-__pycache__/
-*.pyc
+.env.*
+
+# Training/data/notebooks/docs not needed in runtime image
+models-training/
+*.ipynb
+*.md
+README.md
+
+# Keep only files/folders needed to build and run the service
+!app/
+!app/**
+!Dockerfile
+!prod_dependencies.txt
+!.env.example
+
+# Optional documentation for model folder structure (without bundling model binaries)
+!ai_models/
+!ai_models/README.md
