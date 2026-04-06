@@ -7,8 +7,24 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
 
 
-QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+ENVIRONMENT = (
+    os.getenv("ENVIRONMENT")
+    or "development"
+).lower()
+
+QDRANT_LOCAL_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_CLOUD_URL = os.getenv("QDRANT_CLOUD_CLUSTER_URL") or os.getenv(
+    "QDRANT_CLOUD_CLUSER_URL"
+)
+QDRANT_CLOUD_API_KEY = os.getenv("QDRANT_CLOUD_API_KEY")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
+USE_QDRANT_CLOUD = ENVIRONMENT in {"production", "prod"}
+ACTIVE_QDRANT_URL = QDRANT_CLOUD_URL if USE_QDRANT_CLOUD and QDRANT_CLOUD_URL else QDRANT_LOCAL_URL
+ACTIVE_QDRANT_API_KEY = (
+    QDRANT_CLOUD_API_KEY if USE_QDRANT_CLOUD and QDRANT_CLOUD_API_KEY else QDRANT_API_KEY
+)
+
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "houses_vectors")
 QDRANT_RECREATE_ON_DIM_MISMATCH = (
     os.getenv("QDRANT_RECREATE_ON_DIM_MISMATCH", "true").lower() == "true"
@@ -17,10 +33,13 @@ QDRANT_RECREATE_ON_DIM_MISMATCH = (
 
 @lru_cache(maxsize=1)
 def _get_qdrant_client() -> QdrantClient:
-    client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    client = QdrantClient(url=ACTIVE_QDRANT_URL, api_key=ACTIVE_QDRANT_API_KEY)
     # lightweight connectivity check
     client.get_collections()
-    print(f"[Qdrant] Connected successfully: {QDRANT_URL}")
+    print(
+        f"[Qdrant] Connected successfully ({'cloud' if USE_QDRANT_CLOUD else 'local'}): "
+        f"{ACTIVE_QDRANT_URL}"
+    )
     return client
 
 
