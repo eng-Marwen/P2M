@@ -74,7 +74,7 @@ const Listing = () => {
           `/api/houses/house/${id}`,
           {
             withCredentials: true,
-          }
+          },
         );
         if (response.data.data) {
           setListingData(response.data.data as ListingData);
@@ -112,7 +112,7 @@ const Listing = () => {
   // helper: request smaller Cloudinary image without cropping (no c_fill)
   const transformCloudinaryUrlNoCrop = (
     url: string,
-    width: number = 800
+    width: number = 800,
   ): string => {
     try {
       if (!url || !url.includes("/upload/")) return url;
@@ -161,7 +161,7 @@ const Listing = () => {
   // add mapsSrc for embed and maps link
   const mapsSrc = listingData?.address
     ? `https://www.google.com/maps?q=${encodeURIComponent(
-        listingData.address
+        listingData.address,
       )}&output=embed`
     : null;
 
@@ -226,13 +226,13 @@ const Listing = () => {
             listingData.discountedPrice > 0 ? (
               <div className="flex flex-col items-end">
                 <div className="text-sm text-gray-500 line-through">
-                  {listingData.regularPrice}$
+                  {listingData.regularPrice} TND
                   {listingData.type === "rent" && (
                     <span className="ml-1">/ month</span>
                   )}
                 </div>
                 <div className="text-3xl font-extrabold text-red-600">
-                  {listingData.discountedPrice}$
+                  {listingData.discountedPrice} TND
                   {listingData.type === "rent" && (
                     <span className="text-sm text-gray-500 ml-1">/ month</span>
                   )}
@@ -243,7 +243,7 @@ const Listing = () => {
                 {(listingData.discountedPrice && listingData.discountedPrice > 0
                   ? listingData.discountedPrice
                   : listingData.regularPrice) ?? 0}
-                $
+                TND
                 {listingData.type === "rent" && (
                   <span className="text-sm text-gray-500"> / month</span>
                 )}
@@ -340,7 +340,7 @@ const Listing = () => {
                 <div className="mt-2">
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      listingData.address
+                      listingData.address,
                     )}`}
                     target="_blank"
                     rel="noreferrer"
@@ -376,10 +376,10 @@ const Listing = () => {
                     setOwnerError(null);
                     const res = await axios.get<ApiResponse>(
                       `/api/auth/houseOwner/${id}`,
-                      { withCredentials: true }
+                      { withCredentials: true },
                     );
                     setOwnerData(
-                      (res.data?.data ?? res.data ?? null) as OwnerData | null
+                      (res.data?.data ?? res.data ?? null) as OwnerData | null,
                     );
                   } catch (err: unknown) {
                     let errorMsg = "Failed to load owner";
@@ -488,7 +488,7 @@ const Listing = () => {
                           />
                           <a
                             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                              ownerData.address
+                              ownerData.address,
                             )}`}
                             target="_blank"
                             rel="noreferrer"
