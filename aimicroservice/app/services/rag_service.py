@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 from groq import Groq
 from qdrant_client import QdrantClient
+from qdrant_client.http import models as qdrant_models
 from redis.asyncio import Redis
 
 from app.services.emebdding_service import generate_embedding
@@ -175,6 +176,7 @@ def _get_groq_client() -> Groq:
 def _search_houses(query: str, top_k: int) -> list[dict]:
     embedding = generate_embedding(query)
     client = _get_qdrant_client()
+    _ensure_rag_collection(client, vector_size=len(embedding))
 
     points = []
     try:
@@ -188,14 +190,25 @@ def _search_houses(query: str, top_k: int) -> list[dict]:
         )
     except AttributeError:
         # Newer qdrant-client API
-        result = client.query_points(
-            collection_name=QDRANT_COLLECTION,
-            query=embedding,
-            limit=top_k,
-            with_payload=True,
-            with_vectors=False,
-        )
-        points = getattr(result, "points", result)
+        try:
+            result = client.query_points(
+                collection_name=QDRANT_COLLECTION,
+                query=embedding,
+                limit=top_k,
+                with_payload=True,
+                with_vectors=False,
+            )
+            points = getattr(result, "points", result)
+        except Exception as exc:
+            if "Collection" in str(exc) and "doesn't exist" in str(exc):
+                _ensure_rag_collection(client, vector_size=len(embedding))
+                return []
+            raise
+    except Exception as exc:
+        if "Collection" in str(exc) and "doesn't exist" in str(exc):
+            _ensure_rag_collection(client, vector_size=len(embedding))
+            return []
+        raise
 
     hits: list[dict] = []
     for point in points:
@@ -215,6 +228,29 @@ def _search_houses(query: str, top_k: int) -> list[dict]:
         )
 
     return hits
+
+
+def _ensure_rag_collection(client: QdrantClient, vector_size: int) -> None:
+    try:
+        exists = client.collection_exists(collection_name=QDRANT_COLLECTION)
+    except Exception:
+        try:
+            client.get_collection(collection_name=QDRANT_COLLECTION)
+            exists = True
+        except Exception:
+            exists = False
+
+    if exists:
+        return
+
+    client.create_collection(
+        collection_name=QDRANT_COLLECTION,
+        vectors_config=qdrant_models.VectorParams(
+            size=vector_size,
+            distance=qdrant_models.Distance.COSINE,
+        ),
+    )
+    print(f"[RAG] Created missing Qdrant collection: {QDRANT_COLLECTION}")
 
 
 def _generate_answer_sync(query: str, hits: list[dict], history: list[dict[str, str]]) -> str:
