@@ -15,9 +15,26 @@ export const publishHouseEvent = async (
     data: house,
   };
 
-  channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify(message)), {
+  const body = JSON.stringify(message);
+  const payload = Buffer.from(body);
+  const houseId =
+    house?.id || house?._id || house?.data?.id || house?.data?._id;
+
+  console.log("[RabbitMQ] Sending event", {
+    queue: QUEUE_NAME,
+    event,
+    houseId: houseId || null,
+    bytes: payload.length,
+  });
+
+  const acceptedByBuffer = channel.sendToQueue(QUEUE_NAME, payload, {
     persistent: true,
   });
 
-  console.log("Event published:", event);
+  console.log("[RabbitMQ] Event sent", {
+    queue: QUEUE_NAME,
+    event,
+    houseId: houseId || null,
+    acceptedByBuffer,
+  });
 };
