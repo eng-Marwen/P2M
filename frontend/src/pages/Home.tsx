@@ -48,7 +48,7 @@ const Card = ({ listing }: CardProps) => {
       ? Math.round(
           ((listing.regularPrice - listing.discountedPrice) /
             listing.regularPrice) *
-            100
+            100,
         )
       : null;
   return (
@@ -81,10 +81,10 @@ const Card = ({ listing }: CardProps) => {
           </div>
           <div className="text-right">
             <div className="text-sm font-semibold text-indigo-600">
-              $
               {listing.discountedPrice && listing.discountedPrice > 0
                 ? listing.discountedPrice
-                : listing.regularPrice}
+                : listing.regularPrice}{" "}
+              TND
             </div>
             <div className="text-xs text-slate-400 mt-1">{listing.type}</div>
           </div>
@@ -125,7 +125,7 @@ const Home = () => {
   useEffect(() => {
     const fetch = async (
       url: string,
-      setter: React.Dispatch<React.SetStateAction<Listing[]>>
+      setter: React.Dispatch<React.SetStateAction<Listing[]>>,
     ) => {
       try {
         const { data } = await axios.get<ApiResponse>(url);
@@ -203,7 +203,7 @@ const Home = () => {
                           ((offerListings[0].regularPrice -
                             offerListings[0].discountedPrice) /
                             offerListings[0].regularPrice) *
-                            100
+                            100,
                         )}% OFF`
                       : "Special Offer"}
                   </span>
