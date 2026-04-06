@@ -12,7 +12,7 @@ qdrant-client==1.17.1
 groq==1.1.1
 
 joblib==1.5.3
-numpy==2.2.6
+numpy==1.26.4
 pandas==2.3.3
 scikit-learn==1.7.2
 pillow==12.1.1
