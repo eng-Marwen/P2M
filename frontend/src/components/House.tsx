@@ -50,8 +50,8 @@ const House = ({ house }: HouseProps) => {
     typeof house.discountedPrice === "number"
       ? house.discountedPrice
       : house.discountPrice && Number(house.discountPrice)
-      ? Number(house.discountPrice)
-      : 0;
+        ? Number(house.discountPrice)
+        : 0;
 
   const hasOffer = Boolean(house.offer) && discountedVal > 0;
 
@@ -59,7 +59,7 @@ const House = ({ house }: HouseProps) => {
   const formatCurrency = (v: number): string =>
     Number(v).toLocaleString("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "TND",
       maximumFractionDigits: 0,
     });
 
