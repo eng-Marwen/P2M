@@ -1,15 +1,63 @@
 version: "1"
 services:
   frontend:
-    image: engmarwen/samsar:frontend-1.0
+    image: frontend:latest
     ports:
       - 5173:80
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+      aimicroservice:
+        condition: service_started
     environment:
       API_URL: "http://localhost:4000"
       FIREBASE_API_KEY: "AIzaSyDxxlLzE6XtYske4-XYMqFc68Rj_RxAMEE"
   backend:
-    image: engmarwen/samsar:backend-1.0
+    image: backend:latest
     ports:
       - 4000:4000
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      aimicroservice:
+        condition: service_started
     env_file:
       - ./backend/.env
+  aimicroservice:
+    image: aimicroservice:latest
+    ports:
+      - 8000:8000
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    env_file:
+      - ./aimicroservice/.env
+    environment:
+      RABBITMQ_HOST: rabbitmq:5672
+      QDRANT_URL: http://qdrant:6333
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - 6333:6333
+    volumes:
+      - qdrant_data:/qdrant/storage
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+volumes:
+  qdrant_data:
+  rabbitmq_data:
