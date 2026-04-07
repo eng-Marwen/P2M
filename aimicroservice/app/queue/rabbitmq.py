@@ -1,9 +1,23 @@
 import pika
 import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+
+def _resolve_rabbitmq_url() -> str | None:
+    environment = (os.getenv("ENVIRONMENT") or os.getenv("NODE_ENV") or "development").strip().lower()
+    is_production = environment in {"production", "prod"}
+
+    if is_production and os.getenv("CLOUDAMQ_URL"):
+        return os.getenv("CLOUDAMQ_URL")
+
+    return os.getenv("RABBITMQ_URL")
 
 
 def get_connection():
-    rabbitmq_url = os.getenv("RABBITMQ_URL")
+    rabbitmq_url = _resolve_rabbitmq_url()
 
     if rabbitmq_url:
         params = pika.URLParameters(rabbitmq_url)
