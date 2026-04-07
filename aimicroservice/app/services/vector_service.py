@@ -2,28 +2,39 @@ from app.services.emebdding_service import generate_embedding, house_to_text
 from functools import lru_cache
 import os
 import uuid
+from dotenv import load_dotenv
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
+
+load_dotenv()
 
 
 ENVIRONMENT = (
     os.getenv("ENVIRONMENT")
     or "development"
-).lower()
+).strip().lower()
 
 QDRANT_LOCAL_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
-QDRANT_CLOUD_URL = os.getenv("QDRANT_CLOUD_CLUSTER_URL") or os.getenv(
-    "QDRANT_CLOUD_CLUSER_URL"
-)
-QDRANT_CLOUD_API_KEY = os.getenv("QDRANT_CLOUD_API_KEY")
+QDRANT_CLOUD_URL = os.getenv("QDRANT_CLOUD_CLUSTER_URL")
+
+
+
+QDRANT_CLOUD_API_KEY = os.getenv("QDRANT_CLOUD_API_KEY") or os.getenv("DRANT_CLOUD_API_KEY")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 
 USE_QDRANT_CLOUD = ENVIRONMENT in {"production", "prod"}
-ACTIVE_QDRANT_URL = QDRANT_CLOUD_URL if USE_QDRANT_CLOUD and QDRANT_CLOUD_URL else QDRANT_LOCAL_URL
-ACTIVE_QDRANT_API_KEY = (
-    QDRANT_CLOUD_API_KEY if USE_QDRANT_CLOUD and QDRANT_CLOUD_API_KEY else QDRANT_API_KEY
-)
+if USE_QDRANT_CLOUD:
+    if not QDRANT_CLOUD_URL:
+        raise ValueError(
+            "ENVIRONMENT is production but no cloud Qdrant URL is configured. "
+            "Set QDRANT_CLOUD_CLUSTER_URL (or QDRANT_CLOUD_CLUSER_URL)."
+        )
+    ACTIVE_QDRANT_URL = QDRANT_CLOUD_URL
+    ACTIVE_QDRANT_API_KEY = QDRANT_CLOUD_API_KEY
+else:
+    ACTIVE_QDRANT_URL = QDRANT_LOCAL_URL
+    ACTIVE_QDRANT_API_KEY = QDRANT_API_KEY
 
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "houses_vectors")
 QDRANT_RECREATE_ON_DIM_MISMATCH = (
