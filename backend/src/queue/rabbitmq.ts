@@ -3,8 +3,19 @@ import amqp, { Channel } from "amqplib";
 let channel: Channel;
 const RABBITMQ_RETRY_MS = Number(process.env.RABBITMQ_RETRY_MS || 5000);
 
+const resolveRabbitMQUrl = () => {
+  const nodeEnv = (process.env.NODE_ENV || "development").trim().toLowerCase();
+  const isProduction = nodeEnv === "production" || nodeEnv === "prod";
+
+  if (isProduction && process.env.CLOUDAMQ_URL) {
+    return process.env.CLOUDAMQ_URL;
+  }
+
+  return process.env.RABBITMQ_URL || "amqp://localhost:5672";
+};
+
 export const connectRabbitMQ = async () => {
-  const url = process.env.RABBITMQ_URL || "amqp://localhost:5672";
+  const url = resolveRabbitMQUrl();
 
   try {
     const connection = await amqp.connect(url);
