@@ -8,8 +8,8 @@ from app.routes.rag import router as rag_router
 from app.queue.consumer import start_consumer
 from app.queue.rabbitmq import check_rabbitmq_connection
 from app.services.model_bootstrap import ensure_all_models_available
-from app.services.vector_service import check_qdrant_connection
-from redis.asyncio import Redis
+from app.databases.qdrant import check_qdrant_connection
+from app.databases.redis import check_redis_connection
 import threading
 import os
 
@@ -23,12 +23,7 @@ async def lifespan(app: FastAPI):
         print("[Startup] Running external services connectivity checks...")
         check_rabbitmq_connection()
         check_qdrant_connection()
-        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        if redis_url:
-            redis = Redis.from_url(redis_url, decode_responses=True)
-            await redis.ping()
-            await redis.aclose()
-            print("[Startup] Redis connected successfully")
+        await check_redis_connection()
         print("[Startup] Qdrant connected successfully")
         print("[Startup] All connectivity checks passed")
     except Exception as exc:
