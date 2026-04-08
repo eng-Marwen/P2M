@@ -13,7 +13,6 @@ from app.databases.redis import check_redis_connection
 import threading
 import os
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("[Startup] Ensuring AI models are available...")
