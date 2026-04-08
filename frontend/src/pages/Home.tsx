@@ -10,7 +10,12 @@ import { Swiper, SwiperSlide } from "swiper/react";
 
 // (no SwiperCore.use here) — we'll pass modules directly to the Swiper component
 const placeholder =
-  "https://images.unsplash.com/photo-1505691723518-36a1fb0a5c5a?w=1200&q=60&auto=format&fit=crop";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'%3E%3Crect width='1200' height='800' fill='%23e5e7eb'/%3E%3C/svg%3E";
+
+const getFirstImage = (images?: string[]) => {
+  const firstImage = images?.[0]?.trim();
+  return firstImage || placeholder;
+};
 
 interface Listing {
   _id: string;
@@ -40,7 +45,7 @@ interface ApiResponse {
 }
 
 const Card = ({ listing }: CardProps) => {
-  const img = listing?.images?.[0] || placeholder;
+  const img = getFirstImage(listing?.images);
   const discountPercent =
     listing?.discountedPrice &&
     listing.discountedPrice > 0 &&
@@ -209,18 +214,17 @@ const Home = () => {
                   </span>
                 )}
                 <img
-                  src={offerListings?.[0]?.images?.[0] || placeholder}
-                  alt="Hero"
+                  src={getFirstImage(offerListings?.[0]?.images)}
+                  alt="offer"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="p-4">
                 <div className="font-semibold text-slate-800">
-                  Featured: {offerListings?.[0]?.name || "Sea view apartment"}
+                  Featured: {offerListings?.[0]?.name || "For offers"}
                 </div>
                 <div className="text-sm text-slate-500">
-                  {offerListings?.[0]?.description ||
-                    "A beautiful apartment near the beach."}
+                  {offerListings?.[0]?.description}
                 </div>
               </div>
             </div>
