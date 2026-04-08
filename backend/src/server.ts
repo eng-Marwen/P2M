@@ -20,7 +20,7 @@ app.use(
 app.use(morgan("dev")); //HTTP request logger
 app.use(express.json()); //allows us to parse incomming requests:req.body (json)
 app.use(cookieParser()); //allows us to parse incomming cookies
-const port: number = Number(process.env.PORT) || 2000;
+const port: number = Number(process.env.PORT) || 4000;
 
 //----------------------------Root Routes-----------------------------
 
