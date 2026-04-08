@@ -18,10 +18,6 @@
     "sourceMap": true,
     "types": ["node", "jest"]
   },
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
-  },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "src/node_modules"]
 }
