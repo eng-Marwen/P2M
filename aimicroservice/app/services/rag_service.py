@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 from groq import Groq
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
-from redis.asyncio import Redis
 
+from app.databases.redis import get_redis_client
 from app.services.emebdding_service import generate_embedding
 
 
@@ -26,7 +26,6 @@ QDRANT_ALLOW_INSECURE_API_KEY = (
 
 RAG_LLM_MODEL = os.getenv("RAG_LLM_MODEL", "llama-3.3-70b-versatile")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 RAG_MEMORY_KEY_PREFIX = os.getenv("RAG_MEMORY_KEY_PREFIX", "rag:session")
 RAG_MEMORY_MAX_TURNS = int(os.getenv("RAG_MEMORY_MAX_TURNS", "8"))
 RAG_MEMORY_SESSION_TTL_SECONDS = int(os.getenv("RAG_MEMORY_SESSION_TTL_SECONDS", "7200"))
@@ -36,24 +35,17 @@ def _session_key(session_id: str) -> str:
     return f"{RAG_MEMORY_KEY_PREFIX}:{session_id}:messages"
 
 
-@lru_cache(maxsize=1)
-def _get_redis_client() -> Redis:
-    if not REDIS_URL:
-        raise ValueError("REDIS_URL is missing")
-    return Redis.from_url(REDIS_URL, decode_responses=True)
-
-
 async def _ensure_session(session_id: str | None) -> str:
     sid = (session_id or "").strip() or str(uuid.uuid4())
     key = _session_key(sid)
-    redis = _get_redis_client()
+    redis = get_redis_client()
 
     await redis.expire(key, RAG_MEMORY_SESSION_TTL_SECONDS)
     return sid
 
 
 async def _get_session_messages(session_id: str) -> list[dict[str, str]]:
-    redis = _get_redis_client()
+    redis = get_redis_client()
     key = _session_key(session_id)
 
     raw_items = await redis.lrange(key, 0, -1)
@@ -74,7 +66,7 @@ async def _get_session_messages(session_id: str) -> list[dict[str, str]]:
 
 
 async def _append_session_messages(session_id: str, user_query: str, assistant_answer: str) -> None:
-    redis = _get_redis_client()
+    redis = get_redis_client()
     key = _session_key(session_id)
 
     entries = [
@@ -96,7 +88,7 @@ async def clear_rag_session_history(session_id: str | None) -> bool:
     if not sid:
         return False
 
-    redis = _get_redis_client()
+    redis = get_redis_client()
     key = _session_key(sid)
     deleted = await redis.delete(key)
     return bool(deleted)
