@@ -1,62 +1,19 @@
-from app.services.emebdding_service import generate_embedding, house_to_text
-from functools import lru_cache
 import os
 import uuid
-from dotenv import load_dotenv
 
-from qdrant_client import QdrantClient
+from dotenv import load_dotenv
 from qdrant_client.http import models as qdrant_models
+
+from app.services.emebdding_service import generate_embedding, house_to_text
+from app.databases.qdrant import get_qdrant_client
 
 load_dotenv()
 
-
-ENVIRONMENT = (
-    os.getenv("ENVIRONMENT")
-    or "development"
-).strip().lower()
-
-QDRANT_LOCAL_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
-QDRANT_CLOUD_URL = os.getenv("QDRANT_CLOUD_CLUSTER_URL")
-
-
-
-QDRANT_CLOUD_API_KEY = os.getenv("QDRANT_CLOUD_API_KEY") or os.getenv("DRANT_CLOUD_API_KEY")
-QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-
-USE_QDRANT_CLOUD = ENVIRONMENT in {"production", "prod"}
-if USE_QDRANT_CLOUD:
-    if not QDRANT_CLOUD_URL:
-        raise ValueError(
-            "ENVIRONMENT is production but no cloud Qdrant URL is configured. "
-            "Set QDRANT_CLOUD_CLUSTER_URL (or QDRANT_CLOUD_CLUSER_URL)."
-        )
-    ACTIVE_QDRANT_URL = QDRANT_CLOUD_URL
-    ACTIVE_QDRANT_API_KEY = QDRANT_CLOUD_API_KEY
-else:
-    ACTIVE_QDRANT_URL = QDRANT_LOCAL_URL
-    ACTIVE_QDRANT_API_KEY = QDRANT_API_KEY
-
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "houses_vectors")
 QDRANT_RECREATE_ON_DIM_MISMATCH = (
-    os.getenv("QDRANT_RECREATE_ON_DIM_MISMATCH", "true").lower() == "true"
+    os.getenv("QDRANT_RECREATE_ON_DIM_MISMATCH", "false").strip().lower()
+    in {"1", "true", "yes", "on"}
 )
-
-
-@lru_cache(maxsize=1)
-def _get_qdrant_client() -> QdrantClient:
-    client = QdrantClient(url=ACTIVE_QDRANT_URL, api_key=ACTIVE_QDRANT_API_KEY)
-    # lightweight connectivity check
-    client.get_collections()
-    print(
-        f"[Qdrant] Connected successfully ({'cloud' if USE_QDRANT_CLOUD else 'local'}): "
-        f"{ACTIVE_QDRANT_URL}"
-    )
-    return client
-
-
-def check_qdrant_connection() -> None:
-    _get_qdrant_client()
-    print("[Startup] Qdrant connectivity check passed")
 
 
 def _extract_collection_vector_size(collection_info) -> int | None:
@@ -75,7 +32,7 @@ def _extract_collection_vector_size(collection_info) -> int | None:
     return None
 
 
-def _ensure_collection(client: QdrantClient, vector_size: int) -> None:
+def _ensure_collection(client, vector_size: int) -> None:
     exists = False
     try:
         exists = client.collection_exists(collection_name=QDRANT_COLLECTION)
@@ -160,14 +117,13 @@ def _to_qdrant_point_id(house_id: str) -> str:
         return str(uuid.uuid5(uuid.NAMESPACE_URL, f"house:{candidate}"))
 
 
-def create_vector(house):
-    embedding_text = house_to_text(house)
+def _upsert_house_vector(house: dict, action: str) -> None:
     house_id = house.get("id") or house.get("_id")
     if not house_id:
-        raise ValueError("Missing house id for create_vector")
+        raise ValueError(f"Missing house id for {action}_vector")
 
-    embedding = generate_embedding(embedding_text)
-    client = _get_qdrant_client()
+    embedding = generate_embedding(house_to_text(house))
+    client = get_qdrant_client()
     _ensure_collection(client, vector_size=len(embedding))
 
     point_id = _to_qdrant_point_id(str(house_id))
@@ -183,40 +139,22 @@ def create_vector(house):
         ],
         wait=True,
     )
-    print(f"[Qdrant] Vector created for house: {house_id}")
+    print(f"[Qdrant] Vector {action}d for house: {house_id}")
+
+
+def create_vector(house):
+    _upsert_house_vector(house, action="create")
 
 
 def update_vector(house):
-    embedding_text = house_to_text(house)
-    house_id = house.get("id") or house.get("_id")
-    if not house_id:
-        raise ValueError("Missing house id for update_vector")
-
-    embedding = generate_embedding(embedding_text)
-    client = _get_qdrant_client()
-    _ensure_collection(client, vector_size=len(embedding))
-
-    point_id = _to_qdrant_point_id(str(house_id))
-    print(f"[Qdrant] Upsert mapping house_id={house_id} -> point_id={point_id}")
-    client.upsert(
-        collection_name=QDRANT_COLLECTION,
-        points=[
-            qdrant_models.PointStruct(
-                id=point_id,
-                vector=embedding,
-                payload=_build_payload(house),
-            )
-        ],
-        wait=True,
-    )
-    print(f"[Qdrant] Vector updated for house: {house_id}")
+    _upsert_house_vector(house, action="update")
 
 
 def delete_vector(house_id):
     if not house_id:
         raise ValueError("Missing house id for delete_vector")
 
-    client = _get_qdrant_client()
+    client = get_qdrant_client()
     point_id = _to_qdrant_point_id(str(house_id))
     print(f"[Qdrant] Delete mapping house_id={house_id} -> point_id={point_id}")
     client.delete(
