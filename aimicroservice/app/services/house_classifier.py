@@ -1,95 +1,69 @@
 import io
-import os
 from functools import lru_cache
 from pathlib import Path
-
+from typing import Any
+import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image, UnidentifiedImageError
-from torchvision import models, transforms
-
-
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD = [0.229, 0.224, 0.225]
+from torchvision import models
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-
-TEST_TRANSFORM = transforms.Compose([
-	transforms.Resize((224, 224)),
-	transforms.ToTensor(),
-	transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
-])
-
-
-def _default_model_path() -> Path:
-	return ROOT_DIR / "ai_models" / "house_model_snd.pth"
-
-
-def get_house_model_path() -> Path:
-	raw_path = (os.getenv("HOUSE_MODEL_PATH", "") or "").strip()
-	if not raw_path:
-		return _default_model_path()
-
-	path = Path(raw_path)
-	if path.is_absolute():
-		return path.resolve()
-
-	return (ROOT_DIR / path).resolve()
-
-
-def _class_names() -> list[str]:
-	raw = os.getenv("HOUSE_CLASS_NAMES", "house,not_house")
-	return [name.strip() for name in raw.split(",") if name.strip()]
-
-
-def _build_model(num_classes: int) -> nn.Module:
-	model = models.resnet18(weights=None)
-	num_features = model.fc.in_features
-	model.fc = nn.Linear(num_features, num_classes)
-	return model
-
+MODEL_PATH = ROOT_DIR / "ai_models" / "house_model_snd.pth"
+CLASS_NAMES = ["house", "not_house"]
+IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 @lru_cache(maxsize=1)
-def _load_model() -> nn.Module:
-	model_path = get_house_model_path()
-	if not model_path.exists():
-		raise FileNotFoundError(f"Model file not found at: {model_path}")
+def _load_model() -> torch.nn.Module:
+    checkpoint = torch.load(MODEL_PATH, map_location="cpu")
 
-	class_names = _class_names()
-	model = _build_model(num_classes=len(class_names))
-	state_dict = torch.load(model_path, map_location=torch.device("cpu"))
-	model.load_state_dict(state_dict)
-	model.eval()
-	return model
+    if isinstance(checkpoint, torch.nn.Module):
+        model = checkpoint
+    elif isinstance(checkpoint, dict):
+        model = models.resnet18(weights=None)
+        model.fc = nn.Linear(model.fc.in_features, len(CLASS_NAMES))
+        model.load_state_dict(checkpoint)
+    else:
+        raise ValueError("Invalid model file format")
+
+    model.eval()
+    return model
+
+def _preprocess_image(image: Image.Image) -> torch.Tensor:
+    img = image.resize((224, 224))
+
+    arr = np.asarray(img, dtype=np.float32) / 255.0
+    arr = (arr - IMAGENET_MEAN) / IMAGENET_STD
+    arr = np.transpose(arr, (2, 0, 1)).copy()  # ensure contiguous
+
+    return torch.from_numpy(arr).unsqueeze(0)  # ZERO COPY
 
 
-def predict_house_image(image_bytes: bytes) -> dict:
-	if not image_bytes:
-		raise ValueError("Empty image payload")
+def predict_house_image(image_bytes: bytes) -> dict[str, Any]:
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    except UnidentifiedImageError as exc:
+        raise ValueError("Invalid image file") from exc
 
-	try:
-		image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-	except UnidentifiedImageError as exc:
-		raise ValueError("Invalid image file") from exc
+    x = _preprocess_image(image)
+    model = _load_model()
 
-	x = TEST_TRANSFORM(image).unsqueeze(0)
-	model = _load_model()
-	class_names = _class_names()
+    with torch.inference_mode():  
+        logits = model(x)
+        probs = torch.softmax(logits, dim=1)[0]  # avoid squeeze
 
-	with torch.no_grad():
-		logits = model(x)
-		probs = torch.softmax(logits, dim=1).squeeze(0)
-		pred_idx = int(torch.argmax(probs).item())
+        pred_idx = int(torch.argmax(probs))
+        confidence = float(probs[pred_idx])
 
-	label = class_names[pred_idx]
-	probabilities = {
-		class_names[i]: float(probs[i].item())
-		for i in range(len(class_names))
-	}
+    # Convert to Python dict efficiently
+    probabilities = dict(zip(CLASS_NAMES, probs.tolist()))
 
-	return {
-		"label": label,
-		"is_house": label.lower() == "house",
-		"confidence": float(probs[pred_idx].item()),
-		"probabilities": probabilities,
-	}
+    label = CLASS_NAMES[pred_idx]
+
+    return {
+        "label": label,
+        "is_house": label == "house",
+        "confidence": confidence,
+        "probabilities": probabilities,
+    }
