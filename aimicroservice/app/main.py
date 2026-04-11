@@ -7,7 +7,7 @@ from app.routes.house_validation import router as house_validation_router
 from app.routes.rag import router as rag_router
 from app.queue.consumer import start_consumer
 from app.queue.rabbitmq import check_rabbitmq_connection
-from app.services.model_bootstrap import ensure_all_models_available
+from app.services.models_checker import ensure_all_models_available
 from app.databases.qdrant import check_qdrant_connection
 from app.databases.redis import check_redis_connection
 import threading
