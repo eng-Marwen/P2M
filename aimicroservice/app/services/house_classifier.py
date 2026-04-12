@@ -44,10 +44,8 @@ def predict_house_image(image_bytes: bytes) -> dict[str, Any]:
 
     pred_idx = int(np.argmax(probs))
     confidence = float(probs[pred_idx])
-
     # Convert to Python dict efficiently
     probabilities = dict(zip(CLASS_NAMES, probs.tolist()))
-
     label = CLASS_NAMES[pred_idx]
 
     return {
