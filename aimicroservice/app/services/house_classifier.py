@@ -3,41 +3,30 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 import numpy as np
-import torch
-import torch.nn as nn
+import onnxruntime as ort
 from PIL import Image, UnidentifiedImageError
-from torchvision import models
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-MODEL_PATH = ROOT_DIR / "ai_models" / "house_model_snd.pth"
+MODEL_PATH = ROOT_DIR / "ai_models" / "house_model.onnx"
 CLASS_NAMES = ["house", "not_house"]
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 @lru_cache(maxsize=1)
-def _load_model() -> torch.nn.Module:
-    checkpoint = torch.load(MODEL_PATH, map_location="cpu")
+def _load_model() -> ort.InferenceSession:
+    return ort.InferenceSession(str(MODEL_PATH), providers=["CPUExecutionProvider"])
 
-    if isinstance(checkpoint, torch.nn.Module):
-        model = checkpoint
-    elif isinstance(checkpoint, dict):
-        model = models.resnet18(weights=None)
-        model.fc = nn.Linear(model.fc.in_features, len(CLASS_NAMES))
-        model.load_state_dict(checkpoint)
-    else:
-        raise ValueError("Invalid model file format")
-
-    model.eval()
-    return model
-
-def _preprocess_image(image: Image.Image) -> torch.Tensor:
+def _preprocess_image(image: Image.Image) -> np.ndarray:
     img = image.resize((224, 224))
-
     arr = np.asarray(img, dtype=np.float32) / 255.0
     arr = (arr - IMAGENET_MEAN) / IMAGENET_STD
     arr = np.transpose(arr, (2, 0, 1)).copy()  # ensure contiguous
+    return arr[None, ...]
 
-    return torch.from_numpy(arr).unsqueeze(0)  # ZERO COPY
+def _softmax(x: np.ndarray, axis: int = -1) -> np.ndarray:
+    x = x - np.max(x, axis=axis, keepdims=True)
+    ex = np.exp(x)
+    return ex / np.sum(ex, axis=axis, keepdims=True)
 
 
 def predict_house_image(image_bytes: bytes) -> dict[str, Any]:
@@ -49,12 +38,12 @@ def predict_house_image(image_bytes: bytes) -> dict[str, Any]:
     x = _preprocess_image(image)
     model = _load_model()
 
-    with torch.inference_mode():  
-        logits = model(x)
-        probs = torch.softmax(logits, dim=1)[0]  # avoid squeeze
+    input_name = model.get_inputs()[0].name
+    logits = model.run(None, {input_name: x})[0]
+    probs = _softmax(logits, axis=1)[0]
 
-        pred_idx = int(torch.argmax(probs))
-        confidence = float(probs[pred_idx])
+    pred_idx = int(np.argmax(probs))
+    confidence = float(probs[pred_idx])
 
     # Convert to Python dict efficiently
     probabilities = dict(zip(CLASS_NAMES, probs.tolist()))
