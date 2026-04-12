@@ -50,3 +50,4 @@ htmlcov/
 *.joblib
 ai_models/*.joblib
 ai_models/*.pth
+ai_models/*.onnx
