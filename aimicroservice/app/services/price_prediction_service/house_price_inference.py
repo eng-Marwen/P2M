@@ -46,9 +46,6 @@ def _load_price_artifact(model_type: str | None = "sale") -> dict[str, Any]:
         "label_mappings": {},
     }
 
-def get_price_feature_columns(model_type: str | None = "sale") -> list[str]:
-    return get_model_feature_columns(model_type)
-
 def predict_house_price(
     features: dict[str, int | float | str | bool], model_type: str | None = "sale"
 ) -> dict:
