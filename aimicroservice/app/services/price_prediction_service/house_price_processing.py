@@ -1,37 +1,17 @@
 import re
-from typing import Any, Literal
-
+from typing import Literal
 import numpy as np
-
 
 RENT_CATEGORY_KEYWORDS = ("apartment", "appartement", "studio", "flat")
 PriceModelType = Literal["sale", "rent"]
 SALE_FEATURE_COLUMNS: list[str] = [
-    "location",
-    "city",
-    "governorate",
-    "Area",
-    "pieces",
-    "room",
-    "bathroom",
-    "age",
-    "state",
-    "latt",
-    "long",
-    "distance_to_capital",
-    "garage",
-    "garden",
-    "concierge",
-    "beach_view",
-    "mountain_view",
-    "pool",
-    "elevator",
-    "furnished",
-    "equipped_kitchen",
-    "central_heating",
-    "air_conditioning",
+    "location","city","governorate","Area","pieces","room","bathroom",
+    "age","state","latt","long","distance_to_capital","garage","garden",
+    "concierge","beach_view", "mountain_view","pool", "elevator",
+    "furnished","equipped_kitchen","central_heating","air_conditioning",
 ]
 RENT_FEATURE_COLUMNS: list[str] = ["room_count", "bathroom_count", "size", "city", "region", "category"]
+
 MODEL_FEATURE_COLUMNS: dict[PriceModelType, list[str]] = {
     "sale": SALE_FEATURE_COLUMNS,
     "rent": RENT_FEATURE_COLUMNS,
@@ -43,20 +23,20 @@ STATE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "old": ("old", "ancien", "needs work"),
 }
 
-
+# Normalize optional text for consistent comparisons.
 def text_normalize(value: str | None) -> str:
     return (value or "").strip().lower()
 
-
+# Convert truthy/falsey values to model-friendly binary flags.
 def bool_to_int(value: bool) -> int:
     return 1 if bool(value) else 0
 
-
+# Extract a property age in years from free-form description text.
 def extract_age(description: str) -> int:
     match = re.search(r"(\d{1,2})\s*(year|years|ans|an)", description, flags=re.IGNORECASE)
     return int(match.group(1)) if match else 0
 
-
+# Infer property state from known state-related keywords.
 def detect_state(description: str) -> str:
     text = text_normalize(description)
     for state, keywords in STATE_KEYWORDS.items():
@@ -64,7 +44,7 @@ def detect_state(description: str) -> str:
             return state
     return "good"
 
-
+# Split an address into location, city, and governorate placeholders.
 def extract_location_parts(address: str) -> tuple[str, str, str]:
     parts = [part.strip() for part in re.split(r"[,\-/]+", address) if part.strip()]
     if not parts:
@@ -75,46 +55,32 @@ def extract_location_parts(address: str) -> tuple[str, str, str]:
         return parts[-1], parts[-1], parts[0]
     return parts[-1], parts[-1], parts[-2]
 
-
+# Return 1 when any keyword appears in text, otherwise 0.
 def keyword_flag(text: str, keywords: list[str] | tuple[str, ...]) -> int:
     return 1 if any(keyword in text for keyword in keywords) else 0
 
-
+# Classify listing into the rent model category expected by training.
 def infer_rent_category(listing: dict, description_text: str) -> str:
     combined = f"{text_normalize(str(listing.get('name', '')))} {description_text}"
     if any(keyword in combined for keyword in RENT_CATEGORY_KEYWORDS):
         return "Appartements"
     return "Maisons et Villas"
 
-
+# Resolve arbitrary model type input to supported model keys.
 def _resolve_model_type(model_type: str | None = "sale") -> PriceModelType:
     return "sale" if text_normalize(model_type or "sale") == "sale" else "rent"
 
-
+# Return the ordered feature columns required by a specific model.
 def get_model_feature_columns(model_type: str | None = "sale") -> list[str]:
     return list(MODEL_FEATURE_COLUMNS[_resolve_model_type(model_type)])
 
-
-def build_feature_items_from_listing(listing: dict) -> list[dict[str, int | float | str]]:
-    features = build_model_features_from_listing(listing)
-    return [{"name": key, "value": value} for key, value in features.items()]
-
-
-def feature_items_to_dict(feature_items: list[dict[str, Any]]) -> dict[str, int | float | str]:
-    return {
-        str(item.get("name", "")): item.get("value")
-        for item in feature_items
-        if item.get("name")
-    }
-
-
+# Build the full engineered feature set from a raw listing payload.
 def build_model_features_from_listing(listing: dict) -> dict[str, int | float | str]:
     address = str(listing.get("address", ""))
     description = str(listing.get("description", ""))
     bedrooms = int(listing.get("bedrooms", 0) or 0)
     bathrooms = int(listing.get("bathrooms", 0) or 0)
     area = float(listing.get("area", 0) or 0)
-
     location, city, governorate = extract_location_parts(address)
     desc_text = text_normalize(description)
 
@@ -149,7 +115,7 @@ def build_model_features_from_listing(listing: dict) -> dict[str, int | float | 
         "air_conditioning": keyword_flag(desc_text, ["air conditioning", "clim", "ac"]),
     }
 
-
+# Keep only the features required by the selected model.
 def process_house_listing_for_model(
     listing: dict,
     model_type: str | None = "sale",
@@ -158,11 +124,11 @@ def process_house_listing_for_model(
     feature_columns = get_model_feature_columns(model_type)
     return {col: all_features[col] for col in feature_columns}
 
-
+# Convert feature values to numeric model inputs using optional mappings.
 def to_numeric_features(
     features: dict[str, int | float | str],
     feature_columns: list[str],
-    mappings: dict[str, Any] | None = None,
+    mappings: dict[str, object] | None = None,
 ) -> dict[str, int | float]:
     mappings = mappings or {}
     numeric_features: dict[str, int | float] = {}
