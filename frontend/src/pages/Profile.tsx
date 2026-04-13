@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { AppDispatch, RootState } from "../app/store";
 import { signInSuccess, signOut } from "../app/user/userSlice";
+import { normalizeAvatarUrl } from "../lib/avatar";
 import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper";
 
@@ -339,12 +340,15 @@ const Profile = () => {
               onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
             <img
-              src={encodeURI(
-                url || currentUser?.avatar || "/placeholder-profile.png",
+              src={normalizeAvatarUrl(
+                url || currentUser?.avatar,
+                currentUser?.email,
+                currentUser?.username,
               )}
               alt={currentUser?.username || "profile"}
               onClick={() => fileInputRef.current?.click()}
               className="w-28 h-28 rounded-full object-cover cursor-pointer ring-2 ring-indigo-100"
+              referrerPolicy="no-referrer"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = "/placeholder-profile.png";
