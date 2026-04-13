@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { ENV } from "../config/env";
 import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper";
 
@@ -190,42 +191,55 @@ const CreateHouse = () => {
     setUploading(true);
     setValidatingImages(true);
     try {
-      const aiServiceUrl =
-        import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
+      const aiServiceUrl = ENV.AI_API_URL || "http://localhost:8000";
 
       const payload = new FormData();
       files.forEach((file) => payload.append("files", file));
 
-      const validation = await axios.post<HouseBatchValidationResponse>(
-        `${aiServiceUrl}/api/house/validate/batch`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        },
-      );
+      let approvedFiles = [...files];
 
-      const approvedByName = new Set(
-        validation.data.results
-          .filter((item) => item.is_house)
-          .map((item) => item.filename),
-      );
+      if (aiServiceUrl) {
+        try {
+          const validation = await axios.post<HouseBatchValidationResponse>(
+            `${aiServiceUrl}/api/house/validate/batch`,
+            payload,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            },
+          );
 
-      const approvedFiles = files.filter((file) =>
-        approvedByName.has(file.name),
-      );
-      const rejectedFiles = validation.data.results
-        .filter((item) => !item.is_house)
-        .map((item) => item.filename);
+          const approvedByName = new Set(
+            validation.data.results
+              .filter((item) => item.is_house)
+              .map((item) => item.filename),
+          );
 
-      if (rejectedFiles.length > 0) {
-        showToast(
-          `${rejectedFiles.length} image(s) rejected by AI: ${rejectedFiles.join(
-            ", ",
-          )}`,
-          "error",
-        );
+          approvedFiles = files.filter((file) => approvedByName.has(file.name));
+          const rejectedFiles = validation.data.results
+            .filter((item) => !item.is_house)
+            .map((item) => item.filename);
+
+          if (rejectedFiles.length > 0) {
+            showToast(
+              `${rejectedFiles.length} image(s) rejected by AI: ${rejectedFiles.join(
+                ", ",
+              )}`,
+              "error",
+            );
+          }
+        } catch (validationError) {
+          console.warn(
+            "AI validation unavailable, continuing upload:",
+            validationError,
+          );
+          showToast(
+            "AI image validation is unavailable. Uploading selected images directly.",
+            "error",
+          );
+          approvedFiles = [...files];
+        }
       }
 
       if (approvedFiles.length === 0) {
@@ -480,8 +494,7 @@ const CreateHouse = () => {
 
     setEnhancing(true);
     try {
-      const aiServiceUrl =
-        import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
+      const aiServiceUrl = ENV.AI_API_URL || "http://localhost:8000";
 
       const response = await axios.post<AIEnhanceResponse>(
         `${aiServiceUrl}/api/enhance`,
@@ -544,8 +557,7 @@ const CreateHouse = () => {
 
     setPredictingPrice(true);
     try {
-      const aiServiceUrl =
-        import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
+      const aiServiceUrl = ENV.AI_API_URL || "http://localhost:8000";
 
       const areaValue =
         formData.area === "" || formData.area === undefined
