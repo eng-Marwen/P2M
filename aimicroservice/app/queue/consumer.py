@@ -1,6 +1,6 @@
 import json
 from app.queue.rabbitmq import get_connection
-from app.services.vector_service import create_vector, delete_vector, update_vector
+from app.services.rag_service.vector_service import create_vector, delete_vector, update_vector
 
 QUEUE_NAME = "house.events"
 
