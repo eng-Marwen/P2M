@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { FaBars, FaSearch, FaTimes } from "react-icons/fa";
-import logoImage from "../assets/image-removebg-preview.png";
 import { useSelector } from "react-redux";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { RootState } from "../app/store";
+import logoImage from "../assets/image-removebg-preview.png";
+import { normalizeAvatarUrl } from "../lib/avatar";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -38,10 +39,7 @@ const Header = () => {
         <div className="flex items-center justify-between h-16 md:h-18">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img
-              src={logoImage}
-              className="w-15  rounded-lg"
-            />
+            <img src={logoImage} className="w-15  rounded-lg" />
             <div className="hidden sm:flex flex-col leading-tight">
               <span className="text-xl font-semibold text-shadow-black">
                 Samsar
@@ -93,9 +91,14 @@ const Header = () => {
                       aria-label="Profile"
                     >
                       <img
-                        src={currentUser.avatar || "/placeholder-profile.png"}
+                        src={normalizeAvatarUrl(
+                          currentUser.avatar,
+                          currentUser.email,
+                          currentUser.username,
+                        )}
                         alt={currentUser.username || "profile"}
                         className="w-full h-full object-cover "
+                        referrerPolicy="no-referrer"
                       />
                     </Link>
                   ) : null}
@@ -128,7 +131,9 @@ const Header = () => {
               to="/"
               className={({ isActive }) =>
                 ` hover:text-slate-800 hover:font-semibold hover:underline ${
-                  isActive ? "text-black font-semibold underline" : "text-sm text-black"
+                  isActive
+                    ? "text-black font-semibold underline"
+                    : "text-sm text-black"
                 }`
               }
             >
@@ -138,7 +143,9 @@ const Header = () => {
               to="/about"
               className={({ isActive }) =>
                 ` hover:text-slate-800 hover:font-semibold hover:underline ${
-                  isActive ? "text-black font-semibold underline" : "text-black text-sm"
+                  isActive
+                    ? "text-black font-semibold underline"
+                    : "text-black text-sm"
                 }`
               }
             >
@@ -149,7 +156,9 @@ const Header = () => {
               to="/contact"
               className={({ isActive }) =>
                 `text-sm hover:text-slate-800 hover:font-semibold hover:underline ${
-                  isActive ? "text-balck font-semibold underline" : "text-sm text-black"
+                  isActive
+                    ? "text-balck font-semibold underline"
+                    : "text-sm text-black"
                 }`
               }
             >
@@ -175,9 +184,14 @@ const Header = () => {
             >
               {currentUser ? (
                 <img
-                  src={currentUser.avatar || "/placeholder-profile.png"}
+                  src={normalizeAvatarUrl(
+                    currentUser.avatar,
+                    currentUser.email,
+                    currentUser.username,
+                  )}
                   alt="profile"
                   className="w-9 h-9 rounded-full object-cover border-2 border-gray-100 shadow-sm"
+                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <button className="text-sm px-3 py-1.5 rounded-md border border-black hover:bg-gray-100">
@@ -270,9 +284,14 @@ const Header = () => {
               {currentUser ? (
                 <div className="flex items-center gap-3">
                   <img
-                    src={currentUser.avatar || "/placeholder-profile.png"}
+                    src={normalizeAvatarUrl(
+                      currentUser.avatar,
+                      currentUser.email,
+                      currentUser.username,
+                    )}
                     alt={currentUser.username || "profile"}
                     className="w-9 h-9 rounded-full object-cover border-2 border-gray-100"
+                    referrerPolicy="no-referrer"
                   />
                   <span className="text-black hover:text-slate-800 hover:font-semibold hover:underline">
                     My Profile
