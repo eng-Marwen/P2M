@@ -24,6 +24,8 @@ const port: number = Number(process.env.PORT) || 4000;
 
 //----------------------------Root Routes-----------------------------
 
+
+
 app.use("/api/auth", authRoutes);
 app.use("/api/houses", houseRoutes);
 app.use("/api/cloudinary", cloudinaryRoutes);
