@@ -6,7 +6,7 @@ from app.schemas import (
     RagQueryRequest,
     RagQueryResponse,
 )
-from app.services.rag_service import clear_rag_session_history, run_rag_query
+from app.services.rag_service.agent_service import clear_rag_session_history, run_rag_query
 
 
 router = APIRouter()
