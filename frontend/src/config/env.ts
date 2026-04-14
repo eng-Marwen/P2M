@@ -25,3 +25,18 @@ export const ENV = {
     ? window.__ENV__!.FIREBASE_API_KEY
     : import.meta.env.VITE_FIRE_BASE_API_KEY,
 };
+
+export const getAiServiceBaseUrl = (): string => {
+  const fallback = "http://localhost:8000";
+  const value = (ENV.AI_API_URL || fallback).trim();
+
+  if (!value) {
+    return fallback;
+  }
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value.replace(/\/$/, "");
+  }
+
+  return `http://${value.replace(/\/$/, "")}`;
+};
