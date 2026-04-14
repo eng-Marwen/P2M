@@ -3,5 +3,47 @@ services:
     image: microservice:latest
     ports:
       - 8000:8000
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_started
     env_file:
       - ./aimicroservice/.env
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379/0
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - 6333:6333
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
+
+volumes:
+  qdrant_data:
+  rabbitmq_data:
+  redis_data:
