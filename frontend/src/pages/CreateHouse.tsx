@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { ENV } from "../config/env";
+import { getAiServiceBaseUrl } from "../config/env";
 import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper";
 
@@ -80,6 +80,8 @@ interface ListingPricePredictPayload {
 }
 
 const CreateHouse = () => {
+  const aiServiceUrl = getAiServiceBaseUrl();
+
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<boolean>(false);
   const [creating, setCreating] = useState<boolean>(false);
@@ -191,8 +193,6 @@ const CreateHouse = () => {
     setUploading(true);
     setValidatingImages(true);
     try {
-      const aiServiceUrl = ENV.AI_API_URL || "http://localhost:8000";
-
       const payload = new FormData();
       files.forEach((file) => payload.append("files", file));
 
@@ -494,8 +494,6 @@ const CreateHouse = () => {
 
     setEnhancing(true);
     try {
-      const aiServiceUrl = ENV.AI_API_URL || "http://localhost:8000";
-
       const response = await axios.post<AIEnhanceResponse>(
         `${aiServiceUrl}/api/enhance`,
         { description: currentDescription },
@@ -557,8 +555,6 @@ const CreateHouse = () => {
 
     setPredictingPrice(true);
     try {
-      const aiServiceUrl = ENV.AI_API_URL || "http://localhost:8000";
-
       const areaValue =
         formData.area === "" || formData.area === undefined
           ? undefined
