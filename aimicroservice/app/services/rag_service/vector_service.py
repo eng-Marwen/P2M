@@ -1,5 +1,4 @@
 import uuid
-
 from qdrant_client.http import models as qdrant_models
 from app.services.rag_service.emebdding_service import generate_embedding, house_to_text
 from app.databases.qdrant import get_qdrant_client
@@ -20,7 +19,6 @@ def _build_payload(house: dict) -> dict:
         "discountedPrice": house.get("discountedPrice"),
         "embedding_text": house_to_text(house),
     }
-
 
 def _to_qdrant_point_id(house_id: str) -> str:
     candidate = str(house_id)
@@ -60,7 +58,6 @@ def update_vector(house):
 def delete_vector(house_id):
     if not house_id:
         raise ValueError("Missing house id for delete_vector")
-
     client = get_qdrant_client()
     point_id = _to_qdrant_point_id(str(house_id))
     client.delete(
