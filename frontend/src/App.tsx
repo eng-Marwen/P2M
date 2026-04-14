@@ -8,7 +8,7 @@ import AIAgentLauncher from "./app/ai-agent/AIAgentLauncher";
 import { signOut } from "./app/user/userSlice";
 import Header from "./components/Header";
 import PrivateRoute from "./components/PrivateRoute";
-import { ENV } from "./config/env";
+import { ENV, getAiServiceBaseUrl } from "./config/env";
 import About from "./pages/About";
 import ContactUs from "./pages/ContactUs";
 import CreateHouse from "./pages/CreateHouse";
@@ -26,11 +26,17 @@ import VerifyResetOtp from "./pages/VerifyResetOtp";
 
 // Set default config for all axios requests
 const API_URL = ENV.API_URL;
+const AI_MICROSERVICE_URL = getAiServiceBaseUrl();
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = API_URL;
 
-console.log("🔗 Backend URL:", API_URL, "| Mode:", import.meta.env.MODE);
+console.log(
+ ` 
+  Backend:,${API_URL},
+  AI Microservice:${AI_MICROSERVICE_URL}
+  `
+);
 
 // Component to setup axios interceptor
 function AxiosInterceptor() {
