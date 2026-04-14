@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ENV } from "../../config/env";
+import { getAiServiceBaseUrl } from "../../config/env";
 
 export interface RagHit {
   score: number;
@@ -20,27 +20,12 @@ export interface RagResponse {
   hits: RagHit[];
 }
 
-const normalizeAiBaseUrl = (rawUrl?: string): string => {
-  const fallback = "http://localhost:8000";
-  const value = (rawUrl || fallback).trim();
-
-  if (!value) {
-    return fallback;
-  }
-
-  if (value.startsWith("http://") || value.startsWith("https://")) {
-    return value.replace(/\/$/, "");
-  }
-
-  return `http://${value.replace(/\/$/, "")}`;
-};
-
 export const queryRag = async (
   query: string,
   topK = 3,
   sessionId?: string,
 ): Promise<RagResponse> => {
-  const baseUrl = normalizeAiBaseUrl(ENV.AI_API_URL);
+  const baseUrl = getAiServiceBaseUrl();
   const endpoint = `${baseUrl}/api/rag/query`;
 
   const response = await axios.post<RagResponse>(endpoint, {
@@ -53,7 +38,7 @@ export const queryRag = async (
 };
 
 export const clearRagHistory = async (sessionId?: string): Promise<void> => {
-  const baseUrl = normalizeAiBaseUrl(ENV.AI_API_URL);
+  const baseUrl = getAiServiceBaseUrl();
   const endpoint = `${baseUrl}/api/rag/history/clear`;
 
   await axios.post(
