@@ -6,14 +6,6 @@ class DescriptionRequest(BaseModel):
 class DescriptionResponse(BaseModel):
     enhanced_description: str
 
-
-class HousePredictionResponse(BaseModel):
-    label: str
-    is_house: bool
-    confidence: float = Field(..., ge=0, le=1)
-    probabilities: dict[str, float]
-
-
 class HousePredictionItem(BaseModel):
     filename: str
     label: str | None = None
@@ -22,19 +14,16 @@ class HousePredictionItem(BaseModel):
     probabilities: dict[str, float] | None = None
     error: str | None = None
 
-
 class HouseBatchPredictionResponse(BaseModel):
     results: list[HousePredictionItem]
     total: int
     accepted: int
     rejected: int
 
-
 class RagQueryRequest(BaseModel):
     query: str
     top_k: int = Field(default=5, ge=1, le=20)
     session_id: str | None = Field(default=None, max_length=128)
-
 
 class RagSearchHit(BaseModel):
     score: float
@@ -46,7 +35,6 @@ class RagSearchHit(BaseModel):
     discountedPrice: float | int | None = None
     description: str | None = None
 
-
 class RagQueryResponse(BaseModel):
     session_id: str
     query: str
@@ -54,30 +42,17 @@ class RagQueryResponse(BaseModel):
     total_hits: int
     hits: list[RagSearchHit]
 
-
 class RagClearHistoryRequest(BaseModel):
     session_id: str | None = Field(default=None, max_length=128)
-
 
 class RagClearHistoryResponse(BaseModel):
     session_id: str | None = None
     cleared: bool
 
-
-class HousePriceFeaturesResponse(BaseModel):
-    feature_columns: list[str]
-    total: int
-
-
-class HousePricePredictRequest(BaseModel):
-    features: dict[str, int | float | str | bool]
-
-
 class HousePricePredictResponse(BaseModel):
     predicted_price_tnd: float
     used_features: dict[str, int | float | str | bool]
     ignored_features: list[str]
-
 
 class HousePriceListingPredictRequest(BaseModel):
     name: str = ""
@@ -94,21 +69,3 @@ class HousePriceListingPredictRequest(BaseModel):
     offer: bool = False
     userRef: str = ""
     area: float | int | None = None
-
-
-class HousePriceBatchPredictRequest(BaseModel):
-    items: list[dict[str, int | float | str | bool]]
-
-
-class HousePriceBatchItem(BaseModel):
-    index: int
-    predicted_price_tnd: float | None = None
-    ignored_features: list[str] = Field(default_factory=list)
-    error: str | None = None
-
-
-class HousePriceBatchPredictResponse(BaseModel):
-    results: list[HousePriceBatchItem]
-    total: int
-    succeeded: int
-    failed: int
