@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
+import { getAiServiceBaseUrl } from "../config/env";
 import { uploadToCloudinary } from "../lib/cloudinary";
 import { showToast } from "../popups/tostHelper";
 
@@ -108,6 +109,8 @@ interface ListingPricePredictPayload {
 }
 
 const EditListing = () => {
+  const aiServiceUrl = getAiServiceBaseUrl();
+
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [listing, setListing] = useState<ListingData | null>(null);
@@ -384,9 +387,6 @@ const EditListing = () => {
     setUploading(true);
     setValidatingImages(true);
     try {
-      const aiServiceUrl =
-        import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
-
       const payload = new FormData();
       files.forEach((file) => payload.append("files", file));
 
@@ -619,9 +619,6 @@ const EditListing = () => {
 
     setEnhancing(true);
     try {
-      const aiServiceUrl =
-        import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
-
       const response = await axios.post<AIEnhanceResponse>(
         `${aiServiceUrl}/api/enhance`,
         { description: currentDescription },
@@ -683,9 +680,6 @@ const EditListing = () => {
 
     setPredictingPrice(true);
     try {
-      const aiServiceUrl =
-        import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
-
       const areaValue =
         formData.area === "" || formData.area === undefined
           ? undefined
