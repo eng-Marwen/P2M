@@ -12,6 +12,7 @@ services:
         condition: service_started
     environment:
       API_URL: "http://localhost:4000"
+      AI_API_URL: "http://localhost:8000"
       FIREBASE_API_KEY: "AIzaSyDxxlLzE6XtYske4-XYMqFc68Rj_RxAMEE"
   backend:
     image: backend:latest
@@ -24,7 +25,7 @@ services:
       aimicroservice:
         condition: service_started
     env_file:
-      - ./backend/.env
+      - ./backend/.compose.env
   aimicroservice:
     image: microservice:latest
     ports:
@@ -38,11 +39,7 @@ services:
       redis:
         condition: service_started
     env_file:
-      - ./aimicroservice/.env
-    environment:
-      RABBITMQ_HOST: rabbitmq:5672
-      QDRANT_URL: http://qdrant:6333
-      REDIS_URL: redis://redis:6379/0
+      - ./aimicroservice/.compose.env
   qdrant:
     image: qdrant/qdrant:latest
     ports:
