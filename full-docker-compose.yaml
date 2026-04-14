@@ -26,7 +26,7 @@ services:
     env_file:
       - ./backend/.env
   aimicroservice:
-    image: aimicroservice:latest
+    image: microservice:latest
     ports:
       - 8000:8000
     restart: unless-stopped
@@ -35,11 +35,14 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
+      redis:
+        condition: service_started
     env_file:
       - ./aimicroservice/.env
     environment:
       RABBITMQ_HOST: rabbitmq:5672
       QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379/0
   qdrant:
     image: qdrant/qdrant:latest
     ports:
@@ -58,6 +61,13 @@ services:
       retries: 10
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+  redis:
+    image: redis:7-alpine
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
 volumes:
   qdrant_data:
   rabbitmq_data:
+  redis_data:
