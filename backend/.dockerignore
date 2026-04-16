@@ -3,4 +3,5 @@ dist
 .git
 .gitignore
 #needs to be passed as parameters when running either in dev or in prod
-.env 
+*.env 
+__test__
