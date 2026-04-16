@@ -3,12 +3,12 @@ name: CI/CD aiMicroservice
 on:
   push:
     paths:
-      - "aiMicroservice/**"
+      - "aimicroservice/**"
       - ".github/workflows/aimicroservice.yaml"
     branches: [main]
   pull_request:
     paths:
-      - "aiMicroservice/**"
+      - "aimicroservice/**"
       - ".github/workflows/aimicroservice.yaml"
     branches: [main]
 
@@ -30,10 +30,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r aiMicroservice/prod_dependencies.txt
+          pip install -r aimicroservice/prod_dependencies.txt
           pip install pytest 
 
       - name: Run tests
         run: |
-          cd aiMicroservice
+          cd aimicroservice
           pytest 
