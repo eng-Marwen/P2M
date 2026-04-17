@@ -37,6 +37,9 @@ WORKDIR /app
 # Set Node.js to production mode (disables dev warnings, optimizes performance)
 ENV NODE_ENV=production
 
+# Create non-root user
+RUN addgroup -S mainBackend && adduser -S mainBackend -G mainBackend
+
 # Copy package files
 COPY package*.json ./
 
@@ -48,11 +51,17 @@ RUN npm ci --omit=dev
 # Only copy dist/ folder, not the TypeScript source code
 COPY --from=builder /app/dist ./dist
 
+# Copy entrypoint script
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
+# Switch to non-root user
+USER mainBackend
+
 # Expose port 4000 (informs Docker which port the app uses)
 # Actual port mapping happens with docker run -p flag
 EXPOSE 4000
 
 # Start the application
-# Run index.js (which loads dotenv then run the server) 
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["./entrypoint.sh"]
 
