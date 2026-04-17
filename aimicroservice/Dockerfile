@@ -18,10 +18,14 @@ RUN pip install --no-compile -r prod_dependencies.txt && \
     find /usr/local/lib/python3.10/site-packages -type d -name '__pycache__' -prune -exec rm -rf '{}' +
 
 COPY app ./app
+COPY entrypoint.sh .
 
 RUN mkdir -p /app/ai_models && \
-    chown -R appuser:appuser /app
+    chown -R appuser:appuser /app && \
+    chmod +x /app/entrypoint.sh
+
 USER appuser
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+ENTRYPOINT ["./entrypoint.sh"]
