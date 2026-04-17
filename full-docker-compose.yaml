@@ -25,9 +25,9 @@ services:
       aimicroservice:
         condition: service_started
     env_file:
-      - ./backend/.compose.env
+      - ./backend/ENV/.compose.env
   aimicroservice:
-    image: microservice:latest
+    image: aimicroservice:latest
     ports:
       - 8000:8000
     restart: unless-stopped
@@ -39,7 +39,7 @@ services:
       redis:
         condition: service_started
     env_file:
-      - ./aimicroservice/.compose.env
+      - ./aimicroservice/ENV/.compose.env
   qdrant:
     image: qdrant/qdrant:latest
     ports:
