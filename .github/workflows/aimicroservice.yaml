@@ -91,7 +91,7 @@ jobs:
           path: aiMicroservice-image.tar
 
   push_image:
-    needs: build_image
+    needs: [build_image, version]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
