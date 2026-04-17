@@ -19,5 +19,11 @@
     "types": ["node", "jest"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "src/node_modules"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/node_modules",
+    "src/**/__test__/**",
+    "src/**/__mocks__/**"
+  ]
 }
