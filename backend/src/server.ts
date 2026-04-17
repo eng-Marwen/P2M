@@ -10,30 +10,47 @@ import cloudinaryRoutes from "./routes/cloudinary.route.js";
 import houseRoutes from "./routes/house.route.js";
 
 const app: Express = express();
+
+// ─── CORS Logs ───────────────────────────────────────────────
+console.log("CLIENT_URL env:", process.env.CLIENT_URL);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true, // allow cookies/auth headers
+    origin: (origin, callback) => {
+      console.log("Incoming request origin:", origin);
+      console.log("Allowed origin (CLIENT_URL):", process.env.CLIENT_URL);
+
+      if (!origin || origin === process.env.CLIENT_URL) {
+        callback(null, true);
+      } else {
+        console.log("CORS BLOCKED:", origin);
+        callback(new Error(`CORS origin not allowed: ${origin}`));
+      }
+    },
+    credentials: true,
   }),
 );
 
-app.use(morgan("dev")); //HTTP request logger
-app.use(express.json()); //allows us to parse incomming requests:req.body (json)
-app.use(cookieParser()); //allows us to parse incomming cookies
+app.use(morgan("dev"));
+app.use(express.json());
+app.use(cookieParser());
+
 const port: number = Number(process.env.PORT) || 4000;
 
-//----------------------------Root Routes-----------------------------
-
-
-
+// ─── Routes ───────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/houses", houseRoutes);
 app.use("/api/cloudinary", cloudinaryRoutes);
-//----------------------------Start Server-----------------------------
 
-app.listen(port, () => {
+// ─── Start Server ─────────────────────────────────────────────
+app.listen(port, async () => {
+  console.log("═══════════════════════════════════");
+  console.log("Server starting on port:", port);
+  console.log("CLIENT_URL:", process.env.CLIENT_URL || "NOT SET ⚠️");
+  console.log("NODE_ENV:", process.env.NODE_ENV || "NOT SET");
+  console.log("═══════════════════════════════════");
+
   connectMongoDB();
   connectRedis();
   connectRabbitMQ();
-  console.log("Server starting on port", port);
 });
