@@ -27,18 +27,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          
+
       - name: Install dependencies
         run: |
           cd backend
           npm install
-          
+
       - name: Run tests
         run: |
           cd backend
           npm test
           # 5. Run SonarCloud analysis
-  
+
   sonarqube:
     needs: run_tests
     name: SonarQube
@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
@@ -59,7 +59,7 @@ jobs:
     with:
       service_name: backend
     secrets: inherit
- 
+
   build_image:
     needs: version
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -92,7 +92,7 @@ jobs:
           path: backend-image.tar
 
   push_image:
-    needs: build_image
+    needs: [build_image, version]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -114,7 +114,6 @@ jobs:
       - name: Push backend image to Docker Hub
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}
-
 
       ###!!!!!!!!!!!!!only when feat fix BREAKING CHANGE
       # - name: Deploy to Render
