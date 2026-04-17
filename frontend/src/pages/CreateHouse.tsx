@@ -198,48 +198,54 @@ const CreateHouse = () => {
 
       let approvedFiles = [...files];
 
-      if (aiServiceUrl) {
-        try {
-          const validation = await axios.post<HouseBatchValidationResponse>(
-            `${aiServiceUrl}/api/house/validate/batch`,
-            payload,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
+      if (!aiServiceUrl) {
+        showToast(
+          "AI image validation is unavailable. Try again later.",
+          "error",
+        );
+        return;
+      }
+
+      try {
+        const validation = await axios.post<HouseBatchValidationResponse>(
+          `${aiServiceUrl}/api/house/validate/batch`,
+          payload,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
             },
-          );
+          },
+        );
 
-          const approvedByName = new Set(
-            validation.data.results
-              .filter((item) => item.is_house)
-              .map((item) => item.filename),
-          );
+        const approvedByName = new Set(
+          validation.data.results
+            .filter((item) => item.is_house)
+            .map((item) => item.filename),
+        );
 
-          approvedFiles = files.filter((file) => approvedByName.has(file.name));
-          const rejectedFiles = validation.data.results
-            .filter((item) => !item.is_house)
-            .map((item) => item.filename);
+        approvedFiles = files.filter((file) => approvedByName.has(file.name));
+        const rejectedFiles = validation.data.results
+          .filter((item) => !item.is_house)
+          .map((item) => item.filename);
 
-          if (rejectedFiles.length > 0) {
-            showToast(
-              `${rejectedFiles.length} image(s) rejected by AI: ${rejectedFiles.join(
-                ", ",
-              )}`,
-              "error",
-            );
-          }
-        } catch (validationError) {
-          console.warn(
-            "AI validation unavailable, continuing upload:",
-            validationError,
-          );
+        if (rejectedFiles.length > 0) {
           showToast(
-            "AI image validation is unavailable. Uploading selected images directly.",
+            `${rejectedFiles.length} image(s) rejected by AI: ${rejectedFiles.join(
+              ", ",
+            )}`,
             "error",
           );
-          approvedFiles = [...files];
         }
+      } catch (validationError) {
+        console.warn(
+          "AI validation unavailable, blocking upload:",
+          validationError,
+        );
+        showToast(
+          "AI image validation is unavailable. Try again later.",
+          "error",
+        );
+        return;
       }
 
       if (approvedFiles.length === 0) {
