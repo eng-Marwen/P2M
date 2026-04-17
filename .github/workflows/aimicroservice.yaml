@@ -38,7 +38,7 @@ jobs:
           cd aimicroservice
           pytest 
   sonarqube:
-    needs: test
+    needs: run_tests
     name: SonarQube
     runs-on: ubuntu-latest
     steps:
