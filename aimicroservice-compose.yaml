@@ -1,6 +1,6 @@
 services:
   microservice:
-    image: microservice:latest
+    image: aimicroservice:latest
     ports:
       - 8000:8000
     depends_on:
@@ -11,7 +11,7 @@ services:
       redis:
         condition: service_started
     env_file:
-      - ./aimicroservice/.env
+      - ./aimicroservice/ENV/.compose.env
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       QDRANT_URL: http://qdrant:6333
