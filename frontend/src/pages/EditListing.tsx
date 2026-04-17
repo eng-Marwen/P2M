@@ -390,6 +390,14 @@ const EditListing = () => {
       const payload = new FormData();
       files.forEach((file) => payload.append("files", file));
 
+      if (!aiServiceUrl) {
+        showToast(
+          "AI image validation is unavailable. Try again later.",
+          "error"
+        );
+        return;
+      }
+
       const validation = await axios.post<HouseBatchValidationResponse>(
         `${aiServiceUrl}/api/house/validate/batch`,
         payload,
@@ -448,7 +456,10 @@ const EditListing = () => {
       );
     } catch (error) {
       console.error("Upload failed:", error);
-      showToast("Some images failed to upload", "error");
+      showToast(
+        "AI image validation is unavailable. Try again later.",
+        "error",
+      );
     } finally {
       setValidatingImages(false);
       setUploading(false);
