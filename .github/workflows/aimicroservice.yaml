@@ -16,6 +16,7 @@ env:
   SERVICE_NAME: aiMicroservice
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/samsar
 jobs:
+
   run_tests:
     runs-on: ubuntu-latest
     steps:
@@ -113,3 +114,4 @@ jobs:
       - name: Push aiMicroservice image to Docker Hub
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/samsar:aiMicroservice-${{ needs.version.outputs.version }}
+
