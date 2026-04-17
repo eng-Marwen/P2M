@@ -12,9 +12,7 @@ aivenv/
 
 # Training/data/notebooks/docs not needed in runtime image
 models-training/
-*.joblib
-*.pth
-*.onnx
+ai_models/
 
 .git
 .gitignore
