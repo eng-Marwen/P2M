@@ -126,7 +126,20 @@ jobs:
           echo "VERSION : ${{ needs.version.outputs.version }}"
           echo "IMAGE   : docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:aiMicroservice-${{ needs.version.outputs.version }}"
           echo "========================================="
+      # Run this ONE TIME locally or as a temporary job to get your IDs
+      - name: Get Render IDs
+        run: |
+          echo "=== OWNERS ==="
+          curl -s https://api.render.com/v1/owners \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
 
+          echo "=== REGISTRY CREDENTIALS ==="
+          curl -s https://api.render.com/v1/registrycredentials \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
+
+          echo "=== SERVICE DETAILS ==="
+          curl -s https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }} \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
       - name: Deploy to Render
         run: |
           IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:aiMicroservice-${{ needs.version.outputs.version }}"
