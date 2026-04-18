@@ -121,13 +121,33 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
+      - name: Debug version and image
+        run: |
+          echo "========================================="
+          echo "VERSION FROM version job : ${{ needs.version.outputs.version }}"
+          echo "IMAGE FULL URL           : docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
+          echo "RENDER SERVICE ID        : ${{ secrets.RENDER_SERVICE_ID }}"
+          echo "========================================="
+
       - name: Deploy to Render
         run: |
-          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
+          IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
+          echo "Deploying image: $IMAGE"
+
+          RESPONSE=$(curl -s -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -d '{"image": {"url": "docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"}}'
+            -d "{\"image\": {\"url\": \"$IMAGE\"}}")
+
+          echo "========================================="
+          echo "Render API Response:"
+          echo $RESPONSE | jq .
+          echo "========================================="
+          echo "Deployed image ref : $(echo $RESPONSE | jq -r '.image.ref')"
+          echo "Deploy status      : $(echo $RESPONSE | jq -r '.status')"
+          echo "Deploy ID          : $(echo $RESPONSE | jq -r '.id')"
+          echo "========================================="
 
 # Push to main
 #    ↓
