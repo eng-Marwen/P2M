@@ -131,40 +131,15 @@ jobs:
       - name: Deploy to Render
         run: |
           IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
+          
+          # URL encode the image (replace : with %3A and / with %2F)
+          ENCODED_IMAGE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$IMAGE', safe=''))")
+          echo "Encoded image: $ENCODED_IMAGE"
 
-          # Step 1: Update imagePath on the service
-          UPDATE=$(curl -s -X PATCH https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }} \
-            -H "Accept: application/json" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -d "{
-              \"imagePath\": \"$IMAGE\",
-              \"ownerId\": \"tea-d4b43s0gjchc73f8di3g\",
-              \"registryCredentialId\": \"rgc-d5j7l0dactks73foklvg\"
-            }")
+          RESPONSE=$(curl -s -X POST \
+            "${{ secrets.RENDER_DEPLOY_HOOK_URL }}&imgURL=$ENCODED_IMAGE")
 
-          echo "Update response: $UPDATE"
-
-          # Fail early if PATCH failed
-          if echo $UPDATE | jq -e '.message' > /dev/null 2>&1; then
-            echo "ERROR: $( echo $UPDATE | jq -r '.message')"
-            exit 1
-          fi
-
-          # Step 2: Trigger deploy
-          RESPONSE=$(curl -s -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
-            -H "Accept: application/json" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -d '{}')
-
-          echo "========================================="
-          echo "Deploy response:"
-          echo $RESPONSE | jq .
-          echo "Deployed image ref : $(echo $RESPONSE | jq -r '.image.ref')"
-          echo "Deploy status      : $(echo $RESPONSE | jq -r '.status')"
-          echo "Deploy ID          : $(echo $RESPONSE | jq -r '.id')"
-          echo "========================================="
+          echo "Response: $RESPONSE"
 # Push to main
 #    ↓
 # Checkout code
