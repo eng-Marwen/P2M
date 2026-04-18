@@ -156,7 +156,6 @@ jobs:
 
           RESPONSE=$(curl -s -X POST \
             "${{ secrets.RENDER_DEPLOY_CLIENT_HOOK_URL }}&imgURL=$ENCODED_IMAGE")
-
           echo "Response: $RESPONSE"
 
 # Push to main
