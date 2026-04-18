@@ -130,39 +130,19 @@ jobs:
                 echo "========================================="
       - name: Deploy to Render
         run: |
-          IMAGE="${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
+          IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
           echo "Deploying image: $IMAGE"
 
-          # Step 1: Update the service to point to the new image
-          UPDATE=$(curl -s -X PATCH https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }} \
+          RESPONSE=$(curl -s -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -d "{\"image\": {\"url\": \"$IMAGE\"}}")
 
-          echo "Update response:"
-          echo $UPDATE | jq .
-
-          # Check if update failed
-          if echo $UPDATE | jq -e '.message' > /dev/null 2>&1; then
-            echo "ERROR: Failed to update service image"
-            echo "Reason: $(echo $UPDATE | jq -r '.message')"
-            exit 1
-          fi
-
-          # Step 2: Trigger the deploy
-          RESPONSE=$(curl -s -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
-            -H "Accept: application/json" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -d '{}')
-
-          echo "========================================="
           echo "Render API Response:"
           echo $RESPONSE | jq .
           echo "Deployed image ref : $(echo $RESPONSE | jq -r '.image.ref')"
           echo "Deploy status      : $(echo $RESPONSE | jq -r '.status')"
-          echo "========================================="
 # Push to main
 #    ↓
 # Checkout code
