@@ -115,6 +115,7 @@ jobs:
       - name: Push backend image to Docker Hub
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}
+ 
   trigger_deployment:
     needs: [push_image, version]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
