@@ -124,44 +124,32 @@ jobs:
       - name: Debug version and image
         run: |
           echo "========================================="
-          echo "VERSION FROM version job : ${{ needs.version.outputs.version }}"
-          echo "IMAGE FULL URL           : docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
-          echo "RENDER SERVICE ID        : ${{ secrets.RENDER_SERVICE_ID }}"
-                echo "========================================="
+          echo "VERSION : ${{ needs.version.outputs.version }}"
+          echo "IMAGE   : docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
+          echo "========================================="
 
-      # Run this ONE TIME locally or as a temporary job to get your IDs
-      - name: Get Render IDs
-        run: |
-          echo "=== OWNERS ==="
-          curl -s https://api.render.com/v1/owners \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
-
-          echo "=== REGISTRY CREDENTIALS ==="
-          curl -s https://api.render.com/v1/registrycredentials \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
-
-          echo "=== SERVICE DETAILS ==="
-          curl -s https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }} \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
       - name: Deploy to Render
         run: |
           IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
-          echo "Deploying image: $IMAGE"
 
-          # Step 1: Update image via correct nested body structure
+          # Step 1: Update imagePath on the service
           UPDATE=$(curl -s -X PATCH https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }} \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -d "{
-              \"image\": {
-                \"ownerId\": \"${{ secrets.RENDER_OWNER_ID }}\",
-                \"registryCredentialId\": \"${{ secrets.RENDER_REGISTRY_CREDENTIAL_ID }}\",
-                \"imagePath\": \"$IMAGE\"
-              }
+              \"imagePath\": \"$IMAGE\",
+              \"ownerId\": \"tea-d4b43s0gjchc73f8di3g\",
+              \"registryCredentialId\": \"rgc-d5j7l0dactks73foklvg\"
             }")
 
           echo "Update response: $UPDATE"
+
+          # Fail early if PATCH failed
+          if echo $UPDATE | jq -e '.message' > /dev/null 2>&1; then
+            echo "ERROR: $( echo $UPDATE | jq -r '.message')"
+            exit 1
+          fi
 
           # Step 2: Trigger deploy
           RESPONSE=$(curl -s -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
@@ -170,10 +158,13 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -d '{}')
 
+          echo "========================================="
           echo "Deploy response:"
           echo $RESPONSE | jq .
           echo "Deployed image ref : $(echo $RESPONSE | jq -r '.image.ref')"
           echo "Deploy status      : $(echo $RESPONSE | jq -r '.status')"
+          echo "Deploy ID          : $(echo $RESPONSE | jq -r '.id')"
+          echo "========================================="
 # Push to main
 #    ↓
 # Checkout code
