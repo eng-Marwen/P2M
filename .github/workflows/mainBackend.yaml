@@ -139,6 +139,7 @@ jobs:
             "${{ secrets.RENDER_DEPLOY_HOOK_URL }}&imgURL=$ENCODED_IMAGE")
 
           echo "Response: $RESPONSE"
+          
 # Push to main
 #    ↓
 # Checkout code
