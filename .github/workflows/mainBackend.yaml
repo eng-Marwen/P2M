@@ -132,7 +132,6 @@ jobs:
         run: |
           IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
           
-          # URL encode the image (replace : with %3A and / with %2F)
           ENCODED_IMAGE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$IMAGE', safe=''))")
           echo "Encoded image: $ENCODED_IMAGE"
 
