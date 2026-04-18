@@ -128,18 +128,49 @@ jobs:
           echo "IMAGE FULL URL           : docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
           echo "RENDER SERVICE ID        : ${{ secrets.RENDER_SERVICE_ID }}"
                 echo "========================================="
+
+      # Run this ONE TIME locally or as a temporary job to get your IDs
+      - name: Get Render IDs
+        run: |
+          echo "=== OWNERS ==="
+          curl -s https://api.render.com/v1/owners \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
+
+          echo "=== REGISTRY CREDENTIALS ==="
+          curl -s https://api.render.com/v1/registrycredentials \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
+
+          echo "=== SERVICE DETAILS ==="
+          curl -s https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }} \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
       - name: Deploy to Render
         run: |
           IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"
           echo "Deploying image: $IMAGE"
 
+          # Step 1: Update image via correct nested body structure
+          UPDATE=$(curl -s -X PATCH https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }} \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -d "{
+              \"image\": {
+                \"ownerId\": \"${{ secrets.RENDER_OWNER_ID }}\",
+                \"registryCredentialId\": \"${{ secrets.RENDER_REGISTRY_CREDENTIAL_ID }}\",
+                \"imagePath\": \"$IMAGE\"
+              }
+            }")
+
+          echo "Update response: $UPDATE"
+
+          # Step 2: Trigger deploy
           RESPONSE=$(curl -s -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -d "{\"image\": {\"url\": \"$IMAGE\"}}")
+            -d '{}')
 
-          echo "Render API Response:"
+          echo "Deploy response:"
           echo $RESPONSE | jq .
           echo "Deployed image ref : $(echo $RESPONSE | jq -r '.image.ref')"
           echo "Deploy status      : $(echo $RESPONSE | jq -r '.status')"
