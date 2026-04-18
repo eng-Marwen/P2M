@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
@@ -50,7 +50,7 @@ jobs:
       service_name: frontend
     secrets: inherit
 
-  BuildAndPushDockerImage:
+  build_image:
     runs-on: ubuntu-latest
     needs: version
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -63,29 +63,82 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      #Authenticates GitHub VM with Docker Hub
+      # Build frontend image locally
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          load: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ needs.version.outputs.version }}
+
+      - name: Save image artifact
+        run: |
+          docker save ${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ needs.version.outputs.version }} -o frontend-image.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-image
+          path: frontend-image.tar
+
+  push_image:
+    needs: [build_image, version]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-image
+
+      - name: Load image
+        run: |
+          docker load -i frontend-image.tar
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-     
-      #Build & push frontend Docker image
-      - name: build and push frontend image to docker hub
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ needs.version.outputs.version }}
 
+      - name: Push frontend image to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ needs.version.outputs.version }}
+
+  trigger_deployment:
+    needs: [push_image, version]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug version and image
+        run: |
+          echo "========================================="
+          echo "VERSION : ${{ needs.version.outputs.version }}"
+          echo "IMAGE   : docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ needs.version.outputs.version }}"
+          echo "========================================="
+
+      - name: Deploy to Render
+        run: |
+          IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ needs.version.outputs.version }}"
+
+          # URL encode the image (replace : with %3A and / with %2F)
+          ENCODED_IMAGE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$IMAGE', safe=''))")
+          echo "Encoded image: $ENCODED_IMAGE"
+
+          RESPONSE=$(curl -s -X POST \
+            "${{ secrets.RENDER_DEPLOY_CLIENT_HOOK_URL }}&imgURL=$ENCODED_IMAGE")
+
+          echo "Response: $RESPONSE"
       ###!!!!!!!!!!!!!only when feat fix BREAKING CHANGE
       # - name: Deploy to Render
       #   run: |
       #     curl -X POST https://api.render.com/deploy/srv-d5j7lp0gjchc73d0060g \
       #     -H "Accept: application/json" \
       #     -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
+
 # Push to main
 #    ↓
 # Checkout code
