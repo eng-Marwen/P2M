@@ -116,38 +116,23 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/samsar:aiMicroservice-${{ needs.version.outputs.version }}
 
   trigger_deployment:
-    needs: [push_image, version]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Debug version and image
-        run: |
-          echo "========================================="
-          echo "VERSION : ${{ needs.version.outputs.version }}"
-          echo "IMAGE   : docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:aiMicroservice-${{ needs.version.outputs.version }}"
-          echo "========================================="
-      # Run this ONE TIME locally or as a temporary job to get your IDs
-      - name: Get Render IDs
-        run: |
-          echo "=== OWNERS ==="
-          curl -s https://api.render.com/v1/owners \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
+      needs: [push_image, version]
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      runs-on: ubuntu-latest
+      steps:
+        - name: Deploy to Render
+          run: |
+            IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:aiMicroservice-${{ needs.version.outputs.version }}"
+            ENCODED_IMAGE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$IMAGE', safe=''))")
 
-          echo "=== REGISTRY CREDENTIALS ==="
-          curl -s https://api.render.com/v1/registrycredentials \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
+            RESPONSE=$(curl -s -X POST "${{ secrets.RENDER_AI_DEPLOY_HOOK_URL }}&imgURL=$ENCODED_IMAGE")
+            DEPLOY_ID=$(echo $RESPONSE | jq -r '.deploy.id')
 
-          echo "=== SERVICE DETAILS ==="
-          curl -s https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }} \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq .
-      - name: Deploy to Render
-        run: |
-          IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:aiMicroservice-${{ needs.version.outputs.version }}"
+            if [ "$DEPLOY_ID" == "null" ] || [ -z "$DEPLOY_ID" ]; then
+              echo "ERROR: Deploy failed — $RESPONSE"
+              exit 1
+            fi
 
-          ENCODED_IMAGE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$IMAGE', safe=''))")
-          echo "Encoded image: $ENCODED_IMAGE"
-
-          RESPONSE=$(curl -s -X POST \
-            "${{ secrets.RENDER_DEPLOY_HOOK_URL }}&imgURL=$ENCODED_IMAGE")
-
-          echo "Response: $RESPONSE"
+            echo "✅ Deploy triggered successfully"
+            echo "Image     : $IMAGE"
+            echo "Deploy ID : $DEPLOY_ID"
