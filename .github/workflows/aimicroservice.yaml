@@ -133,6 +133,6 @@ jobs:
               exit 1
             fi
 
-            echo "✅ Deploy triggered successfully"
+            echo "Deploy triggered successfully"
             echo "Image     : $IMAGE"
             echo "Deploy ID : $DEPLOY_ID"
