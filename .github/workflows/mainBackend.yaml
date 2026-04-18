@@ -115,13 +115,18 @@ jobs:
       - name: Push backend image to Docker Hub
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}
-
-      ###!!!!!!!!!!!!!only when feat fix BREAKING CHANGE
-      # - name: Deploy to Render
-      #   run: |
-      #     curl -X POST https://api.render.com/deploy/srv-d5j7lp0gjchc73d0060g \
-      #     -H "Accept: application/json" \
-      #     -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
+  trigger_deployment:
+    needs: [push_image, version]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Render
+        run: |
+          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -d '{"image": {"url": "docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:backend-${{ needs.version.outputs.version }}"}}'
 
 # Push to main
 #    ↓
