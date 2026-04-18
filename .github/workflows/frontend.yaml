@@ -55,7 +55,7 @@ jobs:
     needs: version
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      # ⚠️ CRITICAL: Checkout the code first!
+      # CRITICAL: Checkout the code first!
       - name: checkout repo
         uses: actions/checkout@v4
 
@@ -108,6 +108,33 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ needs.version.outputs.version }}
 
+  # trigger_deployment:
+  #   needs: [push_image, version]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Debug version and image
+  #       run: |
+  #         echo "========================================="
+  #         echo "VERSION : ${{ needs.version.outputs.version }}"
+  #         echo "IMAGE   : docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ needs.version.outputs.version }}"
+  #         echo "========================================="
+
+  #     - name: Deploy to Render
+  #       run: |
+  #         IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ needs.version.outputs.version }}"
+
+  #         # URL encode the image (replace : with %3A and / with %2F)
+  #         ENCODED_IMAGE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$IMAGE', safe=''))")
+  #         echo "Encoded image: $ENCODED_IMAGE"
+
+  #         RESPONSE=$(curl -s -X POST \
+  #           "${{ secrets.RENDER_DEPLOY_CLIENT_HOOK_URL }}&imgURL=$ENCODED_IMAGE")
+
+  #         echo "Response: $RESPONSE"
+
+
+
   trigger_deployment:
     needs: [push_image, version]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -123,8 +150,7 @@ jobs:
       - name: Deploy to Render
         run: |
           IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/samsar:frontend-${{ needs.version.outputs.version }}"
-
-          # URL encode the image (replace : with %3A and / with %2F)
+          
           ENCODED_IMAGE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$IMAGE', safe=''))")
           echo "Encoded image: $ENCODED_IMAGE"
 
@@ -132,12 +158,6 @@ jobs:
             "${{ secrets.RENDER_DEPLOY_CLIENT_HOOK_URL }}&imgURL=$ENCODED_IMAGE")
 
           echo "Response: $RESPONSE"
-      ###!!!!!!!!!!!!!only when feat fix BREAKING CHANGE
-      # - name: Deploy to Render
-      #   run: |
-      #     curl -X POST https://api.render.com/deploy/srv-d5j7lp0gjchc73d0060g \
-      #     -H "Accept: application/json" \
-      #     -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
 
 # Push to main
 #    ↓
