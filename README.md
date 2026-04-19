@@ -11,19 +11,19 @@ This repository already contains separate compose files per service group. A new
 
 ## Global Architecture
 
-![Global Architecture](./global-archi.png)
+![Global Architecture](./frontend/src/assets/global.png)
 
 ## Detailed Architecture
 
-![Detailed Architecture](./detailed-archi.png)
+![Detailed Architecture](./frontend/src/assets/architecture.png)
 
 ## AI Microservice Architecture
 
-![AI Microservice Architecture](./ai-archi.png)
+![AI Microservice Architecture](./frontend/src/assets/aiArchitecture.png)
 
 ## DevOps & CI/CD Pipeline
 
-![DevOps Pipeline](./devops-pipeline.png)
+![DevOps Pipeline](./frontend/src/assets/devops.png)
 
 ---
 
