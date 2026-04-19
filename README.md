@@ -25,7 +25,7 @@ This repository already contains separate compose files per service group. A new
 
 ![DevOps Pipeline](./frontend/src/assets/devops.png)
 
----
+----
 
 ### Service Folders
 
