@@ -1,6 +1,6 @@
-# P2M Real Estate Platform
+#  Real Estate Platform : Samsar ProMax
 
-P2M is a full-stack ai-powered real estate platform composed of:
+Samsar ProMax is a full-stack ai-powered real estate platform composed of:
 
 - A React/Typescript frontend for property discovery and user actions
 - A Node.js/TypeScript backend API for auth and listing management
