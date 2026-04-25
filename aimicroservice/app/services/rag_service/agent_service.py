@@ -98,13 +98,18 @@ def _search(query: str, top_k: int) -> list[dict]:
         )
         points = getattr(result, "points", result)
 
+    # Filter out results with low similarity score (e.g., < 0.35)
+    SCORE_THRESHOLD = 0.5
+    filtered_points = [
+        p for p in points if hasattr(p, "score") and p.score is not None and float(p.score) >= SCORE_THRESHOLD
+    ]
     return [
         {
             "house_id": str((p.payload or {}).get("house_id") or p.id),
             "score": float(p.score),
             **{k: (p.payload or {}).get(k) for k in ("name", "address", "type", "regularPrice", "discountedPrice", "description")},
         }
-        for p in points
+        for p in filtered_points
     ]
 
 def _generate_answer(query: str, hits: list[dict], history: list[dict]) -> str:
