@@ -250,7 +250,7 @@ const AIAgentChatPage = () => {
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="h-10 min-w-[64px] rounded-xl border-2 border-indigo-800 bg-gradient-to-br from-fuchsia-600 via-indigo-600 to-blue-600 px-4 text-base font-bold text-white shadow-md transition hover:scale-105 hover:from-fuchsia-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="h-10 min-w-16 rounded-xl border-2 border-indigo-800 bg-linear-to-br from-fuchsia-600 via-indigo-600 to-blue-600 px-4 text-base font-bold text-white shadow-md transition hover:scale-105 hover:from-fuchsia-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Send
               </button>
