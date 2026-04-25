@@ -206,20 +206,20 @@ const AIAgentChatPage = () => {
             {messages.map((message, index) => (
               <article
                 key={`${message.role}-${index}`}
-                className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap shadow-sm ${
+                className={`max-w-[88%] rounded-lg px-2 py-1.5 text-xs whitespace-pre-wrap shadow-sm ${
                   message.role === "user"
                     ? "ml-auto bg-linear-to-br from-indigo-600 to-indigo-700 text-white"
                     : "border border-slate-200 bg-white text-slate-800"
                 }`}
               >
-                <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider opacity-80">
+                <div className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider opacity-70">
                   {message.role === "user" ? (
                     <>
-                      <FiMessageSquare className="h-3.5 w-3.5" /> You
+                      <FiMessageSquare className="h-3 w-3" /> You
                     </>
                   ) : (
                     <>
-                      <FiZap className="h-3.5 w-3.5" /> AI Agent
+                      <FiZap className="h-3 w-3" /> AI Agent
                     </>
                   )}
                 </div>
@@ -250,7 +250,7 @@ const AIAgentChatPage = () => {
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="h-12 rounded-xl bg-linear-to-br from-indigo-600 to-indigo-700 px-5 text-sm font-semibold text-white shadow-md transition hover:scale-[1.02] hover:from-indigo-700 hover:to-indigo-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="h-10 min-w-[64px] rounded-xl border-2 border-indigo-800 bg-gradient-to-br from-fuchsia-600 via-indigo-600 to-blue-600 px-4 text-base font-bold text-white shadow-md transition hover:scale-105 hover:from-fuchsia-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Send
               </button>
