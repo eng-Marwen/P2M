@@ -1,7 +1,7 @@
 version: "1"
 services:
   frontend:
-    image: engmarwen/samsar:frontend-1.2
+    image: frontend:latest
     ports:
       - 5173:80
     environment:
