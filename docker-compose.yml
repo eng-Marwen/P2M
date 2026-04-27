@@ -1,7 +1,7 @@
 version: "1"
 services:
   frontend:
-    image: frontend:latest
+    image: frontend:latest 
     ports:
       - 5173:80
     restart: unless-stopped
@@ -27,7 +27,7 @@ services:
     env_file:
       - ./backend/ENV/.compose.env
   aimicroservice:
-    image: aimicroservice:latest
+    image: aimicroservice:latest 
     ports:
       - 8000:8000
     restart: unless-stopped
