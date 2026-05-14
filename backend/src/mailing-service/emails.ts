@@ -8,6 +8,7 @@ import { mailjetClient, sender } from "./mail.config.js";
 
 export const sendVerificatinMail = async (
   email: string,
+  
   verificationToken: string
 ): Promise<void> => {
   try {
