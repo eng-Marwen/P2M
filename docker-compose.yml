@@ -1,7 +1,7 @@
 version: "1"
 services:
   frontend:
-    image: frontend:latest
+    image: engmarwen/samsar:frontend-1.1.1
     ports:
       - 5173:80
     restart: unless-stopped
@@ -15,7 +15,7 @@ services:
       AI_API_URL: "http://localhost:8000"
       FIREBASE_API_KEY: "AIzaSyDxxlLzE6XtYske4-XYMqFc68Rj_RxAMEE"
   backend:
-    image: backend:latest
+    image: engmarwen/samsar:backend-2.0.6
     ports:
       - 4000:4000
     restart: unless-stopped
@@ -27,7 +27,7 @@ services:
     env_file:
       - ./backend/ENV/.compose.env
   aimicroservice:
-    image: aimicroservice:latest
+    image: engmarwen/samsar:aiMicroservice-0.2.1
     ports:
       - 8000:8000
     restart: unless-stopped
