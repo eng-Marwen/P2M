@@ -1,5 +1,6 @@
 #  Real Estate Platform : Samsar ProMax
-canva presentation for further understanding: https://canva.link/5b1kmhujybsgr36
+(Canva presentation for further understanding: https://canva.link/5b1kmhujybsgr36)
+
 Samsar ProMax is a full-stack ai-powered real estate platform composed of:
 
 - A React/Typescript frontend for property discovery and user actions
