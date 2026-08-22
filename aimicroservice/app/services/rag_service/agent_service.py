@@ -13,7 +13,7 @@ from app.services.rag_service.emebdding_service import generate_embedding
 load_dotenv()
 
 COLLECTION = "houses_vectors"
-MODEL = "llama-3.3-70b-versatile"
+MODEL = os.getenv("GROQ_MODEL")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 SESSION_PREFIX = "rag:session"
 MAX_TURNS = 8
