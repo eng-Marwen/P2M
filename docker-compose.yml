@@ -27,7 +27,7 @@ services:
     env_file:
       - ./backend/ENV/.compose.env
   aimicroservice:
-    image: engmarwen/samsar:aiMicroservice-0.2.1
+    image: engmarwen/samsar:aiMicroservice-0.2.2
     ports:
       - 8000:8000
     restart: unless-stopped
