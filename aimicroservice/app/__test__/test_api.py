@@ -41,7 +41,7 @@ async def test_enhance_description(async_client, monkeypatch):
 
     monkeypatch.setattr(enhance_routes, "enhance_description", _enhance)
 
-    response = await async_client.post("/api/enhance", json={"description": "nice house"})
+    response = await async_client.post("/api/ai/enhance", json={"description": "nice house"})
 
     assert response.status_code == 200
     assert response.json() == {"enhanced_description": "enhanced: nice house"}
@@ -81,7 +81,7 @@ async def test_house_price_sale_prediction(async_client, monkeypatch):
         "area": 120,
     }
 
-    response = await async_client.post("/api/house/price/sale/predict/listing", json=payload)
+    response = await async_client.post("/api/ai/house/price/sale/predict/listing", json=payload)
 
     assert response.status_code == 200
     body = response.json()
@@ -96,7 +96,7 @@ async def test_house_price_value_error(async_client, monkeypatch):
 
     monkeypatch.setattr(house_price_routes, "process_house_listing_for_model", _raise_value_error)
 
-    response = await async_client.post("/api/house/price/rent/predict/listing", json={})
+    response = await async_client.post("/api/ai/house/price/rent/predict/listing", json={})
 
     assert response.status_code == 400
     assert response.json()["detail"] == "bad input"
@@ -126,7 +126,7 @@ async def test_house_validation_batch(async_client, monkeypatch):
         ("files", ("other.jpg", b"other", "image/jpeg")),
     ]
 
-    response = await async_client.post("/api/house/validate/batch", files=files)
+    response = await async_client.post("/api/ai/house/validate/batch", files=files)
 
     assert response.status_code == 200
     body = response.json()
@@ -149,7 +149,7 @@ async def test_rag_query_sets_cookie(async_client, monkeypatch):
 
     monkeypatch.setattr(rag_routes, "run_rag_query", _run_rag_query)
 
-    response = await async_client.post("/api/rag/query", json={"query": "hello"})
+    response = await async_client.post("/api/ai/rag/query", json={"query": "hello"})
 
     assert response.status_code == 200
     assert response.json()["session_id"] == "session-1"
@@ -158,7 +158,7 @@ async def test_rag_query_sets_cookie(async_client, monkeypatch):
 
 @pytest.mark.anyio
 async def test_rag_query_requires_query(async_client):
-    response = await async_client.post("/api/rag/query", json={"query": " "})
+    response = await async_client.post("/api/ai/rag/query", json={"query": " "})
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Query is required"
@@ -171,7 +171,7 @@ async def test_rag_clear_history(async_client, monkeypatch):
 
     monkeypatch.setattr(rag_routes, "clear_rag_session_history", _clear_rag_session_history)
 
-    response = await async_client.post("/api/rag/history/clear", json={"session_id": "session-1"})
+    response = await async_client.post("/api/ai/rag/history/clear", json={"session_id": "session-1"})
 
     assert response.status_code == 200
     assert response.json()["cleared"] is True
