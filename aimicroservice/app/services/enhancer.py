@@ -4,7 +4,7 @@ from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
-
+MODEL = os.getenv("GROQ_MODEL")
 #for running tests in the ci pipeline.
 _client = None
 def _get_client() -> Groq:
@@ -28,7 +28,7 @@ def _sync_enhance_description(text: str):
     """
     try:
         response = _get_client().chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=MODEL,
             messages=[
                 {"role": "system", "content": "You are a multilingual property description enhancer. Always respond in the same language as the user's input."},
                 {"role": "user", "content": prompt}
