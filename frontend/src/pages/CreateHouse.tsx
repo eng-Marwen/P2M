@@ -208,7 +208,7 @@ const CreateHouse = () => {
 
       try {
         const validation = await axios.post<HouseBatchValidationResponse>(
-          `${aiServiceUrl}/api/house/validate/batch`,
+          `${aiServiceUrl}/api/ai/house/validate/batch`,
           payload,
           {
             headers: {
@@ -501,7 +501,7 @@ const CreateHouse = () => {
     setEnhancing(true);
     try {
       const response = await axios.post<AIEnhanceResponse>(
-        `${aiServiceUrl}/api/enhance`,
+        `${aiServiceUrl}/api/ai/enhance`,
         { description: currentDescription },
         {
           headers: {
@@ -586,7 +586,7 @@ const CreateHouse = () => {
       };
 
       const response = await axios.post<HousePricePredictionResponse>(
-        `${aiServiceUrl}/api/house/price/${formData.type}/predict/listing`,
+        `${aiServiceUrl}/api/ai/house/price/${formData.type}/predict/listing`,
         payload,
         {
           headers: {

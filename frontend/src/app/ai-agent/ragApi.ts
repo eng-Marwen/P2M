@@ -26,7 +26,7 @@ export const queryRag = async (
   sessionId?: string,
 ): Promise<RagResponse> => {
   const baseUrl = getAiServiceBaseUrl();
-  const endpoint = `${baseUrl}/api/rag/query`;
+  const endpoint = `${baseUrl}/api/ai/rag/query`;
 
   const response = await axios.post<RagResponse>(endpoint, {
     query,
@@ -39,7 +39,7 @@ export const queryRag = async (
 
 export const clearRagHistory = async (sessionId?: string): Promise<void> => {
   const baseUrl = getAiServiceBaseUrl();
-  const endpoint = `${baseUrl}/api/rag/history/clear`;
+  const endpoint = `${baseUrl}/api/ai/rag/history/clear`;
 
   await axios.post(
     endpoint,
