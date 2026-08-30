@@ -49,8 +49,8 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-app.include_router(enhance_router, prefix="/api")
-app.include_router(house_price_router, prefix="/api")
-app.include_router(house_validation_router, prefix="/api")
-app.include_router(rag_router, prefix="/api")
+app.include_router(enhance_router, prefix="/api/ai")
+app.include_router(house_price_router, prefix="/api/ai")
+app.include_router(house_validation_router, prefix="/api/ai")
+app.include_router(rag_router, prefix="/api/ai")
 
