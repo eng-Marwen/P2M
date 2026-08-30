@@ -141,12 +141,12 @@ AI service runs on `http://localhost:8000`.
 
 ### AI Microservice
 
-- `POST /api/enhance`
-- `POST /api/house/price/sale/predict/listing`
-- `POST /api/house/price/rent/predict/listing`
-- `POST /api/house/validate/batch`
-- `POST /api/rag/query`
-- `POST /api/rag/history/clear`
+- `POST /api/ai/enhance`
+- `POST /api/ai/house/price/sale/predict/listing`
+- `POST /api/ai/house/price/rent/predict/listing`
+- `POST /api/ai/house/validate/batch`
+- `POST /api/ai/rag/query`
+- `POST /api/ai/rag/history/clear`
 
 ## Existing Compose Variants
 
