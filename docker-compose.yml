@@ -1,7 +1,7 @@
 version: "1"
 services:
   frontend:
-    image: engmarwen/samsar:frontend-1.1.1
+    image: engmarwen/samsar:frontend-1.1.2
     ports:
       - 5173:80
     restart: unless-stopped
@@ -27,7 +27,7 @@ services:
     env_file:
       - ./backend/ENV/.compose.env
   aimicroservice:
-    image: engmarwen/samsar:aiMicroservice-0.2.3
+    image: engmarwen/samsar:aiMicroservice-0.2.5
     ports:
       - 8000:8000
     restart: unless-stopped
