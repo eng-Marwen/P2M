@@ -51,6 +51,7 @@ app.listen(port, async () => {
   console.log("═══════════════════════════════════");
 
   connectMongoDB();
+  //ADD COMMENT 
   connectRedis();
   connectRabbitMQ();
 });
