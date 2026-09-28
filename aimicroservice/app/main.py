@@ -10,6 +10,7 @@ from app.queue.rabbitmq import check_rabbitmq_connection
 from app.services.models_checker import ensure_all_models_available
 from app.databases.qdrant import check_qdrant_connection
 from app.databases.redis import check_redis_connection
+from app.metrics import setup_metrics
 import threading
 import os
 
@@ -36,6 +37,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+# Metrics
+setup_metrics(
+    app,
+    app_name="ai-service",
+)
 
 # Configure CORS
 app.add_middleware(
