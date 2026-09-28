@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-# Metrics
+# Metrics Endpoint
 setup_metrics(
     app,
     app_name="ai-service",
