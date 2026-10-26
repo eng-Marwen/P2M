@@ -20,7 +20,6 @@ sys.modules[
     "app.services.rag_service.emebdding_service"
 ] = embedding_module
 
-
 import app.main as main
 import app.routes.enhance as enhance_routes
 import app.routes.house_price as house_price_routes
