@@ -8,6 +8,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+import sys
+from unittest.mock import AsyncMock, MagicMock
+
+embedding_module = MagicMock()
+embedding_module.generate_embedding = AsyncMock(
+    return_value=[0.0] * 1024
+)
+
+sys.modules[
+    "app.services.rag_service.emebdding_service"
+] = embedding_module
+
 import app.main as main
 import app.routes.enhance as enhance_routes
 import app.routes.house_price as house_price_routes
