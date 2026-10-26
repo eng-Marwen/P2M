@@ -1,12 +1,22 @@
 import os
-import httpx
 from dotenv import load_dotenv
-
+from google import genai
+from google.genai import types
 load_dotenv()
 
-JINA_API_KEY = os.getenv("JINA_API_KEY")
-JINA_EMBEDDING_MODEL = "jina-embeddings-v3"
-JINA_EMBEDDING_URL = "https://api.jina.ai/v1/embeddings"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_EMBEDDING_MODEL = os.getenv(
+    "GEMINI_EMBEDDING_MODEL",
+    "gemini-embedding-001",
+)
+GEMINI_EMBEDDING_DIMENSIONS = int(
+    os.getenv("GEMINI_EMBEDDING_DIMENSIONS", "768")
+)
+
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY is missing from .env")
+
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def house_to_text(house: dict) -> str:
     def safe_text(value, default: str = "unknown") -> str:
@@ -70,19 +80,16 @@ def generate_embedding(text: str) -> list[float]:
     if not normalized_text:
         normalized_text = "empty house listing"
 
-    headers = {
-        "Authorization": f"Bearer {JINA_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": JINA_EMBEDDING_MODEL,
-        "input": [normalized_text],
-    }
+    result = client.models.embed_content(
+        model=GEMINI_EMBEDDING_MODEL,
+        contents=normalized_text,
+        config=types.EmbedContentConfig(
+            task_type="RETRIEVAL_DOCUMENT",
+            output_dimensionality=GEMINI_EMBEDDING_DIMENSIONS,
+        ),
+    )
 
-    with httpx.Client(timeout=60.0) as client:
-        response = client.post(JINA_EMBEDDING_URL, headers=headers, json=payload)
-        response.raise_for_status()
-        data = response.json()
+    if not result.embeddings or result.embeddings[0].values is None:
+        raise RuntimeError("Gemini returned no embedding")
 
-    embedding = data["data"][0]["embedding"]
-    return embedding
+    return list(result.embeddings[0].values)
