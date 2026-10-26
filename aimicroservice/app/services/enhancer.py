@@ -26,6 +26,7 @@ def _sync_enhance_description(text: str):
     Description:
     {text}
     """
+    
     try:
         response = _get_client().chat.completions.create(
             model=MODEL,
