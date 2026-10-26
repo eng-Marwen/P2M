@@ -42,7 +42,8 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy env.js as a template file
 COPY --from=builder /app/public/env.js /usr/share/nginx/html/env.template.js
-
+# Configure Nginx for React Router
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy and set up entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
