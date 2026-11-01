@@ -1,23 +1,24 @@
 
 pipeline {
-    agent any
+    agent {
+        node {
+            label ''
+            retries 2
+        }
+    }
 
     stages {
         stage('Test Connection') {
             steps {
-                echo '================================'
-                echo ' Jenkins CI/CD Pipeline Started!'
-                echo '================================'
+                echo 'Jenkins CI/CD Pipeline Started!'
             }
         }
 
         stage('Checkout') {
             steps {
                 echo "Repository: P2M"
-                echo "Branch: ${env.BRANCH_NAME ?: 'main'}"
                 echo "Build Number: ${env.BUILD_NUMBER}"
-
-                checkout scm
+                echo "Workspace: ${env.WORKSPACE}"
             }
         }
 
@@ -25,8 +26,8 @@ pipeline {
             steps {
                 sh '''
                     echo "Testing Jenkins environment..."
-                    docker --version
                     git --version
+                    docker --version
                     echo "Environment test completed!"
                 '''
             }
@@ -43,7 +44,6 @@ pipeline {
         success {
             echo 'CI/CD pipeline finished successfully!'
         }
-
         failure {
             echo 'Pipeline failed. Check the logs.'
         }
