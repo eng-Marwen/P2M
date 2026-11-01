@@ -1,14 +1,7 @@
-
 pipeline {
-    agent {
-        node {
-            label ''
-            retries 2
-        }
-    }
+    agent any
 
     stages {
-        
         stage('Test Connection') {
             steps {
                 echo 'Jenkins CI/CD Pipeline Started!'
@@ -29,6 +22,7 @@ pipeline {
                     echo "Testing Jenkins environment..."
                     git --version
                     docker --version
+                    docker ps
                     echo "Environment test completed!"
                 '''
             }
