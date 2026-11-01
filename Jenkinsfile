@@ -130,6 +130,8 @@ EOF
         success {
             echo 'ALL CI TESTS PASSED!'
         }
+
+        
         failure {
             echo 'CI PIPELINE FAILED!'
         }
