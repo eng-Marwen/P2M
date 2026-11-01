@@ -52,8 +52,6 @@ EOF
             }
         }
     }
-
-
     post {
         success {
             echo 'All Jenkins tests passed!'
