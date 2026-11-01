@@ -1,63 +1,138 @@
+
 pipeline {
     agent any
 
     options {
         timestamps()
-        buildDiscarder(logRotator(numToKeepStr: '5'))
+        disableConcurrentBuilds()
+        timeout(time: 20, unit: 'MINUTES')
+    }
+
+    environment {
+        TEST_IMAGE = "jenkins-smoke-test:${BUILD_NUMBER}"
     }
 
     stages {
-        stage('Connection Test') {
-            steps {
-                echo 'Jenkins CI/CD Pipeline Started!'
-                echo "Build Number: ${env.BUILD_NUMBER}"
-                echo "Workspace: ${env.WORKSPACE}"
-            }
-        }
 
-        stage('Git Test') {
-            steps {
-                sh 'git --version'
-            }
-        }
-
-        stage('Docker Test') {
+        stage('Environment Check') {
             steps {
                 sh '''
-                    docker --version
-                    docker ps
+                    echo "=== Jenkins Environment ==="
+                    whoami
+                    java -version
+                    git --version
+                    docker version
+                    docker buildx version
                 '''
             }
         }
 
-        stage('Docker Build Test') {
+        stage('Prepare Test Files') {
             steps {
                 sh '''
-                    mkdir -p docker-test
+                    mkdir -p test-node test-python
 
-                    cat > docker-test/Dockerfile <<'EOF'
-FROM alpine:latest
-CMD ["echo", "Docker build from Jenkins works!"]
+                    # Node.js / Jest project
+                    cat > test-node/package.json <<'EOF'
+{
+  "name": "jenkins-node-test",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "jest --runInBand"
+  },
+  "devDependencies": {
+    "jest": "^30.0.0"
+  }
+}
 EOF
 
-                    docker build -t jenkins-test:${BUILD_NUMBER} docker-test/
-                    docker run --rm jenkins-test:${BUILD_NUMBER}
+                    cat > test-node/math.js <<'EOF'
+function add(a, b) {
+    return a + b;
+}
+module.exports = add;
+EOF
+
+                    cat > test-node/math.test.js <<'EOF'
+const add = require('./math');
+
+test('2 + 3 = 5', () => {
+    expect(add(2, 3)).toBe(5);
+});
+EOF
+
+                    # Python / pytest project
+                    cat > test-python/test_math.py <<'EOF'
+def test_addition():
+    assert 2 + 3 == 5
+
+def test_multiplication():
+    assert 3 * 4 == 12
+EOF
+
+                    cat > Dockerfile <<'EOF'
+FROM alpine:3.20
+CMD ["echo", "Docker image built and executed successfully!"]
+EOF
                 '''
             }
         }
 
-        stage('Storage Test') {
+        stage('TypeScript / Jest Tests') {
             steps {
-                sh 'df -h /var/jenkins_home'
+                sh '''
+                    docker run --rm \
+                      -v "$WORKSPACE/test-node:/app" \
+                      -w /app \
+                      node:22-bookworm \
+                      bash -c "npm install --no-audit --no-fund && npm test"
+                '''
+            }
+        }
+
+        stage('Python / Pytest') {
+            steps {
+                sh '''
+                    docker run --rm \
+                      -v "$WORKSPACE/test-python:/app" \
+                      -w /app \
+                      python:3.12-slim \
+                      bash -c "pip install --no-cache-dir pytest && pytest -v"
+                '''
+            }
+        }
+
+        stage('Docker Image Build') {
+            steps {
+                sh '''
+                    docker build -t "$TEST_IMAGE" .
+                '''
+            }
+        }
+
+        stage('Run Docker Image') {
+            steps {
+                sh '''
+                    docker run --rm "$TEST_IMAGE"
+                '''
             }
         }
     }
+
     post {
-        success {
-            echo 'All Jenkins tests passed!'
+        always {
+            sh '''
+                docker image rm "$TEST_IMAGE" 2>/dev/null || true
+            '''
+            echo 'Pipeline execution finished.'
         }
+
+        success {
+            echo 'ALL CI TESTS PASSED!'
+        }
+
         failure {
-            echo 'Pipeline failed. Check the console output.'
+            echo 'CI PIPELINE FAILED!'
         }
     }
 }
