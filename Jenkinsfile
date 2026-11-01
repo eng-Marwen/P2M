@@ -1,46 +1,64 @@
 pipeline {
     agent any
 
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '5'))
+    }
+
     stages {
-        stage('Test Connection') {
+        stage('Connection Test') {
             steps {
                 echo 'Jenkins CI/CD Pipeline Started!'
-            }
-        }
-
-        stage('Checkout') {
-            steps {
-                echo "Repository: P2M"
                 echo "Build Number: ${env.BUILD_NUMBER}"
                 echo "Workspace: ${env.WORKSPACE}"
             }
         }
 
-        stage('Test Build') {
+        stage('Git Test') {
+            steps {
+                sh 'git --version'
+            }
+        }
+
+        stage('Docker Test') {
             steps {
                 sh '''
-                    echo "Testing Jenkins environment..."
-                    git --version
                     docker --version
                     docker ps
-                    echo "Environment test completed!"
                 '''
             }
         }
 
-        stage('Success') {
+        stage('Docker Build Test') {
             steps {
-                echo 'Pipeline executed successfully!'
+                sh '''
+                    mkdir -p docker-test
+
+                    cat > docker-test/Dockerfile <<'EOF'
+FROM alpine:latest
+CMD ["echo", "Docker build from Jenkins works!"]
+EOF
+
+                    docker build -t jenkins-test:${BUILD_NUMBER} docker-test/
+                    docker run --rm jenkins-test:${BUILD_NUMBER}
+                '''
+            }
+        }
+
+        stage('Storage Test') {
+            steps {
+                sh 'df -h /var/jenkins_home'
             }
         }
     }
 
     post {
         success {
-            echo 'CI/CD pipeline finished successfully!'
+            echo 'All Jenkins tests passed!'
         }
         failure {
-            echo 'Pipeline failed. Check the logs.'
+            echo 'Pipeline failed. Check the console output.'
         }
     }
 }
