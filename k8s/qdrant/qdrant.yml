@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: qdrant-statefulset
+  namespace: samsar
+spec:
+  serviceName: qdrant-service-url
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qdrant-pod-label
+  template:
+    metadata:
+      labels:
+        app: qdrant-pod-label
+    spec:
+      containers:
+        - name: qdrant-container
+          image: qdrant/qdrant:v1.17.1
+          ports:
+            - name: qdrant
+              protocol: TCP
+              containerPort: 6333
+          volumeMounts:
+            - name: qdrant-data
+              # Must match the volume name below.
+
+              mountPath: /data
+              # Qdrant stores its persistent data here.
+
+      volumes:
+        - name: qdrant-data
+          # Volume used by the Qdrant container.
+
+          persistentVolumeClaim:
+            claimName: qdrant-data
+            # Use the PVC named qdrant-data.
+---
+apiVersion: v1
+kind: Service
+# Create a Kubernetes Service.
+
+metadata:
+  name: qdrant-service-url
+  namespace: samsar
+spec:
+  selector:
+    app: qdrant-pod-label
+  ports:
+    - name: qdrant
+      protocol: TCP
+      port: 6333
+      targetPort: 6333
+
+  type: ClusterIP

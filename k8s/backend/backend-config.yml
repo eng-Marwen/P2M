@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: samsar
+data:
+  PORT: "4000"
+  REDIS_URL: redis://redis-service-url:6379
+  RABBITMQ_URL: amqp://rabbitmq-service-url:5672
+  CLIENT_URL: https://samsarpromax.local.com

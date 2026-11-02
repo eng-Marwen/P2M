@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+# A PVC is a REQUEST for persistent storage.
+# It does not itself represent the physical storage.
+
+metadata:
+  name: rabbitmq-data
+  # Name of the PVC.
+  # Your StatefulSet refers to this name
+  namespace: samsar
+spec:
+  accessModes:
+    - ReadWriteOnce
+    # The volume can be mounted as read/write by ONE node.
+  resources:
+    requests:
+      storage: 1Gi
+      # RabbitMQ requests 1 GiB of persistent storage.

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aimicroservice-config
+  namespace: samsar
+data:
+  GROQ_MODEL: openai/gpt-oss-120b
+
+  GEMINI_EMBEDDING_MODEL: gemini-embedding-001
+  GEMINI_EMBEDDING_DIMENSIONS: "1024"
+
+  RENT_MODEL_URL: https://drive.google.com/uc?export=download&id=1y3SH-R3qtTIuYlLyvlHr7pbRjxVLYqCi
+  SALE_MODEL_URL: https://drive.google.com/uc?export=download&id=1lXyaSf5ZAQtmFr0zZ0ntlBoYpWZLsF1V
+  VALIDATION_MODEL_URL: https://drive.google.com/uc?export=download&id=1BuXcG-ihbuBrGeBU2dkyEMra8oOK1gZ6
+
+  RABBITMQ_URL: amqp://rabbitmq-service-url:5672
+  QDRANT_URL: http://qdrant-service-url:6333
+  REDIS_URL: redis://redis-service-url:6379
+  CLIENT_URL_HTTPS: https://samsarpromax.local.com

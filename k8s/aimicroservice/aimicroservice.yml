@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aimicroservice-deployment
+  namespace: samsar
+  labels:
+    app: aimicroservice-dep-label
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aimicroservice-pod-label
+  template:
+    metadata:
+      labels:
+        app: aimicroservice-pod-label
+    spec:
+      containers:
+      - name: aimicroservice-container
+        image: engmarwen/samsar:aiMicroservice-1.0.2
+        ports:
+          - containerPort: 8000
+        envFrom:
+          - configMapRef:
+              name: aimicroservice-config
+          - secretRef:
+              name: aimicroservice-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aimicroservice-service-url
+  namespace: samsar
+spec:
+  selector:
+    app: aimicroservice-pod-label
+  ports:
+    - protocol: TCP
+      port: 8000 #servicePort
+      targetPort: 8000 #podPort
+  type: ClusterIP

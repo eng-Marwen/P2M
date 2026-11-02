@@ -1,0 +1,24 @@
+apiVersion: v1
+# PVC uses the core v1 API.
+
+kind: PersistentVolumeClaim
+# Request persistent storage.
+
+metadata:
+  name: redis-data
+  # Name of the PVC.
+  # This is referenced by the StatefulSet.
+
+  namespace: samsar
+  # PVC belongs to the samsar namespace.
+
+spec:
+  accessModes:
+    - ReadWriteOnce
+    # RWO = ReadWriteOnce.
+    # The volume can be mounted read/write from one node.
+
+  resources:
+    requests:
+      storage: 1Gi
+      # Request 1 GiB of persistent storage.

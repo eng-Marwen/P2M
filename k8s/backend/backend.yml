@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: samsar
+  labels:
+    app: backend-dep-label
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend-pod-label
+  template:
+    metadata:
+      labels:
+        app: backend-pod-label
+    spec:
+      containers:
+      - name: backend-container
+        image: engmarwen/samsar:backend-3.0.0
+        ports:
+          - containerPort: 4000
+        envFrom:
+          - configMapRef:
+              name: backend-config
+          - secretRef:
+              name: backend-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service-url
+  namespace: samsar
+spec:
+  selector:
+    app: backend-pod-label
+  ports:
+    - protocol: TCP
+      port: 4001 #servicePort
+      targetPort: 4000 #podPort
+  type: ClusterIP

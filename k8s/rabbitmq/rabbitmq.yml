@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq-statefulset
+  namespace: samsar
+spec:
+  serviceName: rabbitmq-service-url
+  # Headless/stable service name associated with the StatefulSet.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-pod-label
+  template:
+    # Template used to create the RabbitMQ Pod.
+
+    metadata:
+      labels:
+        app: rabbitmq-pod-label
+    spec:
+      containers:
+        - name: rabbitmq-conntainer
+          # Name of the container inside the Pod.
+
+          image: rabbitmq:3-management
+          ports:
+            - name: amqp
+              containerPort: 5672
+            - name: management
+              containerPort: 15672
+              # RabbitMQ Management UI/API port.
+
+          volumeMounts:
+            - name: rabbitmq-data
+              # Must correspond to a volume named "rabbitmq-data"
+              mountPath: /var/lib/rabbitmq
+              # RabbitMQ stores its persistent data here.
+      volumes:
+        - name: rabbitmq-data
+          # Name referenced by volumeMounts above.
+
+          persistentVolumeClaim:
+            claimName: rabbitmq-data
+            # Use the existing PVC named "rabbitmq-data".
+
+---
+apiVersion: v1
+# Services use the core v1 API.
+
+kind: Service
+# Create a Kubernetes Service.
+
+metadata:
+  name: rabbitmq-service-url
+  namespace: samsar
+spec:
+  selector:
+    app: rabbitmq-pod-label
+    # IMPORTANT:
+    # This must match the Pod label:
+
+  ports:
+    - name: amqp
+      protocol: TCP #default
+      port: 5672
+      targetPort: 5672
+    - name: management
+      protocol: TCP
+      port: 15672
+      targetPort: 15672
+
+  type: ClusterIP #default service type. This means the service is only accessible inside the Kubernetes cluster.

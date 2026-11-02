@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-statefulset
+  namespace: samsar
+spec:
+  serviceName: redis-service-url
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-pod-label
+  template:
+    metadata:
+      labels:
+        app: redis-pod-label
+    spec:
+      containers:
+        - name: redis-container
+          image: redis:7
+          ports:
+            - name: redis
+              protocol: TCP
+              containerPort: 6379
+          volumeMounts:
+            - name: redis-data
+              # Must match the volume name below.
+
+              mountPath: /data
+              # Redis stores its persistent data here.
+
+      volumes:
+        - name: redis-data
+          # Volume used by the Redis container.
+
+          persistentVolumeClaim:
+            claimName: redis-data
+            # Use the PVC named redis-data.
+---
+apiVersion: v1
+kind: Service
+# Create a Kubernetes Service.
+
+metadata:
+  name: redis-service-url
+  namespace: samsar
+spec:
+  selector:
+    app: redis-pod-label
+  ports:
+    - name: redis
+      protocol: TCP
+      port: 6379
+      targetPort: 6379
+
+  type: ClusterIP

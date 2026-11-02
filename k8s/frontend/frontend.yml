@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: samsar
+  labels:
+    app: frontend-dep-label
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-pod-label
+  template:
+    metadata:
+      labels:
+        app: frontend-pod-label
+    spec:
+      containers:
+      - name: frontend-container
+        image: engmarwen/samsar:frontend-2.0.0
+        ports:
+          - containerPort: 80
+        envFrom:
+          - configMapRef:
+              name: frontend-config
+          - secretRef:
+              name: frontend-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service-url
+  namespace: samsar
+spec:
+  selector:
+    app: frontend-pod-label
+  ports:
+    - protocol: TCP
+      port: 8080 #servicePort
+      targetPort: 80 #podPort
+  type: ClusterIP

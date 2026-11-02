@@ -1,0 +1,53 @@
+# Kubernetes API version for Ingress resources
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: samsar-ingress-name
+  namespace: samsar
+
+  annotations:
+    # Maximum size of a request body accepted by NGINX Ingress(40 Mb).
+    nginx.ingress.kubernetes.io/proxy-body-size: "40m"
+spec:
+  # Use the NGINX Ingress Controller to process this Ingress.
+  ingressClassName: nginx
+  #TLS
+  tls:
+  - hosts:
+      - samsarpromax.local.com
+    secretName: samsar-tls
+
+  rules:
+
+    # The hostname users will use to access your application.
+    - host: samsarpromax.local.com
+
+      http:
+        paths:
+          # FRONTEND
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service-url
+                port:
+                  number: 8080 #svc port
+          # BACKEND
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service-url
+                port:
+                  number: 4001
+
+          #AIMICROSERVICE
+          - path: /api/ai
+            pathType: Prefix
+            backend:
+              service:
+                name: aimicroservice-service-url
+                port:
+                  number: 8000
+  
