@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -17,16 +18,24 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
+
+                sh '''
+                    git fetch --tags --force
+                    echo "Branch: ${BRANCH_NAME}"
+                    echo "Git branch: ${GIT_BRANCH}"
+                    git log -1 --oneline
+                '''
             }
         }
 
         stage('Install dependencies') {
             steps {
                 dir('backend') {
-                    sh 'npm install'
+                    sh 'npm ci'
                 }
             }
         }
@@ -41,78 +50,103 @@ pipeline {
 
         stage('Version and tag') {
             when {
-                branch 'main'
+                expression {
+                    env.BRANCH_NAME == 'main' ||
+                    env.GIT_BRANCH == 'origin/main' ||
+                    env.GIT_BRANCH == 'main'
+                }
             }
+
             steps {
                 script {
-                    sh 'git fetch --tags'
-
                     def latestTag = sh(
-                        script: "git tag -l '${env.SERVICE_NAME}-v*' | sort -V | tail -n 1",
+                        script: """
+                            git tag -l '${env.SERVICE_NAME}-v*' |
+                            sort -V |
+                            tail -n 1
+                        """,
                         returnStdout: true
                     ).trim()
-                    def version = latestTag ? latestTag.replaceFirst("^${env.SERVICE_NAME}-v", '') : '0.0.0'
-                    def versionParts = version.tokenize('.')
 
-                    if (versionParts.size() != 3 || versionParts.any { !(it ==~ /\d+/) }) {
-                        error("Invalid version in Git tag: ${version}")
+                    def version = latestTag
+                        ? latestTag.replaceFirst(
+                            "^${env.SERVICE_NAME}-v", ""
+                          )
+                        : "0.0.0"
+
+                    def parts = version.tokenize('.')
+
+                    if (parts.size() != 3 ||
+                        parts.any { !(it ==~ /\\d+/) }) {
+                        error("Invalid version: ${version}")
                     }
 
-                    def major = versionParts[0] as int
-                    def minor = versionParts[1] as int
-                    def patch = versionParts[2] as int
+                    def major = parts[0] as int
+                    def minor = parts[1] as int
+                    def patch = parts[2] as int
+
                     def commitMessage = sh(
                         script: 'git log -1 --pretty=%B',
                         returnStdout: true
-                    ).trim()
-                    def normalizedCommitMessage = commitMessage.toLowerCase()
-                    def newVersion = version
+                    ).trim().toLowerCase()
 
-                    if (normalizedCommitMessage.startsWith('feat!:') ||
-                        normalizedCommitMessage.contains('breaking change:')) {
+                    def newVersion = null
+
+                    if (commitMessage =~ /(?m)^breaking change:/ ||
+                        commitMessage =~ /(?m)^feat!:/) {
+
                         newVersion = "${major + 1}.0.0"
-                    } else if (normalizedCommitMessage.startsWith('feat:')) {
+
+                    } else if (commitMessage =~ /(?m)^feat(\([^)]*\))?:/) {
+
                         newVersion = "${major}.${minor + 1}.0"
-                    } else if (normalizedCommitMessage.startsWith('fix:')) {
+
+                    } else if (commitMessage =~ /(?m)^fix(\([^)]*\))?:/) {
+
                         newVersion = "${major}.${minor}.${patch + 1}"
                     }
 
-                    env.NEW_TAG = "${env.SERVICE_NAME}-v${newVersion}"
-                    echo "Version: ${newVersion}"
-                    echo "Tag: ${env.NEW_TAG}"
+                    if (newVersion == null) {
+                        echo "No version increment required for this commit."
+                        env.SKIP_TAG = 'true'
+                    } else {
+                        env.NEW_TAG = "${env.SERVICE_NAME}-v${newVersion}"
+                        env.SKIP_TAG = 'false'
+
+                        echo "Previous version: ${version}"
+                        echo "New version: ${newVersion}"
+                        echo "New tag: ${env.NEW_TAG}"
+                    }
                 }
             }
         }
 
         stage('Push Git tag') {
             when {
-                branch 'main'
+                expression {
+                    env.SKIP_TAG == 'false' &&
+                    env.NEW_TAG != null
+                }
             }
+
             steps {
                 script {
-                    def tagExists = sh(
-                        script: "git rev-parse '${env.NEW_TAG}' >/dev/null 2>&1",
-                        returnStatus: true
-                    ) == 0
+                    withCredentials([
+                        gitUsernamePassword(
+                            credentialsId: env.GIT_CREDENTIALS_ID,
+                            gitToolName: 'Default'
+                        )
+                    ]) {
+                        sh '''
+                            git config user.name "jenkins"
+                            git config user.email "jenkins@localhost"
 
-                    if (tagExists) {
-                        echo "Tag ${env.NEW_TAG} already exists, skipping creation."
-                    } else {
-                        withCredentials([
-                            gitUsernamePassword(
-                                credentialsId: env.GIT_CREDENTIALS_ID,
-                                gitToolName: 'Default'
-                            )
-                        ]) {
-                            sh """
-                                git config user.name "jenkins"
-                                git config user.email "jenkins@localhost"
-                                git tag '${env.NEW_TAG}'
-                                git push origin '${env.NEW_TAG}'
-                            """
-                        }
-                        echo "Created and pushed tag ${env.NEW_TAG}."
+                            git tag "$NEW_TAG"
+                            git push origin "$NEW_TAG"
+                        '''
                     }
+
+                    echo "Successfully pushed ${env.NEW_TAG}"
                 }
             }
         }
@@ -120,10 +154,15 @@ pipeline {
 
     post {
         success {
-            echo 'Backend tests passed and the pipeline stopped after tagging.'
+            echo 'Backend pipeline completed successfully.'
         }
+
         failure {
             echo 'Backend pipeline failed.'
+        }
+
+        always {
+            echo 'Backend CI pipeline finished.'
         }
     }
 }
