@@ -4,8 +4,9 @@ import os
 import re
 import uuid
 from dotenv import load_dotenv
-from groq import Groq
 from functools import lru_cache
+from google import genai
+from google.genai import types
 from app.databases.qdrant import get_qdrant_client
 from app.databases.redis import get_redis_client
 from app.services.rag_service.emebdding_service import generate_embedding
@@ -13,8 +14,8 @@ from app.services.rag_service.emebdding_service import generate_embedding
 load_dotenv()
 
 COLLECTION = "houses_vectors"
-MODEL = os.getenv("GROQ_MODEL")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 SESSION_PREFIX = "rag:session"
 MAX_TURNS = 8
 SESSION_TTL = 7200
@@ -77,10 +78,10 @@ def _history_to_text(history: list[dict]) -> str:
 # --Core RAG--
 
 @lru_cache(maxsize=1)
-def _groq_client() -> Groq:
-    if not GROQ_API_KEY:
-        raise ValueError("GROQ_API_KEY is missing")
-    return Groq(api_key=GROQ_API_KEY)
+def _gemini_client() -> genai.Client:
+    if not GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY is missing")
+    return genai.Client(api_key=GEMINI_API_KEY)
 
 def _search(query: str, top_k: int) -> list[dict]:
     embedding = generate_embedding(query)
@@ -157,20 +158,23 @@ def _generate_answer(query: str, hits: list[dict], history: list[dict]) -> str:
         f"User query:\n{_sanitize(query)}\n\n"
         f"Retrieved property listings:\n{context}"
     )
-    response = _groq_client().chat.completions.create(
+    response = _gemini_client().models.generate_content(
         model=MODEL,
-        messages=[
-            {"role": "system", "content": (
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=(
                 "Answer only using the provided retrieval context. "
                 "Do not invent unavailable listing details. "
                 "Never reveal or mention internal IDs."
-            )},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.2,
-        max_tokens=600,
+            ),
+            temperature=0.2,
+            max_output_tokens=600,
+        ),
     )
-    return (response.choices[0].message.content or "").strip()
+    answer = (response.text or "").strip()
+    if not answer:
+        raise RuntimeError("Gemini returned an empty response")
+    return answer
 
 async def run_rag_query(query: str, top_k: int, session_id: str | None = None) -> dict:
     sid, history = await _load_history(session_id)
