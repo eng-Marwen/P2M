@@ -1,19 +1,21 @@
 import os
 import asyncio
-from groq import Groq
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 load_dotenv()
-MODEL = os.getenv("GROQ_MODEL")
-#for running tests in the ci pipeline.
+MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 _client = None
-def _get_client() -> Groq:
+
+
+def _get_client() -> genai.Client:
     global _client
     if _client is None:
-        api_key = os.getenv("GROQ_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            raise RuntimeError("GROQ_API_KEY is required to call the Groq API")
-        _client = Groq(api_key=api_key)
+            raise RuntimeError("GEMINI_API_KEY is required to call the Gemini API")
+        _client = genai.Client(api_key=api_key)
     return _client
 
 def _sync_enhance_description(text: str):
@@ -28,16 +30,19 @@ def _sync_enhance_description(text: str):
     """
     
     try:
-        response = _get_client().chat.completions.create(
+        response = _get_client().models.generate_content(
             model=MODEL,
-            messages=[
-                {"role": "system", "content": "You are a multilingual property description enhancer. Always respond in the same language as the user's input."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=500
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=(
+                    "You are a multilingual property description enhancer. "
+                    "Always respond in the same language as the user's input."
+                ),
+                temperature=0.7,
+                max_output_tokens=500,
+            ),
         )
-        return response.choices[0].message.content
+        return response.text
     except Exception as e:
         raise Exception(f"API Error: {str(e)}")
 
