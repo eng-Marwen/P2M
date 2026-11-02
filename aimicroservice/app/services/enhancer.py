@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 
 load_dotenv()
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 _client = None
 
 

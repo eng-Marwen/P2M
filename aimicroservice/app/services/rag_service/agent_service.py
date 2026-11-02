@@ -14,7 +14,7 @@ from app.services.rag_service.emebdding_service import generate_embedding
 load_dotenv()
 
 COLLECTION = "houses_vectors"
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 SESSION_PREFIX = "rag:session"
 MAX_TURNS = 8
