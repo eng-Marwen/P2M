@@ -15,6 +15,8 @@ pipeline {
     environment {
         SERVICE_NAME = 'backend'
         GIT_CREDENTIALS_ID = 'github-credentials'
+        AWS_REGION = 'eu-north-1'
+        ECR_REPOSITORY = 'p2m/backend'
     }
 
     stages {
@@ -148,6 +150,65 @@ pipeline {
 
                     echo "Successfully pushed ${env.NEW_TAG}"
                 }
+            }
+        }
+
+        stage('Build Docker image') {
+            when {
+                expression {
+                    env.SKIP_TAG == 'false' &&
+                    env.NEW_TAG != null
+                }
+            }
+
+            steps {
+                script {
+                    def awsAccountId = sh(
+                        script: """
+                            aws sts get-caller-identity \
+                                --query Account \
+                                --output text
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    env.ECR_IMAGE =
+                        "${awsAccountId}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/" +
+                        "${env.ECR_REPOSITORY}:${env.NEW_TAG}"
+
+                    sh '''
+                        docker build \
+                            --tag "$ECR_IMAGE" \
+                            --file backend/Dockerfile \
+                            backend
+                    '''
+
+                    echo "Built Docker image: ${env.ECR_IMAGE}"
+                }
+            }
+        }
+
+        stage('Push Docker image to ECR') {
+            when {
+                expression {
+                    env.SKIP_TAG == 'false' &&
+                    env.NEW_TAG != null
+                }
+            }
+
+            steps {
+                sh '''
+                    aws ecr get-login-password \
+                        --region "$AWS_REGION" |
+                    docker login \
+                        --username AWS \
+                        --password-stdin \
+                        "${ECR_IMAGE%%/*}"
+
+                    docker push "$ECR_IMAGE"
+                '''
+
+                echo "Successfully pushed ${env.ECR_IMAGE}"
             }
         }
     }
