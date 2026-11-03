@@ -12,18 +12,10 @@ metadata:
 spec:
   # Use the NGINX Ingress Controller to process this Ingress.
   ingressClassName: nginx
-  #TLS
-  tls:
-  - hosts:
-      - samsarpromax.local.com
-    secretName: samsar-tls
 
   rules:
-
-    # The hostname users will use to access your application.
-    - host: samsarpromax.local.com
-
-      http:
+    # Routes without a host match the ingress controller load balancer address.
+    - http:
         paths:
           # FRONTEND
           - path: /
