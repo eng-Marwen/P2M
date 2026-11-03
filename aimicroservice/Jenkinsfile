@@ -257,7 +257,10 @@ pipeline {
 
                     kubectl -n "$K8S_NAMESPACE" patch configmap aimicroservice-config \
                         --type merge \
-                        -p "{\"data\":{\"CLIENT_URL\":\"http://$INGRESS_ADDRESS\",\"CLIENT_URL_HTTPS\":\"http://$INGRESS_ADDRESS\"}}"
+                        -p "$(jq -n \
+                            --arg client_url "http://$INGRESS_ADDRESS" \
+                            --arg client_url_https "http://$INGRESS_ADDRESS" \
+                            '{data: {CLIENT_URL: $client_url, CLIENT_URL_HTTPS: $client_url_https}}')"
 
                     kubectl -n "$K8S_NAMESPACE" set image \
                         "deployment/$K8S_DEPLOYMENT" \

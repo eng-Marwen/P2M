@@ -255,7 +255,9 @@ pipeline {
 
                     kubectl -n "$K8S_NAMESPACE" patch configmap backend-config \
                         --type merge \
-                        -p "{\"data\":{\"CLIENT_URL\":\"http://$INGRESS_ADDRESS\"}}"
+                        -p "$(jq -n \
+                            --arg client_url "http://$INGRESS_ADDRESS" \
+                            '{data: {CLIENT_URL: $client_url}}')"
 
                     kubectl -n "$K8S_NAMESPACE" set image \
                         "deployment/$K8S_DEPLOYMENT" \
