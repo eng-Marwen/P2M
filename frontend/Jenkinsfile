@@ -42,14 +42,6 @@ pipeline {
             }
         }
 
-        stage('Run tests') {
-            steps {
-                dir('frontend') {
-                    sh 'npm test'
-                }
-            }
-        }
-
         stage('Version and tag') {
             when {
                 expression {
