@@ -1,0 +1,228 @@
+
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        timeout(time: 20, unit: 'MINUTES')
+    }
+
+    environment {
+        SERVICE_NAME = 'aiMicroservice'
+        GIT_CREDENTIALS_ID = 'github-credentials'
+        AWS_REGION = 'eu-north-1'
+        ECR_REPOSITORY = 'p2m/aimicroservice'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+
+                sh '''
+                    git fetch --tags --force
+                    echo "Branch: ${BRANCH_NAME}"
+                    echo "Git branch: ${GIT_BRANCH}"
+                    git log -1 --oneline
+                '''
+            }
+        }
+
+        stage('Install dependencies') {
+            steps {
+                sh '''
+                    python3 -m pip install --upgrade pip
+                    python3 -m pip install -r aimicroservice/prod_dependencies.txt
+                    python3 -m pip install pytest
+                '''
+            }
+        }
+
+        stage('Run tests') {
+            steps {
+                dir('aimicroservice') {
+                    sh 'pytest'
+                }
+            }
+        }
+
+        stage('Version and tag') {
+            when {
+                expression {
+                    env.BRANCH_NAME == 'main' ||
+                    env.GIT_BRANCH == 'origin/main' ||
+                    env.GIT_BRANCH == 'main'
+                }
+            }
+
+            steps {
+                script {
+                    def latestTag = sh(
+                        script: """
+                            git tag -l '${env.SERVICE_NAME}-v*' |
+                            sort -V |
+                            tail -n 1
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    def version = latestTag
+                        ? latestTag.replaceFirst(
+                            "^${env.SERVICE_NAME}-v", ""
+                          )
+                        : "0.0.0"
+
+                    def parts = version.tokenize('.')
+
+                    if (parts.size() != 3 ||
+                        parts.any { !(it ==~ /\d+/) }) {
+                        error("Invalid version: ${version}")
+                    }
+
+                    def major = parts[0] as int
+                    def minor = parts[1] as int
+                    def patch = parts[2] as int
+
+                    def commitMessage = sh(
+                        script: 'git log -1 --pretty=%B',
+                        returnStdout: true
+                    ).trim().toLowerCase()
+
+                    def newVersion = null
+
+                    if (commitMessage =~ /(?m)^breaking change:/ ||
+                        commitMessage =~ /(?m)^feat!:/) {
+
+                        newVersion = "${major + 1}.0.0"
+
+                    } else if (commitMessage =~ /(?m)^feat(\([^)]*\))?:/) {
+
+                        newVersion = "${major}.${minor + 1}.0"
+
+                    } else if (commitMessage =~ /(?m)^fix(\([^)]*\))?:/) {
+
+                        newVersion = "${major}.${minor}.${patch + 1}"
+                    }
+
+                    if (newVersion == null) {
+                        echo "No version increment required for this commit."
+                        env.SKIP_TAG = 'true'
+                    } else {
+                        env.NEW_TAG = "${env.SERVICE_NAME}-v${newVersion}"
+                        env.SKIP_TAG = 'false'
+
+                        echo "Previous version: ${version}"
+                        echo "New version: ${newVersion}"
+                        echo "New tag: ${env.NEW_TAG}"
+                    }
+                }
+            }
+        }
+
+        stage('Push Git tag') {
+            when {
+                expression {
+                    env.SKIP_TAG == 'false' &&
+                    env.NEW_TAG != null
+                }
+            }
+
+            steps {
+                script {
+                    withCredentials([
+                        gitUsernamePassword(
+                            credentialsId: env.GIT_CREDENTIALS_ID,
+                            gitToolName: 'Default'
+                        )
+                    ]) {
+                        sh '''
+                            git config user.name "jenkins"
+                            git config user.email "jenkins@localhost"
+
+                            git tag "$NEW_TAG"
+                            git push origin "$NEW_TAG"
+                        '''
+                    }
+
+                    echo "Successfully pushed ${env.NEW_TAG}"
+                }
+            }
+        }
+
+        stage('Build Docker image') {
+            when {
+                expression {
+                    env.SKIP_TAG == 'false' &&
+                    env.NEW_TAG != null
+                }
+            }
+
+            steps {
+                script {
+                    def awsAccountId = sh(
+                        script: """
+                            aws sts get-caller-identity \
+                                --query Account \
+                                --output text
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    env.ECR_IMAGE =
+                        "${awsAccountId}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/" +
+                        "${env.ECR_REPOSITORY}:${env.NEW_TAG}"
+
+                    sh '''
+                        docker build \
+                            --tag "$ECR_IMAGE" \
+                            --file aimicroservice/Dockerfile \
+                            aimicroservice
+                    '''
+
+                    echo "Built Docker image: ${env.ECR_IMAGE}"
+                }
+            }
+        }
+
+        stage('Push Docker image to ECR') {
+            when {
+                expression {
+                    env.SKIP_TAG == 'false' &&
+                    env.NEW_TAG != null
+                }
+            }
+
+            steps {
+                sh '''
+                    aws ecr get-login-password \
+                        --region "$AWS_REGION" |
+                    docker login \
+                        --username AWS \
+                        --password-stdin \
+                        "${ECR_IMAGE%%/*}"
+
+                    docker push "$ECR_IMAGE"
+                '''
+
+                echo "Successfully pushed ${env.ECR_IMAGE}"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'AI microservice pipeline completed successfully.'
+        }
+
+
+        failure {
+            echo 'AI microservice pipeline failed.'
+        }
+
+        always {
+            echo 'AI microservice CI pipeline finished.'
+        }
+    }
+}
