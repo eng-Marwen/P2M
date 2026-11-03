@@ -1,7 +1,7 @@
 import { CookieOptions, Response } from "express";
 import jwt from "jsonwebtoken";
 
-const isProduction: boolean = process.env.NODE_ENV === "production";
+const secureCookie = process.env.COOKIE_SECURE === "true";
 
 export const generateTokenAndSetCookie = (
   res: Response,
@@ -16,8 +16,8 @@ export const generateTokenAndSetCookie = (
 
   const cookieOptions: CookieOptions = {
     httpOnly: true,
-    secure: isProduction, //false for localhost testing true for production
-    sameSite: isProduction ? "none" : "lax",
+    secure: secureCookie,
+    sameSite: secureCookie ? "none" : "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for production
     path: "/",
   };

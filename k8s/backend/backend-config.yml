@@ -8,3 +8,4 @@ data:
   REDIS_URL: redis://redis-service-url:6379
   RABBITMQ_URL: amqp://rabbitmq-service-url:5672
   CLIENT_URL: ""
+  COOKIE_SECURE: "false"
