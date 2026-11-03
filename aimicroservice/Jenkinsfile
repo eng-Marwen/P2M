@@ -33,9 +33,10 @@ pipeline {
         stage('Install dependencies') {
             steps {
                 sh '''
-                    python3 -m pip install --upgrade pip
-                    python3 -m pip install -r aimicroservice/prod_dependencies.txt
-                    python3 -m pip install pytest
+                    python3 -m venv .venv
+                    .venv/bin/python -m pip install --upgrade pip
+                    .venv/bin/pip install -r aimicroservice/prod_dependencies.txt
+                    .venv/bin/pip install pytest
                 '''
             }
         }
@@ -43,7 +44,7 @@ pipeline {
         stage('Run tests') {
             steps {
                 dir('aimicroservice') {
-                    sh 'pytest'
+                    sh '../.venv/bin/pytest'
                 }
             }
         }
