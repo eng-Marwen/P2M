@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: aimicroservice-container
-        image: engmarwen/samsar:aiMicroservice-1.0.2
+        image: engmarwen/samsar:aiMicroservice-1.0.4
         ports:
           - containerPort: 8000
         envFrom:
