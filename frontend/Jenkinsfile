@@ -15,6 +15,10 @@ pipeline {
         SERVICE_NAME = 'frontend'
         GIT_CREDENTIALS_ID = 'github-credentials'
         AWS_REGION = 'eu-north-1'
+        EKS_CLUSTER_NAME = 'marwen-cluster'
+        K8S_NAMESPACE = 'samsar'
+        K8S_DEPLOYMENT = 'frontend-deployment'
+        K8S_CONTAINER = 'frontend-container'
         ECR_REPOSITORY = 'p2m/frontend'
     }
 
@@ -200,6 +204,39 @@ pipeline {
                 '''
 
                 echo "Successfully pushed ${env.ECR_IMAGE}"
+            }
+        }
+
+        stage('Deploy to EKS') {
+            when {
+                expression {
+                    env.SKIP_TAG == 'false' &&
+                    env.NEW_TAG != null
+                }
+            }
+
+            steps {
+                sh '''
+                    aws eks update-kubeconfig \
+                        --region "$AWS_REGION" \
+                        --name "$EKS_CLUSTER_NAME"
+
+                    kubectl apply -f k8s/namespace.yml
+                    kubectl apply -f k8s/frontend/frontend-config.yml
+                    kubectl apply -f k8s/frontend/frontend-secret.yml
+                    kubectl apply -f k8s/frontend/frontend.yml
+                    kubectl apply -f k8s/ingress.yml
+
+                    kubectl -n "$K8S_NAMESPACE" set image \
+                        "deployment/$K8S_DEPLOYMENT" \
+                        "$K8S_CONTAINER=$ECR_IMAGE"
+
+                    kubectl -n "$K8S_NAMESPACE" rollout status \
+                        "deployment/$K8S_DEPLOYMENT" \
+                        --timeout=10m
+                '''
+
+                echo "Successfully deployed ${env.ECR_IMAGE} to EKS."
             }
         }
     }

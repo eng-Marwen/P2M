@@ -16,6 +16,10 @@ pipeline {
         SERVICE_NAME = 'backend'
         GIT_CREDENTIALS_ID = 'github-credentials'
         AWS_REGION = 'eu-north-1'
+        EKS_CLUSTER_NAME = 'marwen-cluster'
+        K8S_NAMESPACE = 'samsar'
+        K8S_DEPLOYMENT = 'backend-deployment'
+        K8S_CONTAINER = 'backend-container'
         ECR_REPOSITORY = 'p2m/backend'
     }
     stages {
@@ -208,6 +212,62 @@ pipeline {
                 '''
 
                 echo "Successfully pushed ${env.ECR_IMAGE}"
+            }
+        }
+
+        stage('Deploy to EKS') {
+            when {
+                expression {
+                    env.SKIP_TAG == 'false' &&
+                    env.NEW_TAG != null
+                }
+            }
+
+            steps {
+                sh '''
+                    aws eks update-kubeconfig \
+                        --region "$AWS_REGION" \
+                        --name "$EKS_CLUSTER_NAME"
+
+                    kubectl apply -f k8s/namespace.yml
+                    kubectl apply -f k8s/backend/backend-config.yml
+                    kubectl apply -f k8s/backend/backend-secret.yml
+                    kubectl apply -f k8s/backend/backend.yml
+                    kubectl apply -f k8s/ingress.yml
+
+                     INGRESS_ADDRESS=""
+                    for attempt in $(seq 1 60); do
+                        INGRESS_ADDRESS=$(kubectl -n "$K8S_NAMESPACE" get ingress \
+                            samsar-ingress-name \
+                            -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+                        if [ -z "$INGRESS_ADDRESS" ]; then
+                            INGRESS_ADDRESS=$(kubectl -n "$K8S_NAMESPACE" get ingress \
+                                samsar-ingress-name \
+                                -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+                        fi
+                        [ -n "$INGRESS_ADDRESS" ] && break
+                        sleep 5
+                    done
+
+                    if [ -z "$INGRESS_ADDRESS" ]; then
+                        echo "ERROR: ingress load balancer address was not assigned."
+                        exit 1
+                    fi
+
+                    kubectl -n "$K8S_NAMESPACE" patch configmap backend-config \
+                        --type merge \
+                        -p "{\"data\":{\"CLIENT_URL\":\"http://$INGRESS_ADDRESS\"}}"
+
+                    kubectl -n "$K8S_NAMESPACE" set image \
+                        "deployment/$K8S_DEPLOYMENT" \
+                        "$K8S_CONTAINER=$ECR_IMAGE"
+
+                    kubectl -n "$K8S_NAMESPACE" rollout status \
+                        "deployment/$K8S_DEPLOYMENT" \
+                        --timeout=10m
+                '''
+
+                echo "Successfully deployed ${env.ECR_IMAGE} to EKS."
             }
         }
     }
