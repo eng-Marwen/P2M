@@ -192,6 +192,7 @@ pipeline {
                 expression {
                     env.SKIP_TAG == 'false' &&
                     env.NEW_TAG != null
+
                 }
             }
 
