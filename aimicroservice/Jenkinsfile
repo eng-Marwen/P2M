@@ -195,7 +195,6 @@ pipeline {
 
                 }
             }
-
             steps {
                 sh '''
                     aws ecr get-login-password \
