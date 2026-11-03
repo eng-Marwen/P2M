@@ -18,7 +18,6 @@ pipeline {
         AWS_REGION = 'eu-north-1'
         ECR_REPOSITORY = 'p2m/backend'
     }
-
     stages {
 
         stage('Checkout') {
