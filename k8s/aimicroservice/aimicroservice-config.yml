@@ -15,4 +15,4 @@ data:
   RABBITMQ_URL: amqp://rabbitmq-service-url:5672
   QDRANT_URL: http://qdrant-service-url:6333
   REDIS_URL: redis://redis-service-url:6379
-  CLIENT_URL_HTTPS: https://samsarpromax.local.com
+  CLIENT_URL_HTTPS: ""
