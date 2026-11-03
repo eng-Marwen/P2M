@@ -4,5 +4,5 @@ metadata:
   name: frontend-config
   namespace: samsar
 data:
-  AI_API_URL: /api/ai
-  API_URL: /api
+  AI_API_URL: ""
+  API_URL: ""

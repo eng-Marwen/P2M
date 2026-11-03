@@ -226,6 +226,32 @@ pipeline {
                     kubectl apply -f k8s/frontend/frontend.yml
                     kubectl apply -f k8s/ingress.yml
 
+                    INGRESS_ADDRESS=""
+                    for attempt in $(seq 1 60); do
+                        INGRESS_ADDRESS=$(kubectl -n "$K8S_NAMESPACE" get ingress \
+                            samsar-ingress-name \
+                            -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+                        if [ -z "$INGRESS_ADDRESS" ]; then
+                            INGRESS_ADDRESS=$(kubectl -n "$K8S_NAMESPACE" get ingress \
+                                samsar-ingress-name \
+                                -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+                        fi
+                        [ -n "$INGRESS_ADDRESS" ] && break
+                        sleep 5
+                    done
+
+                    if [ -z "$INGRESS_ADDRESS" ]; then
+                        echo "ERROR: ingress load balancer address was not assigned."
+                        exit 1
+                    fi
+
+                    kubectl -n "$K8S_NAMESPACE" patch configmap frontend-config \
+                        --type merge \
+                        -p "$(jq -n \
+                            --arg api_url "http://$INGRESS_ADDRESS" \
+                            --arg ai_api_url "http://$INGRESS_ADDRESS" \
+                            '{data: {API_URL: $api_url, AI_API_URL: $ai_api_url}}')"
+
                     kubectl -n "$K8S_NAMESPACE" set image \
                         "deployment/$K8S_DEPLOYMENT" \
                         "$K8S_CONTAINER=$ECR_IMAGE"
