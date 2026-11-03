@@ -10,7 +10,6 @@ pipeline {
         disableConcurrentBuilds()
         timeout(time: 20, unit: 'MINUTES')
     }
-
     environment {
         SERVICE_NAME = 'frontend'
         GIT_CREDENTIALS_ID = 'github-credentials'

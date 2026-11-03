@@ -234,7 +234,6 @@ pipeline {
                     kubectl apply -f k8s/backend/backend-secret.yml
                     kubectl apply -f k8s/backend/backend.yml
                     kubectl apply -f k8s/ingress.yml
-
                      INGRESS_ADDRESS=""
                     for attempt in $(seq 1 60); do
                         INGRESS_ADDRESS=$(kubectl -n "$K8S_NAMESPACE" get ingress \

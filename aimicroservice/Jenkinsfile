@@ -19,6 +19,7 @@ pipeline {
         ECR_REPOSITORY = 'p2m/aimicroservice'
     }
 
+
     stages {
 
         stage('Checkout') {
