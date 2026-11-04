@@ -26,6 +26,24 @@ This repository already contains separate compose files per service group. A new
 
 ![DevOps Pipeline](./frontend/src/assets/devops.png)
 
+## Deployment Architecture
+
+The platform supports two deployment paths:
+
+### Render deployment with GitHub Actions
+
+Service changes pushed to the `main` branch trigger the relevant GitHub Actions workflow. Each workflow runs tests and quality checks, builds and tags a Docker image, pushes it to Docker Hub, and triggers the corresponding Render deployment hook.
+
+- Frontend: [frontend.yaml](.github/workflows/frontend.yaml)
+- Backend: [mainBackend.yaml](.github/workflows/mainBackend.yaml)
+- AI microservice: [aimicroservice.yaml](.github/workflows/aimicroservice.yaml)
+
+### AWS deployment with Jenkins
+
+The AWS deployment pipeline uses Jenkins to build, test, tag, and package the Frontend, Backend, and AI microservice Docker images. The images are published to Amazon ECR and deployed to an Amazon EKS cluster using Kubernetes manifests. The infrastructure is hosted in an AWS VPC and includes EC2, IAM, EBS, ELB, and CloudFormation components.
+
+![AWS Cloud Infrastructure](./frontend/src/assets/G.jpeg)
+
 ----
 
 ### Service Folders
