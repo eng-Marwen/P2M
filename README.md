@@ -42,7 +42,7 @@ Service changes pushed to the `main` branch trigger the relevant GitHub Actions 
 
 The AWS deployment pipeline uses Jenkins to build, test, tag, and package the Frontend, Backend, and AI microservice Docker images. The images are published to Amazon ECR and deployed to an Amazon EKS cluster using Kubernetes manifests. The infrastructure is hosted in an AWS VPC and includes EC2, IAM, EBS, ELB, and CloudFormation components.
 
-![AWS Cloud Infrastructure](./frontend/src/assets/G.jpeg)
+![AWS Cloud Infrastructure](./frontend/src/assets/aws.jpeg)
 
 ----
 
